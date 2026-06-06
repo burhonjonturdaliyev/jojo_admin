@@ -1,0 +1,34 @@
+import { Routes, Route, Navigate } from "react-router-dom";
+import { AdminLayout } from "./layouts/AdminLayout";
+import { DashboardPage } from "./pages/DashboardPage";
+import { UsersPage } from "./pages/UsersPage";
+import { ChildrenPage } from "./pages/ChildrenPage";
+import { PremiumPage } from "./pages/PremiumPage";
+import { PaymentsPage } from "./pages/PaymentsPage";
+import { RequestsPage } from "./pages/RequestsPage";
+import { NotificationsPage } from "./pages/NotificationsPage";
+import { AdsPage } from "./pages/AdsPage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { OperatorsPage } from "./pages/OperatorsPage";
+import { BlockedPage } from "./pages/BlockedPage";
+
+export default function App() {
+  return (
+    <Routes>
+      <Route element={<AdminLayout />}>
+        <Route index element={<Navigate to="/users" replace />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/users" element={<UsersPage />} />
+        <Route path="/children" element={<ChildrenPage />} />
+        <Route path="/premium" element={<PremiumPage />} />
+        <Route path="/payments" element={<PaymentsPage />} />
+        <Route path="/requests" element={<RequestsPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/ads" element={<AdsPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/operators" element={<OperatorsPage />} />
+        <Route path="/blocked" element={<BlockedPage />} />
+      </Route>
+    </Routes>
+  );
+}
