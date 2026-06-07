@@ -202,9 +202,12 @@ export function UsersPage() {
                         type="button"
                         title="Karta qo'shish"
                         aria-label="Karta qo'shish"
-                        className="flex h-5 w-5 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-bg-hover hover:text-text-primary"
+                        className="group/add flex h-6 w-6 items-center justify-center rounded-md border border-line bg-bg-card text-text-secondary shadow-sm transition-all duration-150 hover:border-brand/50 hover:bg-brand-soft hover:text-brand hover:shadow-md hover:shadow-brand/20 active:scale-95"
                       >
-                        <Plus className="h-3.5 w-3.5" strokeWidth={2.2} />
+                        <Plus
+                          className="h-3.5 w-3.5 transition-transform duration-150 group-hover/add:rotate-90"
+                          strokeWidth={2.4}
+                        />
                       </button>
                     </div>
                   </div>
