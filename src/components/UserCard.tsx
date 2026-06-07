@@ -2,6 +2,7 @@ import { MessageSquare, Phone } from "lucide-react";
 import type { User } from "../types";
 import { Avatar } from "./Avatar";
 import { cn } from "../lib/utils";
+import { useT } from "../lib/i18n";
 
 interface UserCardProps {
   user: User;
@@ -20,18 +21,19 @@ export function UserCard({
   onDragStart,
   onDragEnd,
 }: UserCardProps) {
+  const { t } = useT();
   const childOk = user.childStatus === "ulangan";
 
   let premiumText = "";
   let premiumColor = "text-text-secondary";
   if (user.premiumStatus === "sotib_olgan") {
-    premiumText = "Sotib olgan";
+    premiumText = t("userDetail.premium.bought");
     premiumColor = "text-text-secondary";
   } else if (user.premiumStatus === "sotib_olmagan") {
-    premiumText = "Sotib olmagan";
+    premiumText = t("userDetail.premium.notBought");
     premiumColor = "text-text-secondary";
   } else if (user.premiumStatus === "faol") {
-    premiumText = "Faol";
+    premiumText = t("userDetail.premium.active");
     premiumColor = "text-status-resolved";
   }
 
@@ -79,7 +81,7 @@ export function UserCard({
             childOk ? "text-status-resolved" : "text-status-blocked",
           )}
         >
-          {childOk ? "Bolani ulangan" : "Bolani ulanmagan"}
+          {childOk ? t("userDetail.connected") : t("userDetail.notConnected")}
         </div>
         <div className="text-[11.5px]">
           <span className="text-text-secondary">Premium: </span>
@@ -89,11 +91,11 @@ export function UserCard({
         {user.status === "jarayonda" && user.currentOperator && (
           <>
             <div className="text-[11.5px]">
-              <span className="text-text-secondary">Operator: </span>
+              <span className="text-text-secondary">{t("dashboard.tbl.operator")}: </span>
               <span className="text-text-primary">{user.currentOperator.name}</span>
             </div>
             <div className="text-[11.5px]">
-              <span className="text-text-secondary">Boshlangan: </span>
+              <span className="text-text-secondary">{t("userDetail.startedAt")}: </span>
               <span className="text-text-primary">{user.startedAt?.split(" ")[1]}</span>
             </div>
           </>
@@ -101,21 +103,21 @@ export function UserCard({
 
         {user.status === "kutilmoqda" && (
           <div className="text-[11.5px]">
-            <span className="text-text-secondary">Kutilmoqda: </span>
+            <span className="text-text-secondary">{t("userStatus.kutilmoqda")}: </span>
             <span className="text-text-primary">{user.waitingTime}</span>
           </div>
         )}
 
         {user.status === "hal_qilingan" && (
           <div className="text-[11.5px]">
-            <span className="text-text-secondary">Hal qilingan: </span>
+            <span className="text-text-secondary">{t("userStatus.hal_qilingan")}: </span>
             <span className="text-text-primary">{user.resolvedAt}</span>
           </div>
         )}
 
         {user.status === "yopilgan" && (
           <div className="text-[11.5px]">
-            <span className="text-text-secondary">Yopilgan: </span>
+            <span className="text-text-secondary">{t("userStatus.yopilgan")}: </span>
             <span className="text-text-primary">{user.closedAt}</span>
           </div>
         )}
@@ -123,11 +125,11 @@ export function UserCard({
         {user.status === "bloklangan" && (
           <>
             <div className="text-[11.5px]">
-              <span className="text-text-secondary">Bloklangan: </span>
+              <span className="text-text-secondary">{t("userStatus.bloklangan")}: </span>
               <span className="text-text-primary">{user.blockedAt}</span>
             </div>
             <div className="text-[11.5px]">
-              <span className="text-text-secondary">Sabab: </span>
+              <span className="text-text-secondary">{t("blocked.tbl.reason")}: </span>
               <span className="text-text-primary">{user.blockedReason}</span>
             </div>
           </>
@@ -135,15 +137,15 @@ export function UserCard({
 
         {user.status === "yangi" && (
           <div className="text-[11.5px]">
-            <span className="text-text-secondary">Ro'yxatdan o'tgan: </span>
+            <span className="text-text-secondary">{t("userDetail.registered")}: </span>
             <span className="text-text-primary">{user.registeredAt}</span>
           </div>
         )}
 
         {user.premiumStatus === "faol" && user.premiumDaysLeft && user.status !== "kutilmoqda" && (
           <div className="text-[11.5px]">
-            <span className="text-text-secondary">Premium tugash: </span>
-            <span className="text-text-primary">{user.premiumDaysLeft} kun</span>
+            <span className="text-text-secondary">{t("userDetail.premiumExpiryShort")}: </span>
+            <span className="text-text-primary">{user.premiumDaysLeft} {t("common.day").toLowerCase()}</span>
           </div>
         )}
       </div>

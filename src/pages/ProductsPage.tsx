@@ -18,9 +18,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import {
-  badgeLabels,
   initialProducts,
-  productTypeLabels,
   type Product,
   type ProductBadge,
   type ProductType,
@@ -28,22 +26,10 @@ import {
 import { initialOrders } from "../data/orders";
 import { computeOrderTotals, computeProductMetrics } from "../lib/analytics";
 import { cn } from "../lib/utils";
+import { useT } from "../lib/i18n";
 
 type TypeFilter = "all" | ProductType;
 type StatusFilter = "all" | "active" | "inactive";
-
-const typeChips: { key: TypeFilter; label: string }[] = [
-  { key: "all", label: "Hammasi" },
-  { key: "stem", label: "STEM" },
-  { key: "book", label: "Kitob" },
-  { key: "other", label: "Boshqa" },
-];
-
-const statusChips: { key: StatusFilter; label: string }[] = [
-  { key: "all", label: "Barchasi" },
-  { key: "active", label: "Faol" },
-  { key: "inactive", label: "Nofaol" },
-];
 
 const emptyForm = (): Product => ({
   id: "",
@@ -65,11 +51,25 @@ const emptyForm = (): Product => ({
 });
 
 export function ProductsPage() {
+  const { t } = useT();
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [editing, setEditing] = useState<Product | null>(null);
+
+  const typeChips: { key: TypeFilter; label: string }[] = [
+    { key: "all", label: t("common.all") },
+    { key: "stem", label: t("productType.stem") },
+    { key: "book", label: t("productType.book") },
+    { key: "other", label: t("productType.other") },
+  ];
+
+  const statusChips: { key: StatusFilter; label: string }[] = [
+    { key: "all", label: t("common.allPlural") },
+    { key: "active", label: t("common.active") },
+    { key: "inactive", label: t("common.inactive") },
+  ];
 
   const metricsByProduct = useMemo(() => {
     const list = computeProductMetrics(initialOrders, products);
@@ -122,14 +122,14 @@ export function ProductsPage() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Mahsulotlar"
-        subtitle="Do'kondagi barcha tovarlar boshqaruvi"
+        title={t("nav.products")}
+        subtitle={t("products.subtitle")}
         actions={
           <button
             className="btn-primary text-[12.5px]"
             onClick={() => setEditing(emptyForm())}
           >
-            <Plus className="h-4 w-4" /> Yangi mahsulot
+            <Plus className="h-4 w-4" /> {t("products.new")}
           </button>
         }
       />
@@ -138,30 +138,33 @@ export function ProductsPage() {
         <div className="grid grid-cols-4 gap-4">
           {[
             {
-              label: "Jami mahsulotlar",
+              label: t("products.stat.total"),
               value: products.length.toLocaleString("ru-RU"),
-              hint: `${products.filter((p) => p.isActive).length} faol · ${products.filter((p) => p.featured).length} tavsiya`,
+              hint: t("products.stat.totalSub", {
+                active: products.filter((p) => p.isActive).length,
+                featured: products.filter((p) => p.featured).length,
+              }),
               icon: Package,
               color: "#3B82F6",
             },
             {
-              label: "Jami buyurtmalar",
+              label: t("products.stat.orders"),
               value: totals.orders.toLocaleString("ru-RU"),
-              hint: `${totals.active} jarayonda`,
+              hint: t("products.stat.ordersSub", { count: totals.active }),
               icon: ShoppingCart,
               color: "#6366F1",
             },
             {
-              label: "Sotilgan",
+              label: t("products.stat.sold"),
               value: totals.sold.toLocaleString("ru-RU"),
-              hint: `${totals.revenue.toLocaleString("ru-RU")} so'm tushum`,
+              hint: t("products.stat.soldSub", { revenue: totals.revenue.toLocaleString("ru-RU") }),
               icon: CheckCircle2,
               color: "#10B981",
             },
             {
-              label: "Bekor qilingan",
+              label: t("products.stat.cancelled"),
               value: totals.cancelled.toLocaleString("ru-RU"),
-              hint: `${Math.round(totals.cancellationRate * 100)}% buyurtmalardan`,
+              hint: t("products.stat.cancelledSub", { pct: Math.round(totals.cancellationRate * 100) }),
               icon: XCircle,
               color: "#EF4444",
             },
@@ -193,7 +196,7 @@ export function ProductsPage() {
             <div className="relative w-full max-w-md">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <input
-                placeholder="Mahsulot nomi yoki kategoriya..."
+                placeholder={t("products.searchPlaceholder")}
                 className="input pl-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -239,15 +242,15 @@ export function ProductsPage() {
             <table className="w-full text-[13px]">
               <thead className="bg-bg-input text-[12px] uppercase tracking-wider text-text-muted">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold">Mahsulot</th>
-                  <th className="px-4 py-3 text-left font-semibold">Kategoriya</th>
-                  <th className="px-4 py-3 text-left font-semibold">Narx</th>
-                  <th className="px-4 py-3 text-left font-semibold">Buyurtmalar</th>
-                  <th className="px-4 py-3 text-left font-semibold">Qo'shilgan</th>
-                  <th className="px-4 py-3 text-left font-semibold">Belgi</th>
-                  <th className="px-4 py-3 text-center font-semibold">Tavsiya</th>
-                  <th className="px-4 py-3 text-center font-semibold">Faol</th>
-                  <th className="px-4 py-3 text-right font-semibold">Amal</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t("products.tbl.product")}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t("products.tbl.category")}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t("products.tbl.price")}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t("products.tbl.orders")}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t("products.tbl.added")}</th>
+                  <th className="px-4 py-3 text-left font-semibold">{t("products.tbl.badge")}</th>
+                  <th className="px-4 py-3 text-center font-semibold">{t("products.tbl.featured")}</th>
+                  <th className="px-4 py-3 text-center font-semibold">{t("products.tbl.active")}</th>
+                  <th className="px-4 py-3 text-right font-semibold">{t("products.tbl.action")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -285,7 +288,7 @@ export function ProductsPage() {
                       <td className="px-4 py-3">
                         <div className="text-text-secondary">{p.category}</div>
                         <div className="text-[11px] text-text-muted">
-                          {productTypeLabels[p.type]}
+                          {t(`productType.${p.type}`)}
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -293,7 +296,7 @@ export function ProductsPage() {
                           <span className="font-semibold text-text-primary">
                             {p.price.toLocaleString("ru-RU")}
                           </span>
-                          <span className="text-[10.5px] text-text-muted">so'm</span>
+                          <span className="text-[10.5px] text-text-muted">{t("common.sum")}</span>
                         </div>
                         {p.oldPrice && (
                           <div className="flex items-center gap-2">
@@ -310,19 +313,19 @@ export function ProductsPage() {
                         <div className="flex flex-wrap items-center gap-1">
                           <StatPill
                             icon={ShoppingCart}
-                            label="Buyurtma"
+                            label={t("products.pill.orders")}
                             value={orders}
                             tone="brand"
                           />
                           <StatPill
                             icon={CheckCircle2}
-                            label="Sotildi"
+                            label={t("products.pill.sold")}
                             value={sold}
                             tone="success"
                           />
                           <StatPill
                             icon={XCircle}
-                            label="Bekor"
+                            label={t("products.pill.cancelled")}
                             value={cancelled}
                             tone="danger"
                           />
@@ -330,7 +333,7 @@ export function ProductsPage() {
                         {orders > 0 && (
                           <div className="mt-1.5 flex items-center gap-1 text-[10.5px] text-text-muted">
                             <TrendingUp className="h-3 w-3" />
-                            <span>Konversiya: {conversion}%</span>
+                            <span>{t("products.conversion", { pct: conversion })}</span>
                           </div>
                         )}
                       </td>
@@ -341,7 +344,7 @@ export function ProductsPage() {
                         </div>
                         {p.updatedAt && p.updatedAt !== p.createdAt && (
                           <div className="mt-0.5 text-[10.5px] text-text-muted">
-                            Yangilandi: {p.updatedAt}
+                            {t("products.updatedAt", { date: p.updatedAt })}
                           </div>
                         )}
                       </td>
@@ -357,7 +360,7 @@ export function ProductsPage() {
                                 : "bg-status-resolved/15 text-status-resolved",
                             )}
                           >
-                            {badgeLabels[p.badge]}
+                            {t(`productBadge.${p.badge}`)}
                           </span>
                         )}
                       </td>
@@ -370,7 +373,7 @@ export function ProductsPage() {
                               ? "bg-status-progress/15 text-status-progress"
                               : "text-text-muted hover:bg-bg-hover",
                           )}
-                          title={p.featured ? "Tavsiyadan olib tashlash" : "Tavsiya etish"}
+                          title={p.featured ? t("products.unrecommend") : t("products.recommend")}
                         >
                           <Star
                             className="h-4 w-4"
@@ -399,14 +402,14 @@ export function ProductsPage() {
                           <button
                             className="icon-btn h-8 w-8"
                             onClick={() => setEditing(p)}
-                            title="Tahrirlash"
+                            title={t("common.edit")}
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
                             className="icon-btn h-8 w-8 hover:bg-status-blocked/15 hover:text-status-blocked"
                             onClick={() => removeProduct(p.id)}
-                            title="O'chirish"
+                            title={t("common.delete")}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -421,7 +424,7 @@ export function ProductsPage() {
                       colSpan={9}
                       className="px-4 py-12 text-center text-[13px] text-text-muted"
                     >
-                      Mahsulot topilmadi
+                      {t("products.notFound")}
                     </td>
                   </tr>
                 )}
@@ -449,6 +452,7 @@ interface DrawerProps {
 }
 
 function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
+  const { t } = useT();
   const [draft, setDraft] = useState<Product>(product);
   const [featureInput, setFeatureInput] = useState("");
   const [dragOver, setDragOver] = useState(false);
@@ -500,10 +504,10 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
         <div className="flex items-center justify-between border-b border-line px-6 py-4">
           <div>
             <h2 className="text-[17px] font-bold text-text-primary">
-              {product.id ? "Mahsulotni tahrirlash" : "Yangi mahsulot"}
+              {product.id ? t("products.editTitle") : t("products.new")}
             </h2>
             <p className="mt-0.5 text-[12.5px] text-text-secondary">
-              Barcha maydonlarni to'ldiring
+              {t("products.fillAll")}
             </p>
           </div>
           <button className="icon-btn" onClick={onClose}>
@@ -514,7 +518,7 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
         <div className="flex-1 overflow-y-auto scrollbar-thin px-6 py-5">
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Slug (ID)">
+              <Field label={t("products.field.slug")}>
                 <input
                   className="input"
                   placeholder="codybot"
@@ -529,7 +533,7 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
                   }
                 />
               </Field>
-              <Field label="Nomi">
+              <Field label={t("products.field.name")}>
                 <input
                   className="input"
                   placeholder="CodyBot — dasturlash roboti"
@@ -537,34 +541,34 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
                   onChange={(e) => set("name", e.target.value)}
                 />
               </Field>
-              <Field label="Kategoriya matni">
+              <Field label={t("products.field.category")}>
                 <input
                   className="input"
-                  placeholder="STEM O'YINCHOQ"
+                  placeholder="STEM"
                   value={draft.category}
                   onChange={(e) => set("category", e.target.value)}
                 />
               </Field>
-              <Field label="Yosh chegarasi">
+              <Field label={t("products.field.age")}>
                 <input
                   className="input"
-                  placeholder="6+ yosh"
+                  placeholder="6+"
                   value={draft.age}
                   onChange={(e) => set("age", e.target.value)}
                 />
               </Field>
-              <Field label="Turi">
+              <Field label={t("products.field.type")}>
                 <select
                   className="input"
                   value={draft.type}
                   onChange={(e) => set("type", e.target.value as ProductType)}
                 >
-                  <option value="stem">STEM</option>
-                  <option value="book">Kitob</option>
-                  <option value="other">Boshqa</option>
+                  <option value="stem">{t("productType.stem")}</option>
+                  <option value="book">{t("productType.book")}</option>
+                  <option value="other">{t("productType.other")}</option>
                 </select>
               </Field>
-              <Field label="Belgi">
+              <Field label={t("products.field.badge")}>
                 <select
                   className="input"
                   value={draft.badge}
@@ -572,12 +576,12 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
                     set("badge", e.target.value as ProductBadge)
                   }
                 >
-                  <option value="none">Yo'q</option>
-                  <option value="top">TOP</option>
-                  <option value="yangi">Yangi</option>
+                  <option value="none">{t("common.none")}</option>
+                  <option value="top">{t("productBadge.top")}</option>
+                  <option value="yangi">{t("productBadge.yangi")}</option>
                 </select>
               </Field>
-              <Field label="Narx (so'm)">
+              <Field label={t("products.field.price")}>
                 <input
                   type="number"
                   className="input"
@@ -589,7 +593,7 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
               <Field
                 label={
                   <span className="flex items-center gap-1">
-                    Chegirmagacha narx
+                    {t("products.field.oldPrice")}
                     {discount > 0 && (
                       <span className="rounded bg-status-blocked/15 px-1.5 py-0.5 text-[10px] font-semibold text-status-blocked">
                         -{discount}%
@@ -601,7 +605,7 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
                 <input
                   type="number"
                   className="input"
-                  placeholder="Bo'sh qoldiring chegirma yo'q bo'lsa"
+                  placeholder={t("products.field.oldPricePh")}
                   value={draft.oldPrice ?? ""}
                   onChange={(e) =>
                     set(
@@ -613,7 +617,7 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
               </Field>
             </div>
 
-            <Field label="Xususiyatlar (chip)">
+            <Field label={t("products.field.features")}>
               <div className="flex flex-wrap gap-1.5">
                 {draft.features.map((f, i) => (
                   <span
@@ -630,7 +634,7 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
               <div className="mt-2 flex gap-2">
                 <input
                   className="input"
-                  placeholder="Bluetooth, Mobil ilova..."
+                  placeholder={t("products.field.featurePh")}
                   value={featureInput}
                   onChange={(e) => setFeatureInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -641,22 +645,22 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
                   }}
                 />
                 <button className="btn-secondary text-[12.5px]" onClick={addFeature}>
-                  Qo'shish
+                  {t("common.add")}
                 </button>
               </div>
             </Field>
 
-            <Field label="Tavsif">
+            <Field label={t("products.field.description")}>
               <textarea
                 rows={4}
                 className="input resize-none"
-                placeholder="Mahsulot haqida batafsil..."
+                placeholder={t("products.field.descriptionPh")}
                 value={draft.description}
                 onChange={(e) => set("description", e.target.value)}
               />
             </Field>
 
-            <Field label="Rasmlar (1-5 ta)">
+            <Field label={t("products.field.images")}>
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -673,10 +677,10 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
               >
                 <UploadCloud className="h-7 w-7 text-text-muted" />
                 <div className="mt-2 text-[12.5px] font-medium text-text-secondary">
-                  Rasmlarni shu yerga tashlang
+                  {t("products.dropImages")}
                 </div>
                 <div className="text-[11px] text-text-muted">
-                  yoki bosib tanlang · PNG, JPG, WebP
+                  {t("products.orChoose")}
                 </div>
               </div>
               {draft.images.length > 0 && (
@@ -704,7 +708,7 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
               )}
             </Field>
 
-            <Field label="Video URL (ixtiyoriy)">
+            <Field label={t("products.field.video")}>
               <div className="relative">
                 <Video className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
                 <input
@@ -720,12 +724,12 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
 
             <div className="grid grid-cols-2 gap-3">
               <ToggleField
-                label="Tavsiya etamiz karuselida"
+                label={t("products.toggle.featured")}
                 value={draft.featured}
                 onChange={(v) => set("featured", v)}
               />
               <ToggleField
-                label="Ilovada faol"
+                label={t("products.toggle.active")}
                 value={draft.isActive}
                 onChange={(v) => set("isActive", v)}
               />
@@ -735,14 +739,14 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
 
         <div className="flex items-center justify-end gap-2 border-t border-line bg-bg-panel px-6 py-4">
           <button className="btn-secondary text-[12.5px]" onClick={onClose}>
-            Bekor qilish
+            {t("common.cancel")}
           </button>
           <button
             className="btn-primary text-[12.5px] disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!valid}
             onClick={() => onSave(draft)}
           >
-            Saqlash
+            {t("common.save")}
           </button>
         </div>
       </div>

@@ -26,6 +26,7 @@ import {
   type AdviceType,
 } from "../data/advice";
 import { cn } from "../lib/utils";
+import { useT } from "../lib/i18n";
 
 const swatches = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
@@ -46,6 +47,7 @@ const emptyItem = (type: AdviceType, sortOrder: number): AdviceItem => ({
 });
 
 export function AdvicePage() {
+  const { t } = useT();
   const [items, setItems] = useState<AdviceItem[]>(initialAdvice);
   const [tab, setTab] = useState<AdviceType>("video");
   const [editing, setEditing] = useState<AdviceItem | null>(null);
@@ -99,15 +101,15 @@ export function AdvicePage() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Maslahatlar"
-        subtitle="Foydali videolar va blog yozuvlari"
+        title={t("nav.advice")}
+        subtitle={t("advice.subtitle")}
         actions={
           <button
             className="btn-primary text-[12.5px]"
             onClick={() => setEditing(emptyItem(tab, nextSortOrder))}
           >
             <Plus className="h-4 w-4" />
-            Yangi {tab === "video" ? "video" : "yozuv"}
+            {tab === "video" ? t("advice.newVideo") : t("advice.newPost")}
           </button>
         }
       />
@@ -123,7 +125,7 @@ export function AdvicePage() {
                 : "text-text-secondary hover:text-text-primary",
             )}
           >
-            <Play className="h-3.5 w-3.5" /> Videolar
+            <Play className="h-3.5 w-3.5" /> {t("advice.tab.videos")}
             <span className="text-[11px] opacity-70">{counts.video}</span>
           </button>
           <button
@@ -135,17 +137,17 @@ export function AdvicePage() {
                 : "text-text-secondary hover:text-text-primary",
             )}
           >
-            <FileText className="h-3.5 w-3.5" /> Bloglar
+            <FileText className="h-3.5 w-3.5" /> {t("advice.tab.blogs")}
             <span className="text-[11px] opacity-70">{counts.blog}</span>
           </button>
         </div>
 
         <div className="mt-5 grid grid-cols-4 gap-4">
           {[
-            { label: "Jami", value: counts[tab], color: "#3B82F6", icon: tab === "video" ? Play : FileText },
-            { label: "Chop etilgan", value: totalStats.published, color: "#10B981", icon: Eye },
-            { label: "Jami like", value: totalStats.likes.toLocaleString("ru-RU"), color: "#EF4444", icon: Heart },
-            { label: "Bookmark qilingan", value: totalStats.bookmarks.toLocaleString("ru-RU"), color: "#F59E0B", icon: Bookmark },
+            { label: t("advice.stat.total"), value: counts[tab], color: "#3B82F6", icon: tab === "video" ? Play : FileText },
+            { label: t("advice.stat.published"), value: totalStats.published, color: "#10B981", icon: Eye },
+            { label: t("advice.stat.likes"), value: totalStats.likes.toLocaleString("ru-RU"), color: "#EF4444", icon: Heart },
+            { label: t("advice.stat.bookmarks"), value: totalStats.bookmarks.toLocaleString("ru-RU"), color: "#F59E0B", icon: Bookmark },
           ].map((s) => (
             <div key={s.label} className="card p-4">
               <div className="flex items-start justify-between">
@@ -178,7 +180,7 @@ export function AdvicePage() {
           ))}
           {list.length === 0 && (
             <div className="col-span-3 rounded-xl border border-dashed border-line py-16 text-center text-[13px] text-text-muted">
-              Hozircha {tab === "video" ? "video" : "yozuv"} yo'q
+              {tab === "video" ? t("advice.empty.video") : t("advice.empty.blog")}
             </div>
           )}
         </div>
@@ -206,6 +208,7 @@ function AdviceCard({
   onTogglePublish: () => void;
   onRemove: () => void;
 }) {
+  const { t } = useT();
   return (
     <div
       className={cn(
@@ -239,19 +242,19 @@ function AdviceCard({
               : "bg-text-muted/90 text-white",
           )}
         >
-          {item.isPublished ? "Chop etilgan" : "Qoralama"}
+          {item.isPublished ? t("advice.published") : t("advice.draft")}
         </span>
       </div>
       <div className="p-4">
         <h3 className="line-clamp-2 text-[14px] font-semibold text-text-primary">
-          {item.title || "Sarlavhasiz"}
+          {item.title || t("advice.untitled")}
         </h3>
         <div className="mt-2 flex items-center gap-3 text-[11.5px] text-text-secondary">
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />
             {item.type === "video"
               ? item.durationLabel
-              : `${item.readTimeMinutes} daqiqa`}
+              : t("advice.minutes", { n: item.readTimeMinutes ?? 0 })}
           </span>
           <span>·</span>
           <span>{item.publishedAt}</span>
@@ -261,12 +264,12 @@ function AdviceCard({
           <div className="flex items-center gap-1.5 text-status-blocked">
             <Heart className="h-3.5 w-3.5" fill="currentColor" />
             <span className="font-semibold">{item.likes.toLocaleString("ru-RU")}</span>
-            <span className="text-text-muted">like</span>
+            <span className="text-text-muted">{t("advice.like")}</span>
           </div>
           <div className="flex items-center gap-1.5 text-status-progress">
             <Bookmark className="h-3.5 w-3.5" fill="currentColor" />
             <span className="font-semibold">{item.bookmarks.toLocaleString("ru-RU")}</span>
-            <span className="text-text-muted">saqlangan</span>
+            <span className="text-text-muted">{t("advice.bookmarkLabel")}</span>
           </div>
         </div>
 
@@ -277,7 +280,7 @@ function AdviceCard({
             rel="noreferrer"
             className="flex items-center gap-1 text-[11.5px] text-brand hover:underline"
           >
-            <ExternalLink className="h-3 w-3" /> Havola
+            <ExternalLink className="h-3 w-3" /> {t("advice.link")}
           </a>
           <div className="flex items-center gap-1">
             <button
@@ -288,7 +291,7 @@ function AdviceCard({
                   : "hover:text-status-resolved",
               )}
               onClick={onTogglePublish}
-              title={item.isPublished ? "Qoralama qilish" : "Chop etish"}
+              title={item.isPublished ? t("advice.makeDraft") : t("advice.publish")}
             >
               {item.isPublished ? (
                 <EyeOff className="h-4 w-4" />
@@ -321,6 +324,7 @@ function AdviceFormDrawer({
   onClose: () => void;
   onSave: (i: AdviceItem) => void;
 }) {
+  const { t } = useT();
   const [draft, setDraft] = useState<AdviceItem>(item);
   const [dragOver, setDragOver] = useState(false);
 
@@ -345,8 +349,12 @@ function AdviceFormDrawer({
           <div>
             <h2 className="text-[17px] font-bold text-text-primary">
               {draft.title
-                ? `Tahrirlash: ${draft.type === "video" ? "Video" : "Blog"}`
-                : `Yangi ${draft.type === "video" ? "video" : "yozuv"}`}
+                ? draft.type === "video"
+                  ? t("advice.editTitle.video")
+                  : t("advice.editTitle.blog")
+                : draft.type === "video"
+                  ? t("advice.editNew.video")
+                  : t("advice.editNew.blog")}
             </h2>
             <p className="mt-0.5 font-mono text-[11.5px] text-text-muted">
               {draft.id}
@@ -360,11 +368,11 @@ function AdviceFormDrawer({
         <div className="flex-1 overflow-y-auto scrollbar-thin px-6 py-5 space-y-5">
           <div>
             <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              Sarlavha
+              {t("advice.field.title")}
             </label>
             <input
               className="input"
-              placeholder="Bolaning ekran vaqtini qanday cheklash kerak?"
+              placeholder={t("advice.field.titlePh")}
               value={draft.title}
               onChange={(e) => set("title", e.target.value)}
             />
@@ -372,7 +380,7 @@ function AdviceFormDrawer({
 
           <div>
             <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              Cover rasm
+              {t("advice.field.cover")}
             </label>
             <div
               onDragOver={(e) => {
@@ -403,7 +411,7 @@ function AdviceFormDrawer({
               <div className="flex items-center gap-2">
                 <UploadCloud className="h-4 w-4 text-text-muted" />
                 <span className="text-[12.5px] font-medium text-text-secondary">
-                  Rasmni shu yerga tashlang
+                  {t("advice.dropCover")}
                 </span>
               </div>
             </div>
@@ -412,7 +420,9 @@ function AdviceFormDrawer({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                {draft.type === "video" ? "Video URL (YouTube/Vimeo)" : "Tashqi havola"}
+                {draft.type === "video"
+                  ? t("advice.field.videoUrl")
+                  : t("advice.field.externalUrl")}
               </label>
               <div className="relative">
                 <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
@@ -430,7 +440,9 @@ function AdviceFormDrawer({
             </div>
             <div>
               <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                {draft.type === "video" ? "Davomiyligi (11:38)" : "O'qish vaqti (daqiqa)"}
+                {draft.type === "video"
+                  ? t("advice.field.duration")
+                  : t("advice.field.readTime")}
               </label>
               {draft.type === "video" ? (
                 <input
@@ -456,17 +468,17 @@ function AdviceFormDrawer({
           {draft.type === "blog" && (
             <div>
               <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                Maqola matni
+                {t("advice.field.body")}
               </label>
               <div className="rounded-lg border border-line bg-bg-input">
                 <div className="flex items-center gap-1 border-b border-line p-1.5">
-                  <ToolbarButton onClick={() => wrap("**")} title="Qalin">
+                  <ToolbarButton onClick={() => wrap("**")} title={t("advice.toolbar.bold")}>
                     <Bold className="h-3.5 w-3.5" />
                   </ToolbarButton>
-                  <ToolbarButton onClick={() => wrap("*")} title="Kursiv">
+                  <ToolbarButton onClick={() => wrap("*")} title={t("advice.toolbar.italic")}>
                     <Italic className="h-3.5 w-3.5" />
                   </ToolbarButton>
-                  <ToolbarButton onClick={() => wrap("\n- ", "")} title="Ro'yxat">
+                  <ToolbarButton onClick={() => wrap("\n- ", "")} title={t("advice.toolbar.list")}>
                     <List className="h-3.5 w-3.5" />
                   </ToolbarButton>
                   <span className="ml-auto pr-2 text-[10.5px] text-text-muted">
@@ -476,7 +488,7 @@ function AdviceFormDrawer({
                 <textarea
                   rows={10}
                   className="w-full resize-none rounded-b-lg bg-transparent px-3 py-2 text-[13px] text-text-primary placeholder:text-text-muted focus:outline-none"
-                  placeholder="Maqola matnini yozing... \n\nParagraflarni \\n\\n bilan ajrating."
+                  placeholder={t("advice.bodyPlaceholder")}
                   value={draft.body ?? ""}
                   onChange={(e) => set("body", e.target.value)}
                 />
@@ -487,7 +499,7 @@ function AdviceFormDrawer({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                Chop etish sanasi
+                {t("advice.field.publishedAt")}
               </label>
               <input
                 className="input"
@@ -498,7 +510,7 @@ function AdviceFormDrawer({
             </div>
             <div>
               <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                Tartib
+                {t("advice.field.sortOrder")}
               </label>
               <input
                 type="number"
@@ -511,7 +523,7 @@ function AdviceFormDrawer({
 
           <div className="rounded-lg border border-line bg-bg-input p-3">
             <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-              Statistika (faqat o'qish)
+              {t("advice.statsReadOnly")}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Stat icon={Heart} color="#EF4444" value={draft.likes} label="Like" />
@@ -531,12 +543,12 @@ function AdviceFormDrawer({
           >
             <div>
               <div className="text-[13px] font-medium text-text-primary">
-                {draft.isPublished ? "Chop etilgan" : "Qoralama"}
+                {draft.isPublished ? t("advice.published") : t("advice.draft")}
               </div>
               <div className="text-[11px] text-text-muted">
                 {draft.isPublished
-                  ? "Foydalanuvchilar ilovada ko'rmoqda"
-                  : "Ilovada ko'rinmaydi"}
+                  ? t("advice.toggle.publishedHint")
+                  : t("advice.toggle.draftHint")}
               </div>
             </div>
             <span
@@ -557,14 +569,14 @@ function AdviceFormDrawer({
 
         <div className="flex items-center justify-end gap-2 border-t border-line px-6 py-4">
           <button className="btn-secondary text-[12.5px]" onClick={onClose}>
-            Bekor qilish
+            {t("common.cancel")}
           </button>
           <button
             className="btn-primary text-[12.5px] disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!valid}
             onClick={() => onSave(draft)}
           >
-            Saqlash
+            {t("common.save")}
           </button>
         </div>
       </div>

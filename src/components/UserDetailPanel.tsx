@@ -11,7 +11,8 @@ import {
 import type { User } from "../types";
 import { Avatar } from "./Avatar";
 import { cn } from "../lib/utils";
-import { statusLabels, statusBadgeClass } from "../data/users";
+import { statusBadgeClass } from "../data/users";
+import { useT } from "../lib/i18n";
 
 interface Props {
   user: User;
@@ -21,14 +22,15 @@ interface Props {
 type Tab = "umumiy" | "bolalar" | "tolovlar" | "faollik";
 
 export function UserDetailPanel({ user, onClose }: Props) {
+  const { t } = useT();
   const [tab, setTab] = useState<Tab>("umumiy");
   const [note, setNote] = useState("");
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "umumiy", label: "Umumiy ma'lumot" },
-    { id: "bolalar", label: `Bolalar (${user.children?.length ?? 0})` },
-    { id: "tolovlar", label: "To'lovlar tarixi" },
-    { id: "faollik", label: "Faollik tarixi" },
+    { id: "umumiy", label: t("userDetail.tab.general") },
+    { id: "bolalar", label: `${t("userDetail.tab.children")} (${user.children?.length ?? 0})` },
+    { id: "tolovlar", label: t("userDetail.tab.payments") },
+    { id: "faollik", label: t("userDetail.tab.activity") },
   ];
 
   return (
@@ -48,7 +50,7 @@ export function UserDetailPanel({ user, onClose }: Props) {
                 )}
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                {statusLabels[user.status]}
+                {t(`userStatus.${user.status}`)}
               </span>
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-[12.5px] text-text-secondary">
@@ -56,9 +58,9 @@ export function UserDetailPanel({ user, onClose }: Props) {
               {user.phone}
             </div>
             <div className="mt-0.5 text-[11.5px] text-text-muted">
-              Ro'yxatdan o'tgan sana: {user.registeredAt}
+              {t("userDetail.registered")}: {user.registeredAt}
             </div>
-            <div className="mt-0.5 text-[11.5px] text-text-muted">ID: #{user.id}</div>
+            <div className="mt-0.5 text-[11.5px] text-text-muted">{t("userDetail.id")}: #{user.id}</div>
           </div>
         </div>
         <button onClick={onClose} className="icon-btn">
@@ -95,20 +97,20 @@ export function UserDetailPanel({ user, onClose }: Props) {
 
       <div className="border-t border-line p-4">
         <div className="mb-3 text-[12px] font-semibold uppercase tracking-wide text-text-muted">
-          Amallar
+          {t("userDetail.actions")}
         </div>
         <div className="grid grid-cols-2 gap-2">
           <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-soft px-3 py-2 text-[12.5px] font-medium text-brand transition-colors hover:bg-brand/20">
-            <Edit3 className="h-4 w-4" /> Statusni o'zgartirish
+            <Edit3 className="h-4 w-4" /> {t("userDetail.changeStatus")}
           </button>
           <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-status-progress/15 px-3 py-2 text-[12.5px] font-medium text-status-progress transition-colors hover:bg-status-progress/25">
-            <Bell className="h-4 w-4" /> Ogohlantirish yuborish
+            <Bell className="h-4 w-4" /> {t("userDetail.sendWarning")}
           </button>
           <button className="inline-flex items-center justify-center gap-2 rounded-lg bg-status-blocked/15 px-3 py-2 text-[12.5px] font-medium text-status-blocked transition-colors hover:bg-status-blocked/25">
-            <Ban className="h-4 w-4" /> Foydalanuvchini bloklash
+            <Ban className="h-4 w-4" /> {t("userDetail.block")}
           </button>
           <button className="inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-bg-card px-3 py-2 text-[12.5px] font-medium text-text-primary transition-colors hover:bg-bg-hover">
-            <PhoneCall className="h-4 w-4" /> Qo'ng'iroq qilish
+            <PhoneCall className="h-4 w-4" /> {t("userDetail.call")}
           </button>
         </div>
       </div>
@@ -125,47 +127,45 @@ function UmumiyTab({
   note: string;
   setNote: (v: string) => void;
 }) {
+  const { t } = useT();
+  const premiumText =
+    user.premiumStatus === "sotib_olgan"
+      ? t("userDetail.premium.bought")
+      : user.premiumStatus === "faol"
+        ? t("userDetail.premium.active")
+        : t("userDetail.premium.notBought");
   return (
     <div className="space-y-4 p-5">
       <div className="grid grid-cols-2 gap-3">
-        <InfoCard title="Asosiy ma'lumotlar">
-          <Row label="Ism familiya" value={user.name} />
-          <Row label="Telefon raqami" value={user.phone} />
-          <Row label="Email" value={user.email} />
-          <Row label="Manzil" value={user.address} />
-          <Row label="Jinsi" value={user.gender} />
-          <Row label="Tug'ilgan sana" value={user.birthDate} />
-          <Row label="Ro'yxatdan o'tgan sana" value={user.registeredAt} />
-          <Row label="Oxirgi faollik" value={user.lastActivity} />
+        <InfoCard title={t("userDetail.basicInfo")}>
+          <Row label={t("userDetail.fullName")} value={user.name} />
+          <Row label={t("userDetail.phone")} value={user.phone} />
+          <Row label={t("userDetail.email")} value={user.email} />
+          <Row label={t("userDetail.address")} value={user.address} />
+          <Row label={t("userDetail.gender")} value={user.gender} />
+          <Row label={t("userDetail.birthDate")} value={user.birthDate} />
+          <Row label={t("userDetail.registered")} value={user.registeredAt} />
+          <Row label={t("userDetail.lastActivity")} value={user.lastActivity} />
         </InfoCard>
 
-        <InfoCard title="Hisob holati">
+        <InfoCard title={t("userDetail.accountState")}>
           <Row
-            label="Bolani ulangan"
+            label={t("userDetail.childConnected")}
             value={
               <span className="flex items-center gap-1 text-status-resolved">
                 <CheckCircle2 className="h-3.5 w-3.5" />{" "}
-                {user.childStatus === "ulangan" ? "Ha" : "Yo'q"}
+                {user.childStatus === "ulangan" ? t("common.yes") : t("common.no")}
               </span>
             }
           />
+          <Row label={t("userDetail.premiumStatus")} value={premiumText} />
           <Row
-            label="Premium holati"
-            value={
-              user.premiumStatus === "sotib_olgan"
-                ? "Sotib olgan"
-                : user.premiumStatus === "faol"
-                  ? "Faol"
-                  : "Sotib olmagan"
-            }
-          />
-          <Row
-            label="Premium obunasi tugashi"
+            label={t("userDetail.premiumExpiry")}
             value={user.premiumExpiry ?? "-"}
           />
           {user.currentOperator && (
             <Row
-              label="Joriy operator"
+              label={t("userDetail.currentOperator")}
               value={
                 <span className="flex items-center gap-1.5">
                   <Avatar name={user.currentOperator.name} size={18} />
@@ -174,10 +174,12 @@ function UmumiyTab({
               }
             />
           )}
-          {user.startedAt && <Row label="Boshlangan vaqt" value={user.startedAt} />}
-          <Row label="Ro'yxatdan o'tgan sana" value={user.registeredAt} />
+          {user.startedAt && (
+            <Row label={t("userDetail.startedAt")} value={user.startedAt} />
+          )}
+          <Row label={t("userDetail.registered")} value={user.registeredAt} />
           <Row
-            label="Joriy status"
+            label={t("userDetail.currentStatus")}
             value={
               <span
                 className={cn(
@@ -185,7 +187,7 @@ function UmumiyTab({
                   statusBadgeClass[user.status],
                 )}
               >
-                {statusLabels[user.status]}
+                {t(`userStatus.${user.status}`)}
               </span>
             }
           />
@@ -194,7 +196,7 @@ function UmumiyTab({
 
       <div className="card p-4">
         <div className="mb-2 text-[12.5px] font-semibold text-text-primary">
-          Operator izohi
+          {t("userDetail.operatorNote")}
         </div>
         {user.operatorNote && (
           <div className="mb-3 whitespace-pre-line rounded-lg border border-line bg-bg-input p-3 text-[12.5px] text-text-secondary">
@@ -205,20 +207,22 @@ function UmumiyTab({
           <input
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Izoh qo'shish..."
+            placeholder={t("userDetail.addNote")}
             className="input"
           />
-          <button className="btn-primary px-4 whitespace-nowrap">Saqlash</button>
+          <button className="btn-primary px-4 whitespace-nowrap">
+            {t("common.save")}
+          </button>
         </div>
       </div>
 
       <div className="card p-4">
         <div className="mb-3 flex items-center justify-between">
           <div className="text-[12.5px] font-semibold text-text-primary">
-            Izohlar tarixi
+            {t("userDetail.notesHistory")}
           </div>
           <button className="text-[12px] text-text-secondary hover:text-text-primary">
-            Barchasi ›
+            {t("common.viewAll")}
           </button>
         </div>
         <div className="space-y-3">
@@ -237,7 +241,7 @@ function UmumiyTab({
                         statusBadgeClass[c.status],
                       )}
                     >
-                      {statusLabels[c.status]}
+                      {t(`userStatus.${c.status}`)}
                     </span>
                   </div>
                   <span className="shrink-0 text-[11px] text-text-muted">
@@ -251,7 +255,9 @@ function UmumiyTab({
             </div>
           ))}
           {!user.comments?.length && (
-            <p className="text-[12.5px] text-text-muted">Izohlar mavjud emas</p>
+            <p className="text-[12.5px] text-text-muted">
+              {t("userDetail.noNotes")}
+            </p>
           )}
         </div>
       </div>
@@ -260,6 +266,7 @@ function UmumiyTab({
 }
 
 function BolalarTab({ user }: { user: User }) {
+  const { t } = useT();
   return (
     <div className="p-5 space-y-3">
       {user.children?.length ? (
@@ -272,7 +279,7 @@ function BolalarTab({ user }: { user: User }) {
                   {c.name}
                 </div>
                 <div className="text-[12px] text-text-secondary">
-                  {c.age} yosh · {c.gender}
+                  {c.age} {t("userDetail.yearsOld")} · {c.gender}
                 </div>
               </div>
               <span
@@ -283,22 +290,26 @@ function BolalarTab({ user }: { user: User }) {
                     : "bg-status-blocked/15 text-status-blocked",
                 )}
               >
-                {c.connected ? "Ulangan" : "Ulanmagan"}
+                {c.connected
+                  ? t("userDetail.connected")
+                  : t("userDetail.notConnected")}
               </span>
             </div>
             <div className="mt-3 border-t border-line pt-3 text-[12px] text-text-secondary">
-              Qurilma: <span className="text-text-primary">{c.device}</span>
+              {t("userDetail.device")}:{" "}
+              <span className="text-text-primary">{c.device}</span>
             </div>
           </div>
         ))
       ) : (
-        <p className="text-[13px] text-text-muted">Bolalar qo'shilmagan</p>
+        <p className="text-[13px] text-text-muted">{t("userDetail.noChildren")}</p>
       )}
     </div>
   );
 }
 
 function TolovlarTab({ user }: { user: User }) {
+  const { t } = useT();
   return (
     <div className="p-5 space-y-2">
       {user.payments?.length ? (
@@ -315,22 +326,23 @@ function TolovlarTab({ user }: { user: User }) {
             </div>
             <div className="text-right">
               <div className="text-[13px] font-semibold text-text-primary">
-                {p.amount.toLocaleString("ru-RU")} so'm
+                {p.amount.toLocaleString("ru-RU")} {t("common.sum")}
               </div>
               <div className="text-[11px] text-status-resolved">
-                {p.status === "muvaffaqiyatli" ? "Muvaffaqiyatli" : p.status}
+                {t(`payments.status.${p.status}`)}
               </div>
             </div>
           </div>
         ))
       ) : (
-        <p className="text-[13px] text-text-muted">To'lovlar mavjud emas</p>
+        <p className="text-[13px] text-text-muted">{t("userDetail.noPayments")}</p>
       )}
     </div>
   );
 }
 
 function FaollikTab({ user }: { user: User }) {
+  const { t } = useT();
   return (
     <div className="p-5 space-y-2">
       {user.activity?.length ? (
@@ -345,7 +357,7 @@ function FaollikTab({ user }: { user: User }) {
           </div>
         ))
       ) : (
-        <p className="text-[13px] text-text-muted">Faollik tarixi bo'sh</p>
+        <p className="text-[13px] text-text-muted">{t("userDetail.noActivity")}</p>
       )}
     </div>
   );

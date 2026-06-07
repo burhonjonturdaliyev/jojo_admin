@@ -24,7 +24,6 @@ import {
   initialOrders,
   orderFlow,
   orderStatusColors,
-  orderStatusLabels,
   type Order,
   type OrderStatus,
 } from "../data/orders";
@@ -37,22 +36,23 @@ import {
   type ProductMetric,
 } from "../lib/analytics";
 import { cn } from "../lib/utils";
+import { useT } from "../lib/i18n";
 
 type Tab = "active" | "delivered" | "cancelled";
 type Period = "7d" | "30d" | "90d" | "all";
 
-const tabs: { key: Tab; label: string; statuses: OrderStatus[] }[] = [
-  { key: "active", label: "Faol", statuses: ["sent", "review", "confirmed", "shipping"] },
-  { key: "delivered", label: "Yetkazilgan", statuses: ["delivered"] },
-  { key: "cancelled", label: "Bekor qilingan", statuses: ["cancelled"] },
-];
+const tabStatuses: Record<Tab, OrderStatus[]> = {
+  active: ["sent", "review", "confirmed", "shipping"],
+  delivered: ["delivered"],
+  cancelled: ["cancelled"],
+};
 
-const periodChips: { key: Period; label: string; days: number | null }[] = [
-  { key: "7d", label: "7 kun", days: 7 },
-  { key: "30d", label: "30 kun", days: 30 },
-  { key: "90d", label: "90 kun", days: 90 },
-  { key: "all", label: "Butun davr", days: null },
-];
+const periodDays: Record<Period, number | null> = {
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+  all: null,
+};
 
 const orderStatusOrder: OrderStatus[] = [
   "sent",
@@ -68,6 +68,7 @@ const orderStatusOrder: OrderStatus[] = [
 const REFERENCE_NOW = new Date(2024, 4, 31, 23, 59).getTime();
 
 export function OrdersPage() {
+  const { t } = useT();
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [tab, setTab] = useState<Tab>("active");
   const [search, setSearch] = useState("");
@@ -77,10 +78,24 @@ export function OrdersPage() {
   const [period, setPeriod] = useState<Period>("30d");
   const [analyticsOpen, setAnalyticsOpen] = useState(true);
 
+  const tabs: { key: Tab; label: string; statuses: OrderStatus[] }[] = [
+    { key: "active", label: t("orders.tab.active"), statuses: tabStatuses.active },
+    { key: "delivered", label: t("orders.tab.delivered"), statuses: tabStatuses.delivered },
+    { key: "cancelled", label: t("orders.tab.cancelled"), statuses: tabStatuses.cancelled },
+  ];
+
+  const periodChips: { key: Period; label: string; days: number | null }[] = [
+    { key: "7d", label: t("orders.period.7d"), days: periodDays["7d"] },
+    { key: "30d", label: t("orders.period.30d"), days: periodDays["30d"] },
+    { key: "90d", label: t("orders.period.90d"), days: periodDays["90d"] },
+    { key: "all", label: t("orders.period.all"), days: periodDays.all },
+  ];
+
   const periodOrders = useMemo(() => {
     const cfg = periodChips.find((p) => p.key === period)!;
     if (cfg.days === null) return orders;
     return orders.filter((o) => isWithinDays(o.createdAt, cfg.days!, REFERENCE_NOW));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orders, period]);
 
   const totals = useMemo(() => computeOrderTotals(periodOrders), [periodOrders]);
@@ -183,15 +198,15 @@ export function OrdersPage() {
 
   const exportCsv = () => {
     const headers = [
-      "ID",
-      "Mahsulot",
-      "Narx",
-      "Mijoz",
-      "Telefon",
-      "Manzil",
-      "Status",
-      "Yaratilgan",
-      "Izoh",
+      t("orders.csv.id"),
+      t("orders.csv.product"),
+      t("orders.csv.price"),
+      t("orders.csv.customer"),
+      t("orders.csv.phone"),
+      t("orders.csv.address"),
+      t("common.status"),
+      t("orders.csv.created"),
+      t("orders.csv.note"),
     ];
     const rows = filtered.map((o) => [
       o.id,
@@ -200,7 +215,7 @@ export function OrdersPage() {
       o.userName,
       o.userPhone,
       o.userAddress ?? "",
-      orderStatusLabels[o.status],
+      t(`orderStatus.${o.status}`),
       o.createdAt,
       o.managerNote.replace(/[\n,]/g, " "),
     ]);
@@ -214,7 +229,7 @@ export function OrdersPage() {
     const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `buyurtmalar-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(a.href);
   };
@@ -222,39 +237,39 @@ export function OrdersPage() {
   const activePeriod = periodChips.find((p) => p.key === period)!;
   const kpis = [
     {
-      label: "Tushum",
+      label: t("orders.kpi.revenue"),
       value: totals.revenue.toLocaleString("ru-RU"),
-      suffix: "so'm",
-      hint: `${totals.sold} ta yetkazildi`,
+      suffix: t("common.sum"),
+      hint: t("orders.kpi.revenueHint", { count: totals.sold }),
       icon: Wallet,
       color: "#10B981",
     },
     {
-      label: "Buyurtmalar",
+      label: t("orders.kpi.orders"),
       value: totals.orders.toLocaleString("ru-RU"),
-      hint: `${totals.active} faol jarayonda`,
+      hint: t("orders.kpi.ordersHint", { count: totals.active }),
       icon: Package,
       color: "#3B82F6",
     },
     {
-      label: "O'rtacha buyurtma (AOV)",
+      label: t("orders.kpi.aov"),
       value: totals.avgOrderValue.toLocaleString("ru-RU"),
-      suffix: "so'm",
-      hint: "Yetkazilgan buyurtmalar bo'yicha",
+      suffix: t("common.sum"),
+      hint: t("orders.kpi.aovHint"),
       icon: Activity,
       color: "#6366F1",
     },
     {
-      label: "Konversiya",
+      label: t("orders.kpi.conversion"),
       value: `${Math.round(totals.conversionRate * 100)}%`,
       hint: `${totals.sold} / ${totals.orders}`,
       icon: TrendingUp,
       color: "#0EA5E9",
     },
     {
-      label: "Bekor qilish",
+      label: t("orders.kpi.cancellation"),
       value: `${Math.round(totals.cancellationRate * 100)}%`,
-      hint: `${totals.cancelled} ta buyurtma`,
+      hint: t("orders.kpi.cancellationHint", { count: totals.cancelled }),
       icon: AlertTriangle,
       color: "#EF4444",
     },
@@ -264,15 +279,15 @@ export function OrdersPage() {
     <div className="flex h-full">
       <div className="flex h-full flex-1 flex-col overflow-hidden">
         <PageHeader
-          title="Buyurtmalar"
-          subtitle="Do'kon buyurtmalari va analitikasi"
+          title={t("nav.orders")}
+          subtitle={t("orders.subtitle")}
           actions={
             <>
               <button className="btn-secondary text-[12.5px]">
                 <Calendar className="h-4 w-4" /> {activePeriod.label}
               </button>
               <button className="btn-secondary text-[12.5px]" onClick={exportCsv}>
-                <Download className="h-4 w-4" /> CSV eksport
+                <Download className="h-4 w-4" /> {t("orders.csvExport")}
               </button>
             </>
           }
@@ -290,7 +305,7 @@ export function OrdersPage() {
                   analyticsOpen ? "" : "-rotate-90",
                 )}
               />
-              Analitika
+              {t("orders.analytics")}
               <span className="text-[11.5px] font-normal text-text-muted">
                 · {activePeriod.label}
               </span>
@@ -347,54 +362,54 @@ export function OrdersPage() {
               <div className="mt-5 grid grid-cols-12 gap-4">
                 <RankingCard
                   className="col-span-6"
-                  title="Eng ko'p sotilgan"
-                  subtitle="Yetkazilgan buyurtmalar soni bo'yicha"
+                  title={t("orders.rank.topSold")}
+                  subtitle={t("orders.rank.topSoldSub")}
                   icon={<Trophy className="h-4 w-4" />}
                   tone="success"
                   metrics={topSellers}
                   unit="ta"
                   valueOf={(m) => m.sold}
-                  formatValue={(v) => `${v} ta`}
-                  emptyText="Hozircha sotuv yo'q"
+                  formatValue={(v) => `${v}`}
+                  emptyText={t("orders.rank.empty.sold")}
                 />
                 <RankingCard
                   className="col-span-6"
-                  title="Eng yuqori tushum"
-                  subtitle="Yetkazilgan buyurtmalardan kelgan summa"
+                  title={t("orders.rank.topRevenue")}
+                  subtitle={t("orders.rank.topRevenueSub")}
                   icon={<Wallet className="h-4 w-4" />}
                   tone="brand"
                   metrics={topRevenue}
-                  unit="so'm"
+                  unit={t("common.sum")}
                   valueOf={(m) => m.revenue}
-                  formatValue={(v) => `${v.toLocaleString("ru-RU")} so'm`}
-                  emptyText="Tushum hisoblanmagan"
+                  formatValue={(v) => `${v.toLocaleString("ru-RU")} ${t("common.sum")}`}
+                  emptyText={t("orders.rank.empty.revenue")}
                 />
                 <RankingCard
                   className="col-span-6"
-                  title="Eng kam sotilgan / nofaol"
-                  subtitle="Diqqat talab qiluvchi mahsulotlar"
+                  title={t("orders.rank.worst")}
+                  subtitle={t("orders.rank.worstSub")}
                   icon={<TrendingDown className="h-4 w-4" />}
                   tone="muted"
                   metrics={worstPerformers}
                   unit="ta"
                   valueOf={(m) => m.sold}
-                  formatValue={(v) => `${v} ta`}
-                  emptyText="Hammasi yaxshi ishlayapti"
+                  formatValue={(v) => `${v}`}
+                  emptyText={t("orders.rank.empty.worst")}
                 />
                 <RankingCard
                   className="col-span-6"
-                  title="Eng ko'p bekor qilingan"
-                  subtitle="Bekor qilingan buyurtmalar yuqori bo'lganlar"
+                  title={t("orders.rank.topCancelled")}
+                  subtitle={t("orders.rank.topCancelledSub")}
                   icon={<AlertTriangle className="h-4 w-4" />}
                   tone="danger"
                   metrics={topCancelled}
                   unit="ta"
                   valueOf={(m) => m.cancelled}
                   secondaryOf={(m) =>
-                    `${Math.round(m.cancellationRate * 100)}% rate`
+                    t("orders.rank.rate", { pct: Math.round(m.cancellationRate * 100) })
                   }
-                  formatValue={(v) => `${v} ta`}
-                  emptyText="Bekor qilingan yo'q"
+                  formatValue={(v) => `${v}`}
+                  emptyText={t("orders.rank.empty.cancelled")}
                 />
               </div>
 
@@ -402,14 +417,14 @@ export function OrdersPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-[13px] font-semibold text-text-primary">
-                      Status taqsimoti
+                      {t("orders.statusDist")}
                     </div>
                     <div className="text-[11.5px] text-text-muted">
-                      Tanlangan davr bo'yicha buyurtmalar
+                      {t("orders.statusDistSub")}
                     </div>
                   </div>
                   <div className="text-[12px] text-text-muted">
-                    Jami: <span className="font-semibold text-text-primary">{totals.orders}</span>
+                    {t("orders.total")} <span className="font-semibold text-text-primary">{totals.orders}</span>
                   </div>
                 </div>
                 <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-bg-input">
@@ -423,7 +438,7 @@ export function OrdersPage() {
                         key={s}
                         className={c.dot}
                         style={{ width: `${pct}%` }}
-                        title={`${orderStatusLabels[s]}: ${count}`}
+                        title={`${t(`orderStatus.${s}`)}: ${count}`}
                       />
                     );
                   })}
@@ -443,7 +458,7 @@ export function OrdersPage() {
                         <span className={cn("h-2 w-2 rounded-full", c.dot)} />
                         <div className="min-w-0">
                           <div className="truncate text-[11px] text-text-secondary">
-                            {orderStatusLabels[s]}
+                            {t(`orderStatus.${s}`)}
                           </div>
                           <div className="text-[12.5px] font-semibold text-text-primary">
                             {count}{" "}
@@ -493,10 +508,10 @@ export function OrdersPage() {
                     setStatusFilter(e.target.value as OrderStatus | "all")
                   }
                 >
-                  <option value="all">Barcha statuslar</option>
+                  <option value="all">{t("orders.allStatuses")}</option>
                   {currentTab.statuses.map((s) => (
                     <option key={s} value={s}>
-                      {orderStatusLabels[s]}
+                      {t(`orderStatus.${s}`)}
                     </option>
                   ))}
                 </select>
@@ -505,7 +520,7 @@ export function OrdersPage() {
                   value={productFilter}
                   onChange={(e) => setProductFilter(e.target.value)}
                 >
-                  <option value="all">Barcha mahsulotlar</option>
+                  <option value="all">{t("orders.allProducts")}</option>
                   {productOptions.map(([id, name]) => (
                     <option key={id} value={id}>
                       {name}
@@ -515,7 +530,7 @@ export function OrdersPage() {
                 <div className="relative w-64">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
                   <input
-                    placeholder="ID, mijoz, telefon..."
+                    placeholder={t("orders.searchPlaceholder")}
                     className="input pl-9"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -528,13 +543,13 @@ export function OrdersPage() {
               <table className="w-full text-[13px]">
                 <thead className="bg-bg-input text-[12px] uppercase tracking-wider text-text-muted">
                   <tr>
-                    <th className="px-4 py-3 text-left font-semibold">ID</th>
-                    <th className="px-4 py-3 text-left font-semibold">Mahsulot</th>
-                    <th className="px-4 py-3 text-left font-semibold">Mijoz</th>
-                    <th className="px-4 py-3 text-left font-semibold">Narx</th>
-                    <th className="px-4 py-3 text-left font-semibold">Status</th>
-                    <th className="px-4 py-3 text-left font-semibold">Yaratilgan</th>
-                    <th className="px-4 py-3 text-right font-semibold">Amal</th>
+                    <th className="px-4 py-3 text-left font-semibold">{t("orders.tbl.id")}</th>
+                    <th className="px-4 py-3 text-left font-semibold">{t("orders.tbl.product")}</th>
+                    <th className="px-4 py-3 text-left font-semibold">{t("orders.tbl.customer")}</th>
+                    <th className="px-4 py-3 text-left font-semibold">{t("orders.tbl.price")}</th>
+                    <th className="px-4 py-3 text-left font-semibold">{t("common.status")}</th>
+                    <th className="px-4 py-3 text-left font-semibold">{t("orders.tbl.created")}</th>
+                    <th className="px-4 py-3 text-right font-semibold">{t("orders.tbl.action")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -571,14 +586,14 @@ export function OrdersPage() {
                         </td>
                         <td className="px-4 py-3 font-semibold text-text-primary">
                           {o.productPrice.toLocaleString("ru-RU")}
-                          <span className="ml-1 text-[10px] text-text-muted">so'm</span>
+                          <span className="ml-1 text-[10px] text-text-muted">{t("common.sum")}</span>
                         </td>
                         <td className="px-4 py-3">
                           <span
                             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${c.chip}`}
                           >
                             <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
-                            {orderStatusLabels[o.status]}
+                            {t(`orderStatus.${o.status}`)}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-text-secondary">
@@ -596,7 +611,7 @@ export function OrdersPage() {
                         colSpan={7}
                         className="px-4 py-12 text-center text-[13px] text-text-muted"
                       >
-                        Buyurtma topilmadi
+                        {t("orders.notFound")}
                       </td>
                     </tr>
                   )}
@@ -734,6 +749,7 @@ function OrderDetailPanel({
   onChangeStatus,
   onNoteChange,
 }: PanelProps) {
+  const { t } = useT();
   const currentIdx = orderFlow.indexOf(order.status);
   const isCancelled = order.status === "cancelled";
   const c = orderStatusColors[order.status];
@@ -769,7 +785,7 @@ function OrderDetailPanel({
               </div>
               <div className="mt-1 font-semibold text-text-primary">
                 {order.productPrice.toLocaleString("ru-RU")}{" "}
-                <span className="text-[11px] font-normal text-text-muted">so'm</span>
+                <span className="text-[11px] font-normal text-text-muted">{t("common.sum")}</span>
               </div>
             </div>
           </div>
@@ -777,7 +793,7 @@ function OrderDetailPanel({
 
         <div className="mt-4 rounded-xl border border-line p-3">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-            Mijoz
+            {t("orders.detail.customer")}
           </div>
           <div className="mt-2 text-[14px] font-semibold text-text-primary">
             {order.userName}
@@ -799,13 +815,13 @@ function OrderDetailPanel({
 
         <div className="mt-4">
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-            Statusni o'zgartirish
+            {t("orders.detail.changeStatus")}
           </div>
           <span
             className={`mb-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium ${c.chip}`}
           >
             <span className={`h-1.5 w-1.5 rounded-full ${c.dot}`} />
-            Hozir: {orderStatusLabels[order.status]}
+            {t("orders.detail.now", { status: t(`orderStatus.${order.status}`) })}
           </span>
 
           {!isCancelled ? (
@@ -844,12 +860,12 @@ function OrderDetailPanel({
                             passed ? "text-text-primary" : "text-text-secondary",
                           )}
                         >
-                          {orderStatusLabels[s]}
+                          {t(`orderStatus.${s}`)}
                         </span>
                       </span>
                       {isCurrent && (
                         <span className="text-[10.5px] font-semibold uppercase text-brand">
-                          Hozir
+                          {t("orders.detail.nowChip")}
                         </span>
                       )}
                     </button>
@@ -861,24 +877,24 @@ function OrderDetailPanel({
                 className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-status-blocked/30 bg-status-blocked/10 px-3 py-2 text-[12.5px] font-medium text-status-blocked transition-colors hover:bg-status-blocked/15"
               >
                 <CircleX className="h-4 w-4" />
-                Bekor qilish
+                {t("orders.detail.cancelOrder")}
               </button>
             </div>
           ) : (
             <div className="rounded-lg border border-status-blocked/30 bg-status-blocked/10 p-3 text-[12.5px] text-status-blocked">
-              Bu buyurtma bekor qilingan.
+              {t("orders.detail.cancelled")}
             </div>
           )}
         </div>
 
         <div className="mt-4">
           <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-            <StickyNote className="h-3.5 w-3.5" /> Manager izohi
+            <StickyNote className="h-3.5 w-3.5" /> {t("orders.detail.note")}
           </div>
           <textarea
             rows={3}
             className="input resize-none"
-            placeholder="Ichki izoh yozing..."
+            placeholder={t("orders.detail.notePlaceholder")}
             value={order.managerNote}
             onChange={(e) => onNoteChange(e.target.value)}
           />
@@ -886,7 +902,7 @@ function OrderDetailPanel({
 
         <div className="mt-4">
           <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-            Status tarixi
+            {t("orders.detail.history")}
           </div>
           <ol className="relative space-y-3 border-l border-line pl-4">
             {order.statusHistory.map((h, i) => {
@@ -900,7 +916,7 @@ function OrderDetailPanel({
                     )}
                   />
                   <div className="text-[12.5px] font-medium text-text-primary">
-                    {orderStatusLabels[h.status]}
+                    {t(`orderStatus.${h.status}`)}
                   </div>
                   <div className="text-[11px] text-text-muted">
                     {h.at}

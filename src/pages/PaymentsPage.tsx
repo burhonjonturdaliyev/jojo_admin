@@ -1,6 +1,7 @@
 import { Search, Download, Calendar, ArrowUp } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
+import { useT } from "../lib/i18n";
 
 const payments = [
   { id: "TXN-024531", user: "Zarina Abdurahmonova", plan: "Premium 6 oy", amount: 780000, method: "Click", date: "31.05.2024 14:23", status: "muvaffaqiyatli" },
@@ -12,25 +13,26 @@ const payments = [
   { id: "TXN-024525", user: "Ma'ruf Mirzayev", plan: "Premium 1 oy", amount: 150000, method: "Uzcard", date: "30.05.2024 16:12", status: "muvaffaqiyatli" },
 ];
 
-const statusMap = {
-  muvaffaqiyatli: { label: "Muvaffaqiyatli", cls: "bg-status-resolved/15 text-status-resolved" },
-  kutilmoqda: { label: "Kutilmoqda", cls: "bg-status-progress/15 text-status-progress" },
-  rad_etilgan: { label: "Rad etilgan", cls: "bg-status-blocked/15 text-status-blocked" },
+const statusCls = {
+  muvaffaqiyatli: "bg-status-resolved/15 text-status-resolved",
+  kutilmoqda: "bg-status-progress/15 text-status-progress",
+  rad_etilgan: "bg-status-blocked/15 text-status-blocked",
 };
 
 export function PaymentsPage() {
+  const { t } = useT();
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="To'lovlar tarixi"
-        subtitle="Barcha tranzaksiyalar ro'yxati"
+        title={t("nav.payments")}
+        subtitle={t("payments.subtitle")}
         actions={
           <>
             <button className="btn-secondary text-[12.5px]">
               <Calendar className="h-4 w-4" /> 01.05.2024 - 31.05.2024
             </button>
             <button className="btn-secondary text-[12.5px]">
-              <Download className="h-4 w-4" /> Eksport
+              <Download className="h-4 w-4" /> {t("common.export")}
             </button>
           </>
         }
@@ -39,10 +41,10 @@ export function PaymentsPage() {
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
         <div className="grid grid-cols-4 gap-4 mb-5">
           {[
-            { label: "Jami daromad", value: "120,450,000", suffix: "so'm", trend: "+15.3%" },
-            { label: "Muvaffaqiyatli", value: "8,432", trend: "+12.1%" },
-            { label: "Kutilmoqda", value: "23", trend: "+4.2%" },
-            { label: "Rad etilgan", value: "127", trend: "-1.8%" },
+            { label: t("payments.stat.totalRevenue"), value: "120,450,000", suffix: t("common.sum"), trend: "+15.3%" },
+            { label: t("payments.stat.successful"), value: "8,432", trend: "+12.1%" },
+            { label: t("payments.stat.pending"), value: "23", trend: "+4.2%" },
+            { label: t("payments.stat.rejected"), value: "127", trend: "-1.8%" },
           ].map((s) => (
             <div key={s.label} className="card p-4">
               <div className="text-[12px] text-text-secondary">{s.label}</div>
@@ -61,7 +63,7 @@ export function PaymentsPage() {
             <div className="relative w-full max-w-md">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <input
-                placeholder="TXN ID yoki foydalanuvchi bo'yicha qidirish..."
+                placeholder={t("payments.searchPlaceholder")}
                 className="input pl-9"
               />
             </div>
@@ -70,13 +72,13 @@ export function PaymentsPage() {
           <table className="w-full text-[13px]">
             <thead className="bg-bg-input text-[12px] uppercase tracking-wider text-text-muted">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">ID</th>
-                <th className="px-4 py-3 text-left font-semibold">Foydalanuvchi</th>
-                <th className="px-4 py-3 text-left font-semibold">Tarif</th>
-                <th className="px-4 py-3 text-left font-semibold">Summa</th>
-                <th className="px-4 py-3 text-left font-semibold">Usul</th>
-                <th className="px-4 py-3 text-left font-semibold">Sana</th>
-                <th className="px-4 py-3 text-left font-semibold">Status</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("payments.tbl.id")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("payments.tbl.user")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("payments.tbl.plan")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("payments.tbl.amount")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("payments.tbl.method")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("payments.tbl.date")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("common.status")}</th>
               </tr>
             </thead>
             <tbody>
@@ -93,15 +95,15 @@ export function PaymentsPage() {
                   </td>
                   <td className="px-4 py-3 text-text-secondary">{p.plan}</td>
                   <td className="px-4 py-3 font-semibold text-text-primary">
-                    {p.amount.toLocaleString("ru-RU")} so'm
+                    {p.amount.toLocaleString("ru-RU")} {t("common.sum")}
                   </td>
                   <td className="px-4 py-3 text-text-secondary">{p.method}</td>
                   <td className="px-4 py-3 text-text-secondary">{p.date}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${statusMap[p.status as keyof typeof statusMap].cls}`}
+                      className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${statusCls[p.status as keyof typeof statusCls]}`}
                     >
-                      {statusMap[p.status as keyof typeof statusMap].label}
+                      {t(`payments.status.${p.status}`)}
                     </span>
                   </td>
                 </tr>

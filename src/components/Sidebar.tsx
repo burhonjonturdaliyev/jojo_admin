@@ -11,65 +11,68 @@ import {
   Megaphone,
   Settings,
   Headphones,
-  Ban,
   LogOut,
   Headset,
   Package,
   Image as ImageIcon,
   ShoppingBag,
   Lightbulb,
+  Ban,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useAuth } from "../lib/auth";
-
-const sections = [
-  {
-    label: "BOSH SAHIFA",
-    items: [{ to: "/dashboard", label: "Asosiy panel", icon: LayoutDashboard }],
-  },
-  {
-    label: "FOYDALANUVCHILAR",
-    items: [
-      { to: "/users", label: "Foydalanuvchilar", icon: Users },
-      { to: "/children", label: "Bolalar", icon: Baby },
-      { to: "/premium", label: "Premium obunalar", icon: Crown },
-      { to: "/payments", label: "To'lovlar tarixi", icon: Wallet },
-      { to: "/requests", label: "So'rovlar", icon: MessageSquare },
-    ],
-  },
-  {
-    label: "DO'KON",
-    items: [
-      { to: "/products", label: "Mahsulotlar", icon: Package },
-      { to: "/banners", label: "Promo bannerlar", icon: ImageIcon },
-      { to: "/orders", label: "Buyurtmalar", icon: ShoppingBag },
-    ],
-  },
-  {
-    label: "KONTENT",
-    items: [{ to: "/advice", label: "Maslahatlar", icon: Lightbulb }],
-  },
-  {
-    label: "BOSHQARUV",
-    items: [
-      { to: "/notifications", label: "Bildirishnomalar", icon: Bell },
-      { to: "/sms", label: "SMS xabarlar", icon: MessageCircle },
-      { to: "/ads", label: "Reklamalar", icon: Megaphone },
-      { to: "/settings", label: "Sozlamalar", icon: Settings },
-      { to: "/operators", label: "Operatorlar", icon: Headphones },
-      { to: "/blocked", label: "Bloklanganlar", icon: Ban },
-    ],
-  },
-];
+import { useT } from "../lib/i18n";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function Sidebar() {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useT();
 
   const handleLogout = () => {
     logout();
     navigate("/login", { replace: true });
   };
+
+  const sections = [
+    {
+      label: t("nav.section.home"),
+      items: [{ to: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard }],
+    },
+    {
+      label: t("nav.section.users"),
+      items: [
+        { to: "/users", label: t("nav.users"), icon: Users },
+        { to: "/children", label: t("nav.children"), icon: Baby },
+        { to: "/premium", label: t("nav.premium"), icon: Crown },
+        { to: "/payments", label: t("nav.payments"), icon: Wallet },
+        { to: "/requests", label: t("nav.requests"), icon: MessageSquare },
+      ],
+    },
+    {
+      label: t("nav.section.shop"),
+      items: [
+        { to: "/products", label: t("nav.products"), icon: Package },
+        { to: "/banners", label: t("nav.banners"), icon: ImageIcon },
+        { to: "/orders", label: t("nav.orders"), icon: ShoppingBag },
+      ],
+    },
+    {
+      label: t("nav.section.content"),
+      items: [{ to: "/advice", label: t("nav.advice"), icon: Lightbulb }],
+    },
+    {
+      label: t("nav.section.management"),
+      items: [
+        { to: "/notifications", label: t("nav.notifications"), icon: Bell },
+        { to: "/sms", label: t("nav.sms"), icon: MessageCircle },
+        { to: "/ads", label: t("nav.ads"), icon: Megaphone },
+        { to: "/settings", label: t("nav.settings"), icon: Settings },
+        { to: "/operators", label: t("nav.operators"), icon: Headphones },
+        { to: "/blocked", label: t("nav.blocked"), icon: Ban },
+      ],
+    },
+  ];
 
   return (
     <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-line bg-bg-panel">
@@ -79,10 +82,10 @@ export function Sidebar() {
         </div>
         <div className="leading-tight">
           <div className="text-[15px] font-bold tracking-wide text-text-primary">
-            CALL CENTER
+            {t("nav.brand")}
           </div>
           <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-text-muted">
-            Admin Panel
+            {t("nav.adminPanel")}
           </div>
         </div>
       </div>
@@ -117,13 +120,14 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="border-t border-line p-3">
+      <div className="border-t border-line p-3 space-y-2">
+        <LanguageSwitcher />
         <button
           onClick={handleLogout}
           className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium text-text-secondary transition-colors hover:bg-bg-hover hover:text-text-primary"
         >
           <LogOut className="h-[18px] w-[18px]" strokeWidth={2} />
-          <span>Chiqish</span>
+          <span>{t("nav.logout")}</span>
         </button>
       </div>
     </aside>

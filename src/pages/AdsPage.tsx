@@ -1,5 +1,6 @@
 import { Plus, Image as ImageIcon, MoreVertical } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { useT } from "../lib/i18n";
 
 const ads = [
   { title: "Yozgi chegirma 2024", status: "faol", impressions: 124500, clicks: 8420, ctr: "6.8%", endDate: "30.06.2024", color: "#3B82F6" },
@@ -15,14 +16,15 @@ const statusCls = {
 };
 
 export function AdsPage() {
+  const { t } = useT();
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Reklamalar"
-        subtitle="Reklama kampaniyalari boshqaruvi"
+        title={t("nav.ads")}
+        subtitle={t("ads.subtitle")}
         actions={
           <button className="btn-primary text-[12.5px]">
-            <Plus className="h-4 w-4" /> Yangi reklama
+            <Plus className="h-4 w-4" /> {t("ads.new")}
           </button>
         }
       />
@@ -46,14 +48,14 @@ export function AdsPage() {
                       {ad.title}
                     </h3>
                     <div className="mt-1 text-[11.5px] text-text-secondary">
-                      Tugash sanasi: {ad.endDate}
+                      {t("ads.endDate")}: {ad.endDate}
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
                     <span
                       className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${statusCls[ad.status as keyof typeof statusCls]}`}
                     >
-                      {ad.status}
+                      {t(`ads.status.${ad.status}`)}
                     </span>
                     <button className="icon-btn h-8 w-8">
                       <MoreVertical className="h-4 w-4" />
@@ -66,13 +68,13 @@ export function AdsPage() {
                     <div className="text-[13px] font-bold text-text-primary">
                       {(ad.impressions / 1000).toFixed(1)}K
                     </div>
-                    <div className="text-[10.5px] text-text-muted">Ko'rsatish</div>
+                    <div className="text-[10.5px] text-text-muted">{t("ads.impressions")}</div>
                   </div>
                   <div>
                     <div className="text-[13px] font-bold text-text-primary">
                       {(ad.clicks / 1000).toFixed(1)}K
                     </div>
-                    <div className="text-[10.5px] text-text-muted">Bosish</div>
+                    <div className="text-[10.5px] text-text-muted">{t("ads.clicks")}</div>
                   </div>
                   <div>
                     <div className="text-[13px] font-bold text-status-resolved">

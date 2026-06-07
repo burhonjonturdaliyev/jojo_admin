@@ -18,6 +18,7 @@ import {
   type PromoBanner,
 } from "../data/banners";
 import { cn } from "../lib/utils";
+import { useT } from "../lib/i18n";
 
 const emptyBanner = (sortOrder: number): PromoBanner => ({
   id: `BNR-${Math.floor(Math.random() * 9000 + 1000)}`,
@@ -33,6 +34,7 @@ const emptyBanner = (sortOrder: number): PromoBanner => ({
 });
 
 export function PromoBannersPage() {
+  const { t } = useT();
   const [banners, setBanners] = useState<PromoBanner[]>(initialBanners);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<PromoBanner | null>(null);
@@ -86,14 +88,14 @@ export function PromoBannersPage() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Promo bannerlar"
-        subtitle="Bosh sahifadagi aylanma bannerlar"
+        title={t("nav.banners")}
+        subtitle={t("banners.subtitle")}
         actions={
           <button
             className="btn-primary text-[12.5px]"
             onClick={() => setEditing(emptyBanner(nextSortOrder))}
           >
-            <Plus className="h-4 w-4" /> Yangi banner
+            <Plus className="h-4 w-4" /> {t("banners.new")}
           </button>
         }
       />
@@ -104,14 +106,17 @@ export function PromoBannersPage() {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="text-[15px] font-semibold text-text-primary">
-                  Bannerlar tartibi
+                  {t("banners.order")}
                 </h3>
                 <p className="mt-0.5 text-[12px] text-text-secondary">
-                  Tartibni o'zgartirish uchun sudrab tashlang
+                  {t("banners.orderHint")}
                 </p>
               </div>
               <div className="text-[12px] text-text-muted">
-                {activeBanners.length} faol · {banners.length - activeBanners.length} nofaol
+                {t("banners.activeCount", {
+                  active: activeBanners.length,
+                  inactive: banners.length - activeBanners.length,
+                })}
               </div>
             </div>
 
@@ -147,7 +152,7 @@ export function PromoBannersPage() {
                         className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
                         style={{ background: theme.chip, color: theme.kicker }}
                       >
-                        {b.kicker || "Banner"}
+                        {b.kicker || t("banners.kickerDefault")}
                       </span>
                       <span className="line-clamp-2 text-[10px] font-bold leading-tight">
                         {b.title.split("\n")[0]}
@@ -159,7 +164,7 @@ export function PromoBannersPage() {
                           #{b.sortOrder}
                         </span>
                         <span className="text-[14px] font-semibold text-text-primary">
-                          {b.title.split("\n")[0] || "Untitled"}
+                          {b.title.split("\n")[0] || t("banners.untitled")}
                         </span>
                       </div>
                       <div className="mt-0.5 truncate text-[12px] text-text-secondary">
@@ -172,7 +177,7 @@ export function PromoBannersPage() {
                         />
                         {theme.name}
                         <ChevronRight className="h-3 w-3" />
-                        {actionLabel(b.actionType, b.actionValue)}
+                        {actionLabel(t, b.actionType, b.actionValue)}
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -185,7 +190,7 @@ export function PromoBannersPage() {
                             : "bg-text-muted/15 text-text-muted",
                         )}
                       >
-                        {b.isActive ? "Faol" : "Nofaol"}
+                        {b.isActive ? t("common.active") : t("common.inactive")}
                       </button>
                       <button
                         className="icon-btn h-8 w-8"
@@ -206,7 +211,7 @@ export function PromoBannersPage() {
 
               {banners.length === 0 && (
                 <div className="rounded-xl border border-dashed border-line py-12 text-center text-[13px] text-text-muted">
-                  Hozircha banner yo'q
+                  {t("banners.empty")}
                 </div>
               )}
             </div>
@@ -217,11 +222,11 @@ export function PromoBannersPage() {
               <div className="mb-3 flex items-center gap-2">
                 <Eye className="h-4 w-4 text-brand" />
                 <h3 className="text-[14px] font-semibold text-text-primary">
-                  Oldindan ko'rish
+                  {t("banners.preview")}
                 </h3>
               </div>
               <p className="mb-3 text-[11.5px] text-text-secondary">
-                Ilovaning bosh sahifasida shunday ko'rinadi
+                {t("banners.previewSub")}
               </p>
               {activeBanners.length > 0 ? (
                 <>
@@ -245,31 +250,31 @@ export function PromoBannersPage() {
                 </>
               ) : (
                 <div className="rounded-lg border border-dashed border-line bg-bg-input py-10 text-center text-[12px] text-text-muted">
-                  Faol banner yo'q
+                  {t("banners.noActive")}
                 </div>
               )}
             </div>
 
             <div className="card p-4">
               <h3 className="mb-3 text-[14px] font-semibold text-text-primary">
-                Tema variantlari
+                {t("banners.themes")}
               </h3>
               <div className="space-y-2">
-                {(Object.keys(themeStyles) as BannerTheme[]).map((t) => (
+                {(Object.keys(themeStyles) as BannerTheme[]).map((th) => (
                   <div
-                    key={t}
+                    key={th}
                     className="flex items-center gap-3 rounded-lg border border-line bg-bg-input p-2.5"
                   >
                     <div
                       className="h-10 w-14 rounded-md"
-                      style={{ background: themeStyles[t].bg }}
+                      style={{ background: themeStyles[th].bg }}
                     />
                     <div className="flex-1">
                       <div className="text-[13px] font-medium text-text-primary">
-                        {themeStyles[t].name}
+                        {themeStyles[th].name}
                       </div>
                       <div className="text-[11px] text-text-muted">
-                        {banners.filter((b) => b.theme === t).length} ta banner
+                        {t("banners.themeCount", { count: banners.filter((b) => b.theme === th).length })}
                       </div>
                     </div>
                   </div>
@@ -291,13 +296,24 @@ export function PromoBannersPage() {
   );
 }
 
-function actionLabel(type: BannerActionType, value: string) {
-  if (type === "openProduct") return value ? `Mahsulot: ${value}` : "Mahsulot";
-  if (type === "filterByType") return value ? `Filter: ${value}` : "Filter";
-  return "Amal yo'q";
+function actionLabel(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  type: BannerActionType,
+  value: string,
+) {
+  if (type === "openProduct")
+    return value
+      ? t("banners.action.productLabel", { value })
+      : t("banners.action.openProduct");
+  if (type === "filterByType")
+    return value
+      ? t("banners.action.filterLabel", { value })
+      : t("banners.action.filterByType");
+  return t("banners.action.none");
 }
 
 function BannerPreview({ banner }: { banner: PromoBanner }) {
+  const { t } = useT();
   const theme = themeStyles[banner.theme];
   return (
     <div
@@ -308,18 +324,18 @@ function BannerPreview({ banner }: { banner: PromoBanner }) {
         className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
         style={{ background: theme.chip, color: theme.kicker }}
       >
-        {banner.kicker || "Banner"}
+        {banner.kicker || t("banners.kickerDefault")}
       </span>
       <div className="mt-2 whitespace-pre-line text-[16px] font-bold leading-tight">
-        {banner.title || "Banner sarlavhasi"}
+        {banner.title || t("banners.titleSample")}
       </div>
       <div
         className="mt-1.5 text-[11.5px] font-medium opacity-80"
       >
-        {banner.subtitle || "Banner tavsifi shu yerda ko'rinadi"}
+        {banner.subtitle || t("banners.subtitleSample")}
       </div>
       <div className="absolute bottom-3 right-3 inline-flex items-center justify-center rounded-full bg-white/30 px-3 py-1 text-[10px] font-semibold">
-        Ko'rish <ChevronRight className="ml-0.5 h-3 w-3" />
+        {t("banners.viewCta")} <ChevronRight className="ml-0.5 h-3 w-3" />
       </div>
     </div>
   );
@@ -332,6 +348,7 @@ interface DrawerProps {
 }
 
 function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
+  const { t } = useT();
   const [draft, setDraft] = useState<PromoBanner>(banner);
   const set = <K extends keyof PromoBanner>(key: K, value: PromoBanner[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
@@ -345,7 +362,7 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
       <div className="relative ml-auto flex h-full w-full max-w-xl flex-col border-l border-line bg-bg-panel shadow-panel">
         <div className="flex items-center justify-between border-b border-line px-6 py-4">
           <h2 className="text-[17px] font-bold text-text-primary">
-            {banner.kicker || banner.title ? "Bannerni tahrirlash" : "Yangi banner"}
+            {banner.kicker || banner.title ? t("banners.editTitle") : t("banners.new")}
           </h2>
           <button className="icon-btn" onClick={onClose}>
             <X className="h-5 w-5" />
@@ -357,11 +374,11 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
 
           <div>
             <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              Kicker (kichik yorliq)
+              {t("banners.field.kicker")}
             </label>
             <input
               className="input"
-              placeholder="Yangi mahsulot"
+              placeholder={t("banners.field.kickerPh")}
               value={draft.kicker}
               onChange={(e) => set("kicker", e.target.value)}
             />
@@ -369,12 +386,12 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
 
           <div>
             <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              Sarlavha (ko'p qator uchun Enter bosing)
+              {t("banners.field.title")}
             </label>
             <textarea
               rows={3}
               className="input resize-none font-medium"
-              placeholder="CodyBot bilan\ndasturlashni o'rganing"
+              placeholder={t("banners.field.titlePh")}
               value={draft.title}
               onChange={(e) => set("title", e.target.value)}
             />
@@ -382,11 +399,11 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
 
           <div>
             <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              Tavsif
+              {t("banners.field.subtitle")}
             </label>
             <input
               className="input"
-              placeholder="Qisqa tavsif..."
+              placeholder={t("banners.field.subtitlePh")}
               value={draft.subtitle}
               onChange={(e) => set("subtitle", e.target.value)}
             />
@@ -394,24 +411,24 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
 
           <div>
             <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              Tema
+              {t("banners.field.theme")}
             </label>
             <div className="grid grid-cols-3 gap-2">
-              {(Object.keys(themeStyles) as BannerTheme[]).map((t) => (
+              {(Object.keys(themeStyles) as BannerTheme[]).map((th) => (
                 <button
-                  key={t}
-                  onClick={() => set("theme", t)}
+                  key={th}
+                  onClick={() => set("theme", th)}
                   className={cn(
                     "flex flex-col items-center gap-2 rounded-lg border-2 p-2 transition-colors",
-                    draft.theme === t ? "border-brand" : "border-line",
+                    draft.theme === th ? "border-brand" : "border-line",
                   )}
                 >
                   <div
                     className="h-12 w-full rounded-md"
-                    style={{ background: themeStyles[t].bg }}
+                    style={{ background: themeStyles[th].bg }}
                   />
                   <span className="text-[12px] font-medium text-text-primary">
-                    {themeStyles[t].name}
+                    {themeStyles[th].name}
                   </span>
                 </button>
               ))}
@@ -420,7 +437,7 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
 
           <div>
             <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              Rasm URL (ixtiyoriy)
+              {t("banners.field.imageUrl")}
             </label>
             <div className="relative">
               <ImageIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
@@ -436,7 +453,7 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                Amal turi
+                {t("banners.field.actionType")}
               </label>
               <select
                 className="input"
@@ -445,18 +462,18 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
                   set("actionType", e.target.value as BannerActionType)
                 }
               >
-                <option value="none">Yo'q</option>
-                <option value="openProduct">Mahsulot ochish</option>
-                <option value="filterByType">Tur bo'yicha filter</option>
+                <option value="none">{t("common.none")}</option>
+                <option value="openProduct">{t("banners.action.openProduct")}</option>
+                <option value="filterByType">{t("banners.action.filterByType")}</option>
               </select>
             </div>
             <div>
               <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
                 {draft.actionType === "openProduct"
-                  ? "Mahsulot ID"
+                  ? t("banners.field.productId")
                   : draft.actionType === "filterByType"
-                    ? "Tur (stem/book/other)"
-                    : "Qiymat"}
+                    ? t("banners.field.typeValue")
+                    : t("banners.field.actionValue")}
               </label>
               <input
                 className="input"
@@ -477,7 +494,7 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                Tartib
+                {t("banners.field.sortOrder")}
               </label>
               <input
                 type="number"
@@ -492,7 +509,7 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
               className="flex items-end justify-between rounded-lg border border-line bg-bg-input px-3 py-2.5 text-left transition-colors hover:bg-bg-hover"
             >
               <span className="text-[12.5px] font-medium text-text-secondary">
-                Faol
+                {t("common.active")}
               </span>
               <span
                 className={cn(
@@ -513,13 +530,13 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
 
         <div className="flex items-center justify-end gap-2 border-t border-line px-6 py-4">
           <button className="btn-secondary text-[12.5px]" onClick={onClose}>
-            Bekor qilish
+            {t("common.cancel")}
           </button>
           <button
             className="btn-primary text-[12.5px]"
             onClick={() => onSave(draft)}
           >
-            Saqlash
+            {t("common.save")}
           </button>
         </div>
       </div>

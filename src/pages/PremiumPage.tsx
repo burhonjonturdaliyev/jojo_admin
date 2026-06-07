@@ -1,5 +1,6 @@
 import { Crown, Check, Plus } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { useT } from "../lib/i18n";
 
 const plans = [
   {
@@ -29,14 +30,15 @@ const plans = [
 ];
 
 export function PremiumPage() {
+  const { t } = useT();
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Premium obunalar"
-        subtitle="Premium tariflar va obunachilar"
+        title={t("nav.premium")}
+        subtitle={t("premium.subtitle")}
         actions={
           <button className="btn-primary text-[12.5px]">
-            <Plus className="h-4 w-4" /> Yangi tarif
+            <Plus className="h-4 w-4" /> {t("premium.newPlan")}
           </button>
         }
       />
@@ -54,7 +56,7 @@ export function PremiumPage() {
             >
               {p.highlight && (
                 <span className="absolute -top-3 left-6 rounded-full bg-brand px-3 py-1 text-[11px] font-semibold text-white">
-                  Eng mashhur
+                  {t("premium.mostPopular")}
                 </span>
               )}
               <div className="flex items-start justify-between">
@@ -72,7 +74,7 @@ export function PremiumPage() {
                     <span className="text-[28px] font-bold text-text-primary">
                       {p.price}
                     </span>
-                    <span className="text-[12px] text-text-muted">so'm</span>
+                    <span className="text-[12px] text-text-muted">{t("common.sum")}</span>
                   </div>
                 </div>
               </div>
@@ -92,13 +94,13 @@ export function PremiumPage() {
                     <div className="text-[18px] font-bold text-text-primary">
                       {p.users.toLocaleString("ru-RU")}
                     </div>
-                    <div className="text-[11px] text-text-muted">Obunachilar</div>
+                    <div className="text-[11px] text-text-muted">{t("premium.subscribers")}</div>
                   </div>
                   <div>
                     <div className="text-[14px] font-bold text-text-primary">
                       {p.revenue}
                     </div>
-                    <div className="text-[11px] text-text-muted">Daromad (so'm)</div>
+                    <div className="text-[11px] text-text-muted">{t("premium.revenue")}</div>
                   </div>
                 </div>
               </div>
@@ -108,17 +110,17 @@ export function PremiumPage() {
 
         <div className="mt-6 card p-5">
           <h3 className="mb-4 text-[15px] font-semibold text-text-primary">
-            So'nggi obunalar
+            {t("premium.recent")}
           </h3>
           <div className="overflow-hidden rounded-lg border border-line">
             <table className="w-full text-[13px]">
               <thead className="bg-bg-input text-[12px] text-text-muted">
                 <tr>
-                  <th className="px-4 py-2.5 text-left font-medium">Foydalanuvchi</th>
-                  <th className="px-4 py-2.5 text-left font-medium">Tarif</th>
-                  <th className="px-4 py-2.5 text-left font-medium">Boshlandi</th>
-                  <th className="px-4 py-2.5 text-left font-medium">Tugaydi</th>
-                  <th className="px-4 py-2.5 text-left font-medium">Status</th>
+                  <th className="px-4 py-2.5 text-left font-medium">{t("premium.tbl.user")}</th>
+                  <th className="px-4 py-2.5 text-left font-medium">{t("premium.tbl.plan")}</th>
+                  <th className="px-4 py-2.5 text-left font-medium">{t("premium.tbl.start")}</th>
+                  <th className="px-4 py-2.5 text-left font-medium">{t("premium.tbl.end")}</th>
+                  <th className="px-4 py-2.5 text-left font-medium">{t("common.status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -144,7 +146,7 @@ export function PremiumPage() {
                             : "bg-text-muted/15 text-text-muted"
                         }`}
                       >
-                        {r.active ? "Faol" : "Tugagan"}
+                        {r.active ? t("common.active") : t("premium.expired")}
                       </span>
                     </td>
                   </tr>

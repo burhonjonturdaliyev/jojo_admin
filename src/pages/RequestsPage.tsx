@@ -1,6 +1,7 @@
 import { MessageSquare, Clock, CheckCircle2, AlertCircle, Search } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
+import { useT } from "../lib/i18n";
 
 const requests = [
   { id: "REQ-1042", user: "Zarina Abdurahmonova", subject: "Bolani ulashda muammo", priority: "yuqori", status: "ochiq", date: "31.05.2024 11:05" },
@@ -23,20 +24,21 @@ const statusCls = {
 };
 
 export function RequestsPage() {
+  const { t } = useT();
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="So'rovlar"
-        subtitle="Foydalanuvchilardan kelgan so'rovlar"
+        title={t("nav.requests")}
+        subtitle={t("requests.subtitle")}
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
         <div className="grid grid-cols-4 gap-4 mb-5">
           {[
-            { label: "Jami so'rovlar", value: "1,247", icon: MessageSquare, color: "#3B82F6" },
-            { label: "Ochiq", value: "84", icon: AlertCircle, color: "#F59E0B" },
-            { label: "Kutilmoqda", value: "23", icon: Clock, color: "#3B82F6" },
-            { label: "Yopilgan", value: "1,140", icon: CheckCircle2, color: "#10B981" },
+            { label: t("requests.stat.total"), value: "1,247", icon: MessageSquare, color: "#3B82F6" },
+            { label: t("requests.stat.open"), value: "84", icon: AlertCircle, color: "#F59E0B" },
+            { label: t("requests.stat.pending"), value: "23", icon: Clock, color: "#3B82F6" },
+            { label: t("requests.stat.closed"), value: "1,140", icon: CheckCircle2, color: "#10B981" },
           ].map((s) => (
             <div key={s.label} className="card flex items-center gap-3 p-4">
               <div
@@ -59,18 +61,18 @@ export function RequestsPage() {
           <div className="border-b border-line p-4">
             <div className="relative max-w-md">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-              <input placeholder="So'rovlar bo'yicha qidirish..." className="input pl-9" />
+              <input placeholder={t("requests.searchPlaceholder")} className="input pl-9" />
             </div>
           </div>
           <table className="w-full text-[13px]">
             <thead className="bg-bg-input text-[12px] uppercase tracking-wider text-text-muted">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">ID</th>
-                <th className="px-4 py-3 text-left font-semibold">Foydalanuvchi</th>
-                <th className="px-4 py-3 text-left font-semibold">Mavzu</th>
-                <th className="px-4 py-3 text-left font-semibold">Muhimligi</th>
-                <th className="px-4 py-3 text-left font-semibold">Status</th>
-                <th className="px-4 py-3 text-left font-semibold">Sana</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("requests.tbl.id")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("requests.tbl.user")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("requests.tbl.subject")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("requests.tbl.priority")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("common.status")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("common.date")}</th>
               </tr>
             </thead>
             <tbody>

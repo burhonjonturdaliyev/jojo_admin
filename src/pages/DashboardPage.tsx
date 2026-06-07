@@ -11,6 +11,7 @@ import {
 import { StatCard } from "../components/StatCard";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
+import { useT } from "../lib/i18n";
 
 const recent = [
   { name: "Zarina Abdurahmonova", action: "Premium sotib oldi", time: "5 min" },
@@ -28,18 +29,19 @@ const operators = [
 ];
 
 export function DashboardPage() {
+  const { t } = useT();
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Asosiy panel"
-        subtitle="Umumiy statistika va so'nggi faollik"
+        title={t("nav.dashboard")}
+        subtitle={t("dashboard.subtitle")}
         actions={
           <>
             <button className="btn-secondary text-[12.5px]">
               <Calendar className="h-4 w-4" /> 01.05.2024 - 31.05.2024
             </button>
             <button className="btn-secondary text-[12.5px]">
-              <Download className="h-4 w-4" /> Eksport
+              <Download className="h-4 w-4" /> {t("common.export")}
             </button>
           </>
         }
@@ -48,7 +50,7 @@ export function DashboardPage() {
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
         <div className="grid grid-cols-4 gap-4">
           <StatCard
-            label="Jami foydalanuvchilar"
+            label={t("dashboard.stat.total")}
             value="12,456"
             delta="12.5%"
             icon={Users}
@@ -56,7 +58,7 @@ export function DashboardPage() {
             iconBg="rgba(59,130,246,0.15)"
           />
           <StatCard
-            label="Premium obunalar"
+            label={t("dashboard.stat.premium")}
             value="3,682"
             delta="8.4%"
             icon={Crown}
@@ -64,7 +66,7 @@ export function DashboardPage() {
             iconBg="rgba(139,92,246,0.15)"
           />
           <StatCard
-            label="Faol qo'ng'iroqlar"
+            label={t("dashboard.stat.activeCalls")}
             value="98"
             delta="3.1%"
             icon={PhoneCall}
@@ -72,7 +74,7 @@ export function DashboardPage() {
             iconBg="rgba(245,158,11,0.15)"
           />
           <StatCard
-            label="Oylik daromad"
+            label={t("dashboard.stat.monthly")}
             value="120,450,000"
             delta="15.3%"
             icon={Wallet}
@@ -86,18 +88,18 @@ export function DashboardPage() {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="text-[15px] font-semibold text-text-primary">
-                  Foydalanuvchilar oqimi
+                  {t("dashboard.userFlow")}
                 </h3>
                 <p className="text-[12px] text-text-secondary">
-                  So'nggi 30 kunlik faollik
+                  {t("dashboard.userFlowSub")}
                 </p>
               </div>
               <div className="flex items-center gap-1.5 rounded-lg border border-line bg-bg-input p-1 text-[12px]">
                 <button className="rounded-md bg-bg-hover px-2 py-1 text-text-primary">
-                  Kun
+                  {t("common.day")}
                 </button>
-                <button className="px-2 py-1 text-text-secondary">Hafta</button>
-                <button className="px-2 py-1 text-text-secondary">Oy</button>
+                <button className="px-2 py-1 text-text-secondary">{t("common.week")}</button>
+                <button className="px-2 py-1 text-text-secondary">{t("common.month")}</button>
               </div>
             </div>
             <ChartMock />
@@ -105,7 +107,7 @@ export function DashboardPage() {
 
           <div className="card p-5">
             <h3 className="mb-3 text-[15px] font-semibold text-text-primary">
-              So'nggi faoliyat
+              {t("dashboard.recent")}
             </h3>
             <div className="space-y-3">
               {recent.map((r) => (
@@ -131,18 +133,18 @@ export function DashboardPage() {
         <div className="mt-5 grid grid-cols-3 gap-4">
           <div className="card p-5">
             <h3 className="mb-1 text-[15px] font-semibold text-text-primary">
-              Status taqsimoti
+              {t("dashboard.statusDist")}
             </h3>
             <p className="mb-4 text-[12px] text-text-secondary">
-              Foydalanuvchilar status bo'yicha
+              {t("dashboard.statusDistSub")}
             </p>
             <div className="space-y-3">
               {[
-                { label: "Hal qilingan", value: 4256, pct: 56, color: "#10B981" },
-                { label: "Yopilgan", value: 2310, pct: 30, color: "#6B7280" },
-                { label: "Jarayonda", value: 98, pct: 6, color: "#F59E0B" },
-                { label: "Kutilmoqda", value: 67, pct: 4, color: "#3B82F6" },
-                { label: "Bloklangan", value: 245, pct: 4, color: "#EF4444" },
+                { label: t("userStatus.hal_qilingan"), value: 4256, pct: 56, color: "#10B981" },
+                { label: t("userStatus.yopilgan"), value: 2310, pct: 30, color: "#6B7280" },
+                { label: t("userStatus.jarayonda"), value: 98, pct: 6, color: "#F59E0B" },
+                { label: t("userStatus.kutilmoqda"), value: 67, pct: 4, color: "#3B82F6" },
+                { label: t("userStatus.bloklangan"), value: 245, pct: 4, color: "#EF4444" },
               ].map((s) => (
                 <div key={s.label}>
                   <div className="mb-1 flex items-center justify-between text-[12.5px]">
@@ -165,21 +167,21 @@ export function DashboardPage() {
           <div className="card col-span-2 p-5">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-[15px] font-semibold text-text-primary">
-                Eng yaxshi operatorlar
+                {t("dashboard.topOperators")}
               </h3>
               <button className="text-[12px] text-brand hover:underline">
-                Hammasini ko'rish ›
+                {t("common.viewAll")}
               </button>
             </div>
             <div className="overflow-hidden rounded-lg border border-line">
               <table className="w-full text-[12.5px]">
                 <thead className="bg-bg-input text-text-muted">
                   <tr>
-                    <th className="px-3 py-2 text-left font-medium">Operator</th>
-                    <th className="px-3 py-2 text-left font-medium">Qo'ng'iroqlar</th>
-                    <th className="px-3 py-2 text-left font-medium">Hal qilingan</th>
-                    <th className="px-3 py-2 text-left font-medium">Reyting</th>
-                    <th className="px-3 py-2 text-left font-medium">Trend</th>
+                    <th className="px-3 py-2 text-left font-medium">{t("dashboard.tbl.operator")}</th>
+                    <th className="px-3 py-2 text-left font-medium">{t("dashboard.tbl.calls")}</th>
+                    <th className="px-3 py-2 text-left font-medium">{t("dashboard.tbl.resolved")}</th>
+                    <th className="px-3 py-2 text-left font-medium">{t("dashboard.tbl.rating")}</th>
+                    <th className="px-3 py-2 text-left font-medium">{t("dashboard.tbl.trend")}</th>
                   </tr>
                 </thead>
                 <tbody>

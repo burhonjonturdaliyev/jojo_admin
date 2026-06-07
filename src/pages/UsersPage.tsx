@@ -15,11 +15,13 @@ import {
 import { StatCard } from "../components/StatCard";
 import { UserCard } from "../components/UserCard";
 import { UserDetailPanel } from "../components/UserDetailPanel";
-import { statusColumns, users as initialUsers, statusLabels } from "../data/users";
+import { statusColumns, users as initialUsers } from "../data/users";
 import type { User, UserStatus } from "../types";
 import { cn } from "../lib/utils";
+import { useT } from "../lib/i18n";
 
 export function UsersPage() {
+  const { t } = useT();
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [selectedId, setSelectedId] = useState<string | null>("USR-00012345");
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -79,7 +81,7 @@ export function UsersPage() {
 
     setUsers((prev) => [newUser, ...prev]);
     setSelectedId(newUser.id);
-    setToast(`Yangi karta qo'shildi → ${statusLabels[status]}`);
+    setToast(t("users.toastCreated", { status: t(`userStatus.${status}`) }));
     setTimeout(() => setToast(null), 2400);
     closeAddForm();
   };
@@ -120,7 +122,7 @@ export function UsersPage() {
       prev.map((u) => (u.id === draggedId ? { ...u, status } : u)),
     );
     setToast(
-      `${user.name} → ${statusLabels[status]}`,
+      `${user.name} → ${t(`userStatus.${status}`)}`,
     );
     setTimeout(() => setToast(null), 2400);
     setDraggedId(null);
@@ -134,10 +136,10 @@ export function UsersPage() {
         <header className="flex shrink-0 items-center justify-between gap-4 border-b border-line bg-bg-panel px-7 py-4">
           <div>
             <h1 className="text-[20px] font-bold leading-tight text-text-primary">
-              Foydalanuvchilar
+              {t("nav.users")}
             </h1>
             <p className="mt-0.5 text-[12.5px] text-text-secondary">
-              Barcha foydalanuvchilar haqida ma'lumot va boshqaruv
+              {t("users.subtitle")}
             </p>
           </div>
           <div className="flex items-center gap-2.5">
@@ -147,16 +149,16 @@ export function UsersPage() {
             </button>
             <button className="btn-secondary text-[12.5px]">
               <Download className="h-4 w-4" />
-              Eksport
+              {t("common.export")}
             </button>
             <button className="btn-secondary text-[12.5px]">
               <Filter className="h-4 w-4" />
-              Filtrlar
+              {t("common.filter")}
               <ChevronDown className="h-3.5 w-3.5" />
             </button>
             <button className="btn-primary text-[12.5px]">
               <Plus className="h-4 w-4" />
-              Yangi foydalanuvchi
+              {t("users.newUser")}
             </button>
           </div>
         </header>
@@ -167,7 +169,7 @@ export function UsersPage() {
           {/* Stats */}
           <div className="grid grid-cols-5 gap-4">
             <StatCard
-              label="Jami foydalanuvchilar"
+              label={t("users.stat.total")}
               value="12,456"
               delta="12.5%"
               icon={UsersIcon}
@@ -175,7 +177,7 @@ export function UsersPage() {
               iconBg="rgba(59,130,246,0.15)"
             />
             <StatCard
-              label="Bolani ulangan"
+              label={t("users.stat.connected")}
               value="8,325"
               delta="10.2%"
               icon={UserCheck}
@@ -183,7 +185,7 @@ export function UsersPage() {
               iconBg="rgba(16,185,129,0.15)"
             />
             <StatCard
-              label="Premium foydalanuvchilar"
+              label={t("users.stat.premium")}
               value="3,682"
               delta="8.4%"
               icon={Crown}
@@ -191,7 +193,7 @@ export function UsersPage() {
               iconBg="rgba(139,92,246,0.15)"
             />
             <StatCard
-              label="Premium daromad"
+              label={t("users.stat.revenue")}
               value="120,450,000"
               delta="15.3%"
               icon={Wallet}
@@ -199,7 +201,7 @@ export function UsersPage() {
               iconBg="rgba(245,158,11,0.15)"
             />
             <StatCard
-              label="Bloklangan foydalanuvchilar"
+              label={t("users.stat.blocked")}
               value="245"
               delta="3.1%"
               icon={Ban}
@@ -246,7 +248,7 @@ export function UsersPage() {
                     <div className="flex items-center gap-2">
                       <span className={`h-2 w-2 rounded-full ${col.color}`} />
                       <span className="text-[12.5px] font-semibold text-text-primary">
-                        {col.label}
+                        {t(`userStatus.${col.status}`)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -259,8 +261,8 @@ export function UsersPage() {
                       </span>
                       <button
                         type="button"
-                        title="Karta qo'shish"
-                        aria-label="Karta qo'shish"
+                        title={t("users.addCard")}
+                        aria-label={t("users.addCard")}
                         onClick={() =>
                           addingInCol === col.status
                             ? closeAddForm()
@@ -302,13 +304,13 @@ export function UsersPage() {
                           ref={newNameRef}
                           value={newName}
                           onChange={(e) => setNewName(e.target.value)}
-                          placeholder="Ism familiya"
+                          placeholder={t("users.fullName")}
                           className="w-full rounded-md border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] text-text-primary placeholder:text-text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/40"
                         />
                         <input
                           value={newPhone}
                           onChange={(e) => setNewPhone(e.target.value)}
-                          placeholder="+998 90 000 00 00"
+                          placeholder={t("users.phonePlaceholder")}
                           inputMode="tel"
                           className="mt-1.5 w-full rounded-md border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] text-text-primary placeholder:text-text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/40"
                         />
@@ -318,12 +320,12 @@ export function UsersPage() {
                             disabled={!newName.trim()}
                             className="flex-1 rounded-md bg-brand px-2.5 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
                           >
-                            Qo'shish
+                            {t("common.add")}
                           </button>
                           <button
                             type="button"
                             onClick={closeAddForm}
-                            aria-label="Bekor qilish"
+                            aria-label={t("common.cancel")}
                             className="flex h-7 w-7 items-center justify-center rounded-md border border-line text-text-secondary transition-colors hover:bg-bg-hover hover:text-text-primary"
                           >
                             <X className="h-3.5 w-3.5" />
@@ -353,7 +355,7 @@ export function UsersPage() {
 
                     {isDragOver && (
                       <div className="rounded-xl border-2 border-dashed border-brand bg-brand-soft py-6 text-center text-[12px] font-medium text-brand">
-                        Bu yerga tashlang
+                        {t("users.dropHere")}
                       </div>
                     )}
                   </div>
@@ -376,7 +378,7 @@ export function UsersPage() {
         <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
           <div className="rounded-xl border border-line bg-bg-panel px-4 py-3 text-[13px] font-medium text-text-primary shadow-panel">
             <span className="mr-2 inline-block h-2 w-2 rounded-full bg-status-resolved" />
-            Status o'zgartirildi: <span className="text-text-secondary">{toast}</span>
+            <span className="text-text-secondary">{toast}</span>
           </div>
         </div>
       )}

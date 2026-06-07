@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { ArrowUp } from "lucide-react";
+import { useT } from "../lib/i18n";
 
 interface StatCardProps {
   label: string;
@@ -20,6 +21,7 @@ export function StatCard({
   iconBg,
   positive = true,
 }: StatCardProps) {
+  const { t } = useT();
   return (
     <div className="card p-4">
       <div className="flex items-start justify-between gap-3">
@@ -43,7 +45,7 @@ export function StatCard({
           <ArrowUp className="h-3 w-3" strokeWidth={2.6} />
           {delta}
         </span>
-        <span className="text-text-muted">bu oyda</span>
+        <span className="text-text-muted">{t("common.thisMonth")}</span>
       </div>
     </div>
   );

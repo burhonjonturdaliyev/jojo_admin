@@ -1,6 +1,7 @@
 import { Search, Ban, UserCheck } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
+import { useT } from "../lib/i18n";
 
 const blocked = [
   { name: "Sultonbek Q.", phone: "+998 94 444 55 66", reason: "Qoidalarga zid xatti-harakat", blockedBy: "Jamshid K.", date: "31.05.2024", duration: "Doimiy" },
@@ -11,19 +12,20 @@ const blocked = [
 ];
 
 export function BlockedPage() {
+  const { t } = useT();
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Bloklanganlar"
-        subtitle="Bloklangan foydalanuvchilar ro'yxati"
+        title={t("nav.blocked")}
+        subtitle={t("blocked.subtitle")}
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
         <div className="grid grid-cols-3 gap-4 mb-5">
           {[
-            { label: "Jami bloklanganlar", value: "245", icon: Ban, color: "#EF4444" },
-            { label: "Doimiy blok", value: "162", icon: Ban, color: "#F59E0B" },
-            { label: "Vaqtinchalik", value: "83", icon: UserCheck, color: "#3B82F6" },
+            { label: t("blocked.stat.total"), value: "245", icon: Ban, color: "#EF4444" },
+            { label: t("blocked.stat.permanent"), value: "162", icon: Ban, color: "#F59E0B" },
+            { label: t("blocked.stat.temporary"), value: "83", icon: UserCheck, color: "#3B82F6" },
           ].map((s) => (
             <div key={s.label} className="card flex items-center gap-3 p-4">
               <div
@@ -46,19 +48,19 @@ export function BlockedPage() {
           <div className="border-b border-line p-4">
             <div className="relative max-w-md">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-              <input placeholder="Foydalanuvchi yoki sabab bo'yicha qidirish..." className="input pl-9" />
+              <input placeholder={t("blocked.searchPlaceholder")} className="input pl-9" />
             </div>
           </div>
           <table className="w-full text-[13px]">
             <thead className="bg-bg-input text-[12px] uppercase tracking-wider text-text-muted">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">Foydalanuvchi</th>
-                <th className="px-4 py-3 text-left font-semibold">Telefon</th>
-                <th className="px-4 py-3 text-left font-semibold">Sabab</th>
-                <th className="px-4 py-3 text-left font-semibold">Kim tomonidan</th>
-                <th className="px-4 py-3 text-left font-semibold">Sana</th>
-                <th className="px-4 py-3 text-left font-semibold">Muddat</th>
-                <th className="px-4 py-3 text-right font-semibold">Amallar</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("blocked.tbl.user")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("blocked.tbl.phone")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("blocked.tbl.reason")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("blocked.tbl.by")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("common.date")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("blocked.tbl.duration")}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t("common.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -82,12 +84,12 @@ export function BlockedPage() {
                           : "bg-status-progress/15 text-status-progress"
                       }`}
                     >
-                      {b.duration}
+                      {b.duration === "Doimiy" ? t("blocked.permanent") : b.duration}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button className="inline-flex items-center gap-1 rounded-lg border border-line bg-bg-card px-2.5 py-1 text-[11.5px] font-medium text-status-resolved hover:bg-bg-hover">
-                      <UserCheck className="h-3.5 w-3.5" /> Blokdan ozod
+                      <UserCheck className="h-3.5 w-3.5" /> {t("blocked.unblock")}
                     </button>
                   </td>
                 </tr>

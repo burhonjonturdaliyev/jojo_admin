@@ -1,6 +1,7 @@
 import { Plus, Search, Filter, Baby } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
+import { useT } from "../lib/i18n";
 
 const children = [
   {
@@ -54,18 +55,19 @@ const children = [
 ];
 
 export function ChildrenPage() {
+  const { t } = useT();
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Bolalar"
-        subtitle="Ro'yxatdan o'tgan bolalar va ularning qurilmalari"
+        title={t("nav.children")}
+        subtitle={t("children.subtitle")}
         actions={
           <>
             <button className="btn-secondary text-[12.5px]">
-              <Filter className="h-4 w-4" /> Filtrlar
+              <Filter className="h-4 w-4" /> {t("common.filter")}
             </button>
             <button className="btn-primary text-[12.5px]">
-              <Plus className="h-4 w-4" /> Yangi bola
+              <Plus className="h-4 w-4" /> {t("children.newChild")}
             </button>
           </>
         }
@@ -76,7 +78,7 @@ export function ChildrenPage() {
           <div className="relative flex-1 max-w-md">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
             <input
-              placeholder="Bola yoki ota-ona ismi bo'yicha qidirish..."
+              placeholder={t("children.searchPlaceholder")}
               className="input pl-9"
             />
           </div>
@@ -86,12 +88,12 @@ export function ChildrenPage() {
           <table className="w-full text-[13px]">
             <thead className="bg-bg-input text-[12px] uppercase tracking-wider text-text-muted">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">Bola</th>
-                <th className="px-4 py-3 text-left font-semibold">Ota-ona</th>
-                <th className="px-4 py-3 text-left font-semibold">Yoshi</th>
-                <th className="px-4 py-3 text-left font-semibold">Jinsi</th>
-                <th className="px-4 py-3 text-left font-semibold">Qurilma</th>
-                <th className="px-4 py-3 text-left font-semibold">Status</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("children.tbl.child")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("children.tbl.parent")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("children.tbl.age")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("children.tbl.gender")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("children.tbl.device")}</th>
+                <th className="px-4 py-3 text-left font-semibold">{t("common.status")}</th>
               </tr>
             </thead>
             <tbody>
@@ -109,8 +111,14 @@ export function ChildrenPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-text-secondary">{c.parent}</td>
-                  <td className="px-4 py-3 text-text-secondary">{c.age} yosh</td>
-                  <td className="px-4 py-3 text-text-secondary">{c.gender}</td>
+                  <td className="px-4 py-3 text-text-secondary">
+                    {c.age} {t("children.yearsOld")}
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary">
+                    {c.gender === "Erkak"
+                      ? t("children.gender.male")
+                      : t("children.gender.female")}
+                  </td>
                   <td className="px-4 py-3 text-text-secondary">{c.device}</td>
                   <td className="px-4 py-3">
                     <span
@@ -120,7 +128,9 @@ export function ChildrenPage() {
                           : "bg-status-blocked/15 text-status-blocked"
                       }`}
                     >
-                      {c.status === "ulangan" ? "Ulangan" : "Ulanmagan"}
+                      {c.status === "ulangan"
+                        ? t("children.connected")
+                        : t("children.notConnected")}
                     </span>
                   </td>
                 </tr>
@@ -131,9 +141,9 @@ export function ChildrenPage() {
 
         <div className="mt-6 grid grid-cols-3 gap-4">
           {[
-            { label: "Jami bolalar", value: "8,325", icon: Baby, color: "#3B82F6" },
-            { label: "Ulangan", value: "7,892", icon: Baby, color: "#10B981" },
-            { label: "Ulanmagan", value: "433", icon: Baby, color: "#EF4444" },
+            { label: t("children.stat.total"), value: "8,325", icon: Baby, color: "#3B82F6" },
+            { label: t("children.stat.connected"), value: "7,892", icon: Baby, color: "#10B981" },
+            { label: t("children.stat.notConnected"), value: "433", icon: Baby, color: "#EF4444" },
           ].map((s) => (
             <div key={s.label} className="card flex items-center gap-3 p-4">
               <div

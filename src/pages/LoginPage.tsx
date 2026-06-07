@@ -2,9 +2,12 @@ import { useState, type FormEvent } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { Headset, Lock, User as UserIcon, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../lib/auth";
+import { useT } from "../lib/i18n";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 
 export function LoginPage() {
   const { isAuthenticated, login } = useAuth();
+  const { t } = useT();
   const navigate = useNavigate();
   const location = useLocation();
   const from =
@@ -29,7 +32,7 @@ export function LoginPage() {
     if (ok) {
       navigate(from, { replace: true });
     } else {
-      setError("Login yoki parol noto'g'ri");
+      setError(t("login.error"));
     }
   }
 
@@ -41,17 +44,17 @@ export function LoginPage() {
             <Headset className="h-7 w-7 text-white" strokeWidth={2.4} />
           </div>
           <h1 className="mt-4 text-xl font-bold tracking-wide text-text-primary">
-            CALL CENTER
+            {t("nav.brand")}
           </h1>
           <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-text-muted">
-            Admin Panel
+            {t("nav.adminPanel")}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1.5 block text-xs font-medium text-text-secondary">
-              Login
+              {t("login.username")}
             </label>
             <div className="relative">
               <UserIcon
@@ -72,7 +75,7 @@ export function LoginPage() {
 
           <div>
             <label className="mb-1.5 block text-xs font-medium text-text-secondary">
-              Parol
+              {t("login.password")}
             </label>
             <div className="relative">
               <Lock
@@ -91,6 +94,7 @@ export function LoginPage() {
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 tabIndex={-1}
+                aria-label={showPassword ? t("login.hide") : t("login.show")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-text-muted transition-colors hover:text-text-secondary"
               >
                 {showPassword ? (
@@ -113,9 +117,13 @@ export function LoginPage() {
             disabled={submitting}
             className="mt-2 w-full rounded-lg bg-brand py-2.5 text-[14px] font-semibold text-white shadow-lg shadow-brand/30 transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Kirish
+            {t("login.submit")}
           </button>
         </form>
+
+        <div className="mt-5">
+          <LanguageSwitcher />
+        </div>
       </div>
     </div>
   );

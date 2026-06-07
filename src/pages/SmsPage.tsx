@@ -1,6 +1,7 @@
 import { Plus, Send, Users, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "../components/PageHeader";
+import { useT } from "../lib/i18n";
 
 const smsHistory = [
   { text: "Hurmatli mijoz, Premium obunangiz 3 kundan keyin tugaydi.", target: "Premium foydalanuvchilar", recipients: 3682, sentAt: "31.05.2024 11:20", delivered: 3640 },
@@ -12,6 +13,7 @@ const smsHistory = [
 const SMS_LIMIT = 160;
 
 export function SmsPage() {
+  const { t } = useT();
   const [message, setMessage] = useState("");
   const charCount = message.length;
   const smsCount = Math.max(1, Math.ceil(charCount / SMS_LIMIT));
@@ -19,11 +21,11 @@ export function SmsPage() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="SMS xabarlar"
-        subtitle="Foydalanuvchilarga SMS yuborish va tarix"
+        title={t("nav.sms")}
+        subtitle={t("sms.subtitle")}
         actions={
           <button className="btn-primary text-[12.5px]">
-            <Plus className="h-4 w-4" /> Yangi SMS
+            <Plus className="h-4 w-4" /> {t("sms.new")}
           </button>
         }
       />
@@ -32,53 +34,53 @@ export function SmsPage() {
         <div className="grid grid-cols-2 gap-5">
           <div className="card p-5">
             <h3 className="mb-4 text-[15px] font-semibold text-text-primary">
-              Tezkor yuborish
+              {t("sms.quickSend")}
             </h3>
             <div className="space-y-3">
               <div>
                 <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                  Auditoriya
+                  {t("common.audience")}
                 </label>
                 <select className="input">
-                  <option>Barcha foydalanuvchilar</option>
-                  <option>Premium foydalanuvchilar</option>
-                  <option>Yangi foydalanuvchilar</option>
-                  <option>Bola ulanmaganlar</option>
-                  <option>Bitta raqamga</option>
+                  <option>{t("common.allUsers")}</option>
+                  <option>{t("common.premiumUsers")}</option>
+                  <option>{t("common.newUsers")}</option>
+                  <option>{t("common.unconnectedChildren")}</option>
+                  <option>{t("sms.toOne")}</option>
                 </select>
               </div>
               <div>
                 <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                  Telefon raqam (ixtiyoriy)
+                  {t("sms.phoneOptional")}
                 </label>
-                <input className="input" placeholder="+998 90 123 45 67" />
+                <input className="input" placeholder={t("sms.phonePlaceholder")} />
               </div>
               <div>
                 <div className="mb-1.5 flex items-center justify-between">
                   <label className="block text-[12px] font-medium text-text-secondary">
-                    Xabar matni
+                    {t("common.message")}
                   </label>
                   <span className="text-[11px] text-text-muted">
-                    {charCount}/{SMS_LIMIT} · {smsCount} SMS
+                    {t("sms.charCounter", { count: charCount, limit: SMS_LIMIT, sms: smsCount })}
                   </span>
                 </div>
                 <textarea
                   rows={5}
                   className="input resize-none"
-                  placeholder="SMS matnini kiriting..."
+                  placeholder={t("sms.bodyPlaceholder")}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                 />
               </div>
               <button className="btn-primary w-full">
-                <Send className="h-4 w-4" /> Yuborish
+                <Send className="h-4 w-4" /> {t("common.send")}
               </button>
             </div>
           </div>
 
           <div className="card p-5">
             <h3 className="mb-4 text-[15px] font-semibold text-text-primary">
-              So'nggi yuborilgan
+              {t("sms.recent")}
             </h3>
             <div className="space-y-3">
               {smsHistory.map((s) => (
@@ -96,7 +98,7 @@ export function SmsPage() {
                       <div className="mt-2 flex items-center justify-between text-[11px]">
                         <span className="text-text-muted">{s.sentAt}</span>
                         <span className="text-status-resolved">
-                          Yetkazildi:{" "}
+                          {t("notifications.deliveredLabel")}
                           {((s.delivered / s.recipients) * 100).toFixed(1)}%
                         </span>
                       </div>

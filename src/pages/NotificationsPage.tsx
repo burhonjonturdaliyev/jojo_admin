@@ -1,5 +1,6 @@
 import { Plus, Send, Users, Bell } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { useT } from "../lib/i18n";
 
 const notifications = [
   { title: "Premium chegirma 30%", target: "Barcha foydalanuvchilar", recipients: 12456, sentAt: "31.05.2024 10:00", delivered: 12102 },
@@ -9,14 +10,15 @@ const notifications = [
 ];
 
 export function NotificationsPage() {
+  const { t } = useT();
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Bildirishnomalar"
-        subtitle="Push bildirishnomalar va xabarlar"
+        title={t("nav.notifications")}
+        subtitle={t("notifications.subtitle")}
         actions={
           <button className="btn-primary text-[12.5px]">
-            <Plus className="h-4 w-4" /> Yangi bildirishnoma
+            <Plus className="h-4 w-4" /> {t("notifications.new")}
           </button>
         }
       />
@@ -25,45 +27,45 @@ export function NotificationsPage() {
         <div className="grid grid-cols-2 gap-5">
           <div className="card p-5">
             <h3 className="mb-4 text-[15px] font-semibold text-text-primary">
-              Tezkor yuborish
+              {t("notifications.quickSend")}
             </h3>
             <div className="space-y-3">
               <div>
                 <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                  Sarlavha
+                  {t("common.title")}
                 </label>
-                <input className="input" placeholder="Bildirishnoma sarlavhasi..." />
+                <input className="input" placeholder={t("notifications.titlePlaceholder")} />
               </div>
               <div>
                 <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                  Xabar matni
+                  {t("common.message")}
                 </label>
                 <textarea
                   rows={4}
                   className="input resize-none"
-                  placeholder="Bildirishnoma matni..."
+                  placeholder={t("notifications.bodyPlaceholder")}
                 />
               </div>
               <div>
                 <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                  Auditoriya
+                  {t("common.audience")}
                 </label>
                 <select className="input">
-                  <option>Barcha foydalanuvchilar</option>
-                  <option>Premium foydalanuvchilar</option>
-                  <option>Yangi foydalanuvchilar</option>
-                  <option>Bola ulanmaganlar</option>
+                  <option>{t("common.allUsers")}</option>
+                  <option>{t("common.premiumUsers")}</option>
+                  <option>{t("common.newUsers")}</option>
+                  <option>{t("common.unconnectedChildren")}</option>
                 </select>
               </div>
               <button className="btn-primary w-full">
-                <Send className="h-4 w-4" /> Yuborish
+                <Send className="h-4 w-4" /> {t("common.send")}
               </button>
             </div>
           </div>
 
           <div className="card p-5">
             <h3 className="mb-4 text-[15px] font-semibold text-text-primary">
-              So'nggi yuborilgan
+              {t("notifications.recent")}
             </h3>
             <div className="space-y-3">
               {notifications.map((n) => (
@@ -81,7 +83,7 @@ export function NotificationsPage() {
                       <div className="mt-2 flex items-center justify-between text-[11px]">
                         <span className="text-text-muted">{n.sentAt}</span>
                         <span className="text-status-resolved">
-                          Yetkazildi:{" "}
+                          {t("notifications.deliveredLabel")}
                           {((n.delivered / n.recipients) * 100).toFixed(1)}%
                         </span>
                       </div>
