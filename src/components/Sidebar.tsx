@@ -7,12 +7,17 @@ import {
   Wallet,
   MessageSquare,
   Bell,
+  MessageCircle,
   Megaphone,
   Settings,
   Headphones,
   Ban,
   LogOut,
   Headset,
+  Package,
+  Image as ImageIcon,
+  ShoppingBag,
+  Lightbulb,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 
@@ -32,9 +37,22 @@ const sections = [
     ],
   },
   {
+    label: "DO'KON",
+    items: [
+      { to: "/products", label: "Mahsulotlar", icon: Package },
+      { to: "/banners", label: "Promo bannerlar", icon: ImageIcon },
+      { to: "/orders", label: "Buyurtmalar", icon: ShoppingBag },
+    ],
+  },
+  {
+    label: "KONTENT",
+    items: [{ to: "/advice", label: "Maslahatlar", icon: Lightbulb }],
+  },
+  {
     label: "BOSHQARUV",
     items: [
       { to: "/notifications", label: "Bildirishnomalar", icon: Bell },
+      { to: "/sms", label: "SMS xabarlar", icon: MessageCircle },
       { to: "/ads", label: "Reklamalar", icon: Megaphone },
       { to: "/settings", label: "Sozlamalar", icon: Settings },
       { to: "/operators", label: "Operatorlar", icon: Headphones },
