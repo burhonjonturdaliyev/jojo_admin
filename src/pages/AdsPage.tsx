@@ -1,91 +1,186 @@
-import { Plus, Image as ImageIcon, MoreVertical } from "lucide-react";
+import { useState } from "react";
+import { Megaphone, Send, CheckCircle2, AlertCircle } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { useT } from "../lib/i18n";
+import { broadcastApi } from "../lib/resources";
 
-const ads = [
-  { title: "Yozgi chegirma 2024", status: "faol", impressions: 124500, clicks: 8420, ctr: "6.8%", endDate: "30.06.2024", color: "#3B82F6" },
-  { title: "Premium 6 oy aksiya", status: "faol", impressions: 98200, clicks: 7240, ctr: "7.4%", endDate: "15.06.2024", color: "#8B5CF6" },
-  { title: "Bola ulashga taklif", status: "pauza", impressions: 45100, clicks: 3120, ctr: "6.9%", endDate: "10.06.2024", color: "#F59E0B" },
-  { title: "Yangi yil aksiyasi 2025", status: "tugagan", impressions: 234100, clicks: 18420, ctr: "7.9%", endDate: "01.01.2025", color: "#10B981" },
-];
-
-const statusCls = {
-  faol: "bg-status-resolved/15 text-status-resolved",
-  pauza: "bg-status-progress/15 text-status-progress",
-  tugagan: "bg-text-muted/15 text-text-muted",
-};
-
+/**
+ * Elon (Announcement) — barcha parentlarga umumiy push xabari yuborish.
+ * Backend `/api/admin/broadcast/` har bir aktiv parentga inbox yozuvi
+ * yaratadi (record_parent_notification) + WS event + FCM push.
+ */
 export function AdsPage() {
   const { t } = useT();
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [category, setCategory] = useState<"system" | "tip" | "premium">(
+    "system",
+  );
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const send = async () => {
+    setError(null);
+    setResult(null);
+    if (!title.trim() || !body.trim()) {
+      setError("Sarlavha va matn majburiy");
+      return;
+    }
+    setSending(true);
+    try {
+      const r = await broadcastApi.send({
+        title: title.trim(),
+        body: body.trim(),
+        category,
+      });
+      setResult(`${r.sent_to} ta ota-onaga yetkazildi`);
+      setTitle("");
+      setBody("");
+    } catch (e) {
+      const msg = (e as { message?: string }).message || "Xato yuz berdi";
+      setError(msg);
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.ads")}
-        subtitle={t("ads.subtitle")}
-        actions={
-          <button className="btn-primary text-[12.5px]">
-            <Plus className="h-4 w-4" /> {t("ads.new")}
-          </button>
-        }
+        subtitle="Hamma parentlarga umumiy push xabari yuborish"
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
-        <div className="grid grid-cols-2 gap-4">
-          {ads.map((ad) => (
-            <div key={ad.title} className="card overflow-hidden">
-              <div
-                className="flex h-32 items-center justify-center"
-                style={{
-                  background: `linear-gradient(135deg, ${ad.color}, ${ad.color}88)`,
-                }}
-              >
-                <ImageIcon className="h-10 w-10 text-white/40" strokeWidth={1.5} />
+        <div className="grid grid-cols-[1fr_320px] gap-5">
+          <div className="card p-6">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-500">
+                <Megaphone className="h-5 w-5" />
               </div>
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="text-[15px] font-semibold text-text-primary">
-                      {ad.title}
-                    </h3>
-                    <div className="mt-1 text-[11.5px] text-text-secondary">
-                      {t("ads.endDate")}: {ad.endDate}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${statusCls[ad.status as keyof typeof statusCls]}`}
-                    >
-                      {t(`ads.status.${ad.status}`)}
-                    </span>
-                    <button className="icon-btn h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
+              <div>
+                <h3 className="text-[15px] font-semibold text-text-primary">
+                  Yangi elon yaratish
+                </h3>
+                <p className="text-[12px] text-text-secondary">
+                  Yuborilgan zahoti barcha parent dasturlariga FCM va inbox
+                  orqali yetkaziladi
+                </p>
+              </div>
+            </div>
 
-                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-3 text-center">
-                  <div>
-                    <div className="text-[13px] font-bold text-text-primary">
-                      {(ad.impressions / 1000).toFixed(1)}K
-                    </div>
-                    <div className="text-[10.5px] text-text-muted">{t("ads.impressions")}</div>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
+                  Sarlavha
+                </label>
+                <input
+                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] text-text-primary outline-none focus:border-primary"
+                  placeholder="Masalan: Yangi maslahatlar qo'shildi"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  maxLength={150}
+                />
+                <div className="mt-1 text-right text-[10.5px] text-text-muted">
+                  {title.length}/150
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
+                  Matn
+                </label>
+                <textarea
+                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] text-text-primary outline-none focus:border-primary"
+                  rows={6}
+                  placeholder="Elon matnini kiriting..."
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  maxLength={500}
+                />
+                <div className="mt-1 text-right text-[10.5px] text-text-muted">
+                  {body.length}/500
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
+                  Kategoriya
+                </label>
+                <div className="flex gap-2">
+                  {[
+                    { value: "system", label: "Tizim" },
+                    { value: "tip", label: "Maslahat" },
+                    { value: "premium", label: "Premium" },
+                  ].map((c) => (
+                    <button
+                      key={c.value}
+                      onClick={() =>
+                        setCategory(c.value as "system" | "tip" | "premium")
+                      }
+                      className={
+                        "rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all " +
+                        (category === c.value
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-line bg-bg-input text-text-secondary hover:text-text-primary")
+                      }
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-[12.5px] font-medium text-red-500">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
+                </div>
+              )}
+              {result && (
+                <div className="flex items-center gap-2 rounded-lg bg-green-500/10 px-3 py-2 text-[12.5px] font-medium text-green-500">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {result}
+                </div>
+              )}
+
+              <button
+                onClick={send}
+                disabled={sending}
+                className="btn-primary w-full justify-center py-2.5 text-[13px] disabled:opacity-60"
+              >
+                <Send className="h-4 w-4" />
+                {sending ? "Yuborilmoqda..." : "Hammaga yuborish"}
+              </button>
+            </div>
+          </div>
+
+          {/* Preview */}
+          <div className="card p-5">
+            <h3 className="mb-3 text-[13px] font-semibold text-text-primary">
+              Ko'rinish
+            </h3>
+            <div className="rounded-2xl border border-line bg-bg-input p-3">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/15 text-orange-500">
+                  <Megaphone className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-semibold text-text-primary">
+                    {title || "Sarlavha shu yerda ko'rinadi"}
                   </div>
-                  <div>
-                    <div className="text-[13px] font-bold text-text-primary">
-                      {(ad.clicks / 1000).toFixed(1)}K
-                    </div>
-                    <div className="text-[10.5px] text-text-muted">{t("ads.clicks")}</div>
-                  </div>
-                  <div>
-                    <div className="text-[13px] font-bold text-status-resolved">
-                      {ad.ctr}
-                    </div>
-                    <div className="text-[10.5px] text-text-muted">CTR</div>
+                  <div className="mt-1 line-clamp-3 text-[12px] text-text-secondary">
+                    {body || "Matn shu yerda ko'rinadi..."}
                   </div>
                 </div>
               </div>
             </div>
-          ))}
+            <div className="mt-3 text-[11.5px] text-text-muted">
+              Push notif + inbox yozuvi + WS event hammasi bir vaqtda
+              yuboriladi.
+            </div>
+          </div>
         </div>
       </div>
     </div>

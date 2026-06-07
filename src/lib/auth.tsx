@@ -8,54 +8,104 @@ import {
   type ReactNode,
 } from "react";
 
-const STORAGE_KEY = "jojo_admin_auth";
-const ADMIN_LOGIN = "admin";
-const ADMIN_PASSWORD = "0000";
+import {
+  adminLogin as apiLogin,
+  adminLogout as apiLogout,
+  adminMe,
+  clearTokens,
+  getAccessToken,
+} from "./api";
 
-type AuthContextValue = {
+export interface AdminUser {
+  id: number;
+  phone: string | null;
+  username: string;
+  full_name: string;
+  is_superuser: boolean;
+}
+
+interface AuthContextValue {
   isAuthenticated: boolean;
-  login: (username: string, password: string) => boolean;
+  isLoading: boolean;
+  user: AdminUser | null;
+  errorMessage: string | null;
+  login: (phone: string, password: string) => Promise<boolean>;
   logout: () => void;
-};
+}
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem(STORAGE_KEY) === "1";
-  });
+  const [user, setUser] = useState<AdminUser | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(() => !!getAccessToken());
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Sahifa qayta yuklanganda saqlangan token bilan profilini olamiz.
   useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) {
-        setIsAuthenticated(e.newValue === "1");
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-
-  const login = useCallback((username: string, password: string) => {
-    if (username.trim() === ADMIN_LOGIN && password === ADMIN_PASSWORD) {
-      window.localStorage.setItem(STORAGE_KEY, "1");
-      setIsAuthenticated(true);
-      return true;
+    if (!getAccessToken()) {
+      setIsLoading(false);
+      return;
     }
-    return false;
+    let cancelled = false;
+    (async () => {
+      try {
+        const me = await adminMe();
+        if (!cancelled) setUser(me);
+      } catch {
+        if (!cancelled) {
+          clearTokens();
+          setUser(null);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const logout = useCallback(() => {
-    window.localStorage.removeItem(STORAGE_KEY);
-    setIsAuthenticated(false);
-  }, []);
-
-  const value = useMemo(
-    () => ({ isAuthenticated, login, logout }),
-    [isAuthenticated, login, logout],
+  const login = useCallback(
+    async (phone: string, password: string): Promise<boolean> => {
+      setIsLoading(true);
+      setErrorMessage(null);
+      try {
+        const profile = await apiLogin(phone, password);
+        setUser(profile);
+        return true;
+      } catch (err) {
+        const msg =
+          (err as { message?: string }).message ||
+          "Login muvaffaqiyatsiz tugadi";
+        setErrorMessage(msg);
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  const logout = useCallback(() => {
+    apiLogout();
+    setUser(null);
+  }, []);
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      isAuthenticated: !!user,
+      isLoading,
+      user,
+      errorMessage,
+      login,
+      logout,
+    }),
+    [user, isLoading, errorMessage, login, logout],
+  );
+
+  return (
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

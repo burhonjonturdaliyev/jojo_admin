@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   GripVertical,
@@ -13,12 +13,13 @@ import { PageHeader } from "../components/PageHeader";
 import { LocalizedField } from "../components/LocalizedField";
 import { TranslateAllButton } from "../components/TranslateAllButton";
 import {
-  initialBanners,
   themeStyles,
   type BannerActionType,
   type BannerTheme,
   type PromoBanner,
 } from "../data/banners";
+import { bannersApi, unwrapList } from "../lib/resources";
+import { bannerToApi, bannerToUi } from "../lib/adapters";
 import { cn } from "../lib/utils";
 import { useT, type Lang } from "../lib/i18n";
 import {
@@ -43,10 +44,30 @@ const emptyBanner = (sortOrder: number): PromoBanner => ({
 
 export function PromoBannersPage() {
   const { t, lang } = useT();
-  const [banners, setBanners] = useState<PromoBanner[]>(initialBanners);
+  const [banners, setBanners] = useState<PromoBanner[]>([]);
+  const [, setLoading] = useState(true);
+  const [, setBusy] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<PromoBanner | null>(null);
   const [previewIdx, setPreviewIdx] = useState(0);
+
+  // Backend'dan ro'yxat olib kelamiz.
+  const reload = async () => {
+    setLoading(true);
+    try {
+      const raw = await bannersApi.list();
+      const mapped = unwrapList(raw).map(bannerToUi);
+      setBanners(mapped);
+    } catch (err) {
+      console.error("banners load failed", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void reload();
+  }, []);
 
   const sorted = useMemo(
     () => [...banners].sort((a, b) => a.sortOrder - b.sortOrder),
@@ -75,20 +96,49 @@ export function PromoBannersPage() {
     setDraggedId(null);
   };
 
-  const toggleActive = (id: string) =>
-    setBanners((prev) =>
-      prev.map((b) => (b.id === id ? { ...b, isActive: !b.isActive } : b)),
-    );
+  const toggleActive = async (id: string) => {
+    const b = banners.find((x) => x.id === id);
+    if (!b) return;
+    setBusy(true);
+    try {
+      await bannersApi.update(Number(id), { is_active: !b.isActive });
+      await reload();
+    } catch (err) {
+      console.error("toggle failed", err);
+    } finally {
+      setBusy(false);
+    }
+  };
 
-  const remove = (id: string) =>
-    setBanners((prev) => prev.filter((b) => b.id !== id));
+  const remove = async (id: string) => {
+    setBusy(true);
+    try {
+      await bannersApi.remove(Number(id));
+      await reload();
+    } catch (err) {
+      console.error("remove failed", err);
+    } finally {
+      setBusy(false);
+    }
+  };
 
-  const save = (b: PromoBanner) => {
-    setBanners((prev) => {
-      const exists = prev.some((x) => x.id === b.id);
-      return exists ? prev.map((x) => (x.id === b.id ? b : x)) : [...prev, b];
-    });
-    setEditing(null);
+  const save = async (b: PromoBanner) => {
+    setBusy(true);
+    try {
+      const payload = bannerToApi(b);
+      const isNew = !banners.some((x) => x.id === b.id);
+      if (isNew) {
+        await bannersApi.create(payload);
+      } else {
+        await bannersApi.update(Number(b.id), payload);
+      }
+      await reload();
+      setEditing(null);
+    } catch (err) {
+      console.error("save failed", err);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const nextSortOrder =

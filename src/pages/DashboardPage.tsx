@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Users,
   Crown,
@@ -12,6 +13,7 @@ import { StatCard } from "../components/StatCard";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
 import { useT } from "../lib/i18n";
+import { dashboardApi, type AdminDashboardStats } from "../lib/resources";
 
 const recent = [
   { name: "Zarina Abdurahmonova", action: "Premium sotib oldi", time: "5 min" },
@@ -30,6 +32,17 @@ const operators = [
 
 export function DashboardPage() {
   const { t } = useT();
+  const [stats, setStats] = useState<AdminDashboardStats | null>(null);
+
+  useEffect(() => {
+    void dashboardApi.stats().then(setStats).catch((e) => {
+      console.error("dashboard stats failed", e);
+    });
+  }, []);
+
+  const fmt = (n: number | undefined) =>
+    (n ?? 0).toLocaleString("uz-UZ").replace(/,/g, " ");
+
   return (
     <div className="flex h-full flex-col">
       <PageHeader
@@ -51,32 +64,32 @@ export function DashboardPage() {
         <div className="grid grid-cols-4 gap-4">
           <StatCard
             label={t("dashboard.stat.total")}
-            value="12,456"
-            delta="12.5%"
+            value={fmt(stats?.parents)}
+            delta=""
             icon={Users}
             iconColor="#3B82F6"
             iconBg="rgba(59,130,246,0.15)"
           />
           <StatCard
-            label={t("dashboard.stat.premium")}
-            value="3,682"
-            delta="8.4%"
+            label={"Bolalar"}
+            value={fmt(stats?.children)}
+            delta=""
             icon={Crown}
             iconColor="#8B5CF6"
             iconBg="rgba(139,92,246,0.15)"
           />
           <StatCard
-            label={t("dashboard.stat.activeCalls")}
-            value="98"
-            delta="3.1%"
+            label={"24 soat ichida faol"}
+            value={fmt(stats?.active_24h)}
+            delta=""
             icon={PhoneCall}
             iconColor="#F59E0B"
             iconBg="rgba(245,158,11,0.15)"
           />
           <StatCard
-            label={t("dashboard.stat.monthly")}
-            value="120,450,000"
-            delta="15.3%"
+            label={"Faol mahsulotlar"}
+            value={fmt(stats?.products)}
+            delta=""
             icon={Wallet}
             iconColor="#10B981"
             iconBg="rgba(16,185,129,0.15)"

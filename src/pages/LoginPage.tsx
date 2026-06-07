@@ -23,16 +23,19 @@ export function LoginPage() {
     return <Navigate to={from} replace />;
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    const ok = login(username, password);
-    setSubmitting(false);
-    if (ok) {
-      navigate(from, { replace: true });
-    } else {
-      setError(t("login.error"));
+    try {
+      const ok = await login(username, password);
+      if (ok) {
+        navigate(from, { replace: true });
+      } else {
+        setError(t("login.error"));
+      }
+    } finally {
+      setSubmitting(false);
     }
   }
 
