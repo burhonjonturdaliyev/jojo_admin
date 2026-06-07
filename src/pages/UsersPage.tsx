@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Calendar,
   Download,
@@ -10,6 +10,7 @@ import {
   Wallet,
   Ban,
   ChevronDown,
+  X,
 } from "lucide-react";
 import { StatCard } from "../components/StatCard";
 import { UserCard } from "../components/UserCard";
@@ -24,6 +25,64 @@ export function UsersPage() {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<UserStatus | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [addingInCol, setAddingInCol] = useState<UserStatus | null>(null);
+  const [newName, setNewName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const newNameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (addingInCol) newNameRef.current?.focus();
+  }, [addingInCol]);
+
+  const openAddForm = (status: UserStatus) => {
+    setAddingInCol(status);
+    setNewName("");
+    setNewPhone("");
+  };
+
+  const closeAddForm = () => {
+    setAddingInCol(null);
+    setNewName("");
+    setNewPhone("");
+  };
+
+  const handleCreateUser = (status: UserStatus) => {
+    const name = newName.trim();
+    const phone = newPhone.trim();
+    if (!name) return;
+
+    const today = new Date()
+      .toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+      .replace(/\//g, ".");
+
+    const newUser: User = {
+      id: `USR-${Math.floor(10_000_000 + Math.random() * 89_999_999)}`,
+      name,
+      phone: phone || "—",
+      email: "",
+      address: "",
+      gender: "Erkak",
+      birthDate: "—",
+      avatar: name,
+      status,
+      childStatus: "ulanmagan",
+      premiumStatus: "sotib_olmagan",
+      registeredAt: today,
+      lastActivity: "hozir",
+      cardTimestamp: "hozir",
+      commentsCount: 0,
+    };
+
+    setUsers((prev) => [newUser, ...prev]);
+    setSelectedId(newUser.id);
+    setToast(`Yangi karta qo'shildi → ${statusLabels[status]}`);
+    setTimeout(() => setToast(null), 2400);
+    closeAddForm();
+  };
 
   const selectedUser = useMemo(
     () => users.find((u) => u.id === selectedId) ?? null,
@@ -202,10 +261,25 @@ export function UsersPage() {
                         type="button"
                         title="Karta qo'shish"
                         aria-label="Karta qo'shish"
-                        className="group/add flex h-6 w-6 items-center justify-center rounded-md border border-line bg-bg-card text-text-secondary shadow-sm transition-all duration-150 hover:border-brand/50 hover:bg-brand-soft hover:text-brand hover:shadow-md hover:shadow-brand/20 active:scale-95"
+                        onClick={() =>
+                          addingInCol === col.status
+                            ? closeAddForm()
+                            : openAddForm(col.status)
+                        }
+                        className={cn(
+                          "group/add flex h-6 w-6 items-center justify-center rounded-md border shadow-sm transition-all duration-150 active:scale-95",
+                          addingInCol === col.status
+                            ? "border-brand/60 bg-brand-soft text-brand"
+                            : "border-line bg-bg-card text-text-secondary hover:border-brand/50 hover:bg-brand-soft hover:text-brand hover:shadow-md hover:shadow-brand/20",
+                        )}
                       >
                         <Plus
-                          className="h-3.5 w-3.5 transition-transform duration-150 group-hover/add:rotate-90"
+                          className={cn(
+                            "h-3.5 w-3.5 transition-transform duration-150",
+                            addingInCol === col.status
+                              ? "rotate-45"
+                              : "group-hover/add:rotate-90",
+                          )}
                           strokeWidth={2.4}
                         />
                       </button>
@@ -213,6 +287,51 @@ export function UsersPage() {
                   </div>
 
                   <div className="space-y-2.5">
+                    {addingInCol === col.status && (
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          handleCreateUser(col.status);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") closeAddForm();
+                        }}
+                        className="rounded-xl border border-brand/40 bg-bg-card p-2.5 shadow-md shadow-brand/10"
+                      >
+                        <input
+                          ref={newNameRef}
+                          value={newName}
+                          onChange={(e) => setNewName(e.target.value)}
+                          placeholder="Ism familiya"
+                          className="w-full rounded-md border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] text-text-primary placeholder:text-text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/40"
+                        />
+                        <input
+                          value={newPhone}
+                          onChange={(e) => setNewPhone(e.target.value)}
+                          placeholder="+998 90 000 00 00"
+                          inputMode="tel"
+                          className="mt-1.5 w-full rounded-md border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] text-text-primary placeholder:text-text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/40"
+                        />
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <button
+                            type="submit"
+                            disabled={!newName.trim()}
+                            className="flex-1 rounded-md bg-brand px-2.5 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            Qo'shish
+                          </button>
+                          <button
+                            type="button"
+                            onClick={closeAddForm}
+                            aria-label="Bekor qilish"
+                            className="flex h-7 w-7 items-center justify-center rounded-md border border-line text-text-secondary transition-colors hover:bg-bg-hover hover:text-text-primary"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </form>
+                    )}
+
                     {colUsers.map((user) => (
                       <UserCard
                         key={user.id}
