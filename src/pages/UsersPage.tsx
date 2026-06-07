@@ -1,387 +1,197 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Calendar,
-  Download,
-  Filter,
-  Plus,
-  Users as UsersIcon,
-  UserCheck,
-  Crown,
-  Wallet,
+  Search,
   Ban,
-  ChevronDown,
-  X,
+  CheckCircle2,
+  Users as UsersIcon,
 } from "lucide-react";
-import { StatCard } from "../components/StatCard";
-import { UserCard } from "../components/UserCard";
-import { UserDetailPanel } from "../components/UserDetailPanel";
-import { statusColumns, users as initialUsers } from "../data/users";
-import type { User, UserStatus } from "../types";
-import { cn } from "../lib/utils";
+import { PageHeader } from "../components/PageHeader";
+import { Avatar } from "../components/Avatar";
 import { useT } from "../lib/i18n";
+import { usersApi, type AdminUserRow } from "../lib/resources";
 
+/**
+ * Foydalanuvchilar (parents) ro'yxati. Backend `/admin/users/` dan
+ * pagination + filter bilan o'qiydi. Suspend / activate orqali
+ * `is_active`ni o'zgartirish mumkin.
+ */
 export function UsersPage() {
   const { t } = useT();
-  const [users, setUsers] = useState<User[]>(initialUsers);
-  const [selectedId, setSelectedId] = useState<string | null>("USR-00012345");
-  const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [dragOverCol, setDragOverCol] = useState<UserStatus | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const [addingInCol, setAddingInCol] = useState<UserStatus | null>(null);
-  const [newName, setNewName] = useState("");
-  const [newPhone, setNewPhone] = useState("");
-  const newNameRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (addingInCol) newNameRef.current?.focus();
-  }, [addingInCol]);
-
-  const openAddForm = (status: UserStatus) => {
-    setAddingInCol(status);
-    setNewName("");
-    setNewPhone("");
-  };
-
-  const closeAddForm = () => {
-    setAddingInCol(null);
-    setNewName("");
-    setNewPhone("");
-  };
-
-  const handleCreateUser = (status: UserStatus) => {
-    const name = newName.trim();
-    const phone = newPhone.trim();
-    if (!name) return;
-
-    const today = new Date()
-      .toLocaleDateString("ru-RU", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })
-      .replace(/\//g, ".");
-
-    const newUser: User = {
-      id: `USR-${Math.floor(10_000_000 + Math.random() * 89_999_999)}`,
-      name,
-      phone: phone || "—",
-      email: "",
-      address: "",
-      gender: "Erkak",
-      birthDate: "—",
-      avatar: name,
-      status,
-      childStatus: "ulanmagan",
-      premiumStatus: "sotib_olmagan",
-      registeredAt: today,
-      lastActivity: "hozir",
-      cardTimestamp: "hozir",
-      commentsCount: 0,
-    };
-
-    setUsers((prev) => [newUser, ...prev]);
-    setSelectedId(newUser.id);
-    setToast(t("users.toastCreated", { status: t(`userStatus.${status}`) }));
-    setTimeout(() => setToast(null), 2400);
-    closeAddForm();
-  };
-
-  const selectedUser = useMemo(
-    () => users.find((u) => u.id === selectedId) ?? null,
-    [users, selectedId],
+  const [users, setUsers] = useState<AdminUserRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "blocked">(
+    "all",
   );
 
-  const usersByStatus = useMemo(() => {
-    const map = new Map<UserStatus, User[]>();
-    statusColumns.forEach((c) => map.set(c.status, []));
-    users.forEach((u) => {
-      const arr = map.get(u.status);
-      if (arr) arr.push(u);
-    });
-    return map;
-  }, [users]);
-
-  const initialCountByStatus = useMemo(() => {
-    const map = new Map<UserStatus, number>();
-    statusColumns.forEach((c) => map.set(c.status, 0));
-    initialUsers.forEach((u) => {
-      map.set(u.status, (map.get(u.status) ?? 0) + 1);
-    });
-    return map;
-  }, []);
-
-  const handleDrop = (status: UserStatus) => {
-    if (!draggedId) return;
-    const user = users.find((u) => u.id === draggedId);
-    if (!user || user.status === status) {
-      setDraggedId(null);
-      setDragOverCol(null);
-      return;
+  const reload = async () => {
+    setLoading(true);
+    try {
+      const r = await usersApi.list({
+        q: search || undefined,
+        is_active:
+          activeFilter === "all" ? undefined : activeFilter === "active",
+        role: "parent",
+        page_size: 100,
+      });
+      setUsers(r.results);
+    } catch (e) {
+      console.error("users load", e);
+    } finally {
+      setLoading(false);
     }
-    setUsers((prev) =>
-      prev.map((u) => (u.id === draggedId ? { ...u, status } : u)),
-    );
-    setToast(
-      `${user.name} → ${t(`userStatus.${status}`)}`,
-    );
-    setTimeout(() => setToast(null), 2400);
-    setDraggedId(null);
-    setDragOverCol(null);
   };
 
+  useEffect(() => {
+    void reload();
+  }, [activeFilter]);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return users;
+    const q = search.toLowerCase();
+    return users.filter(
+      (u) =>
+        u.phone?.toLowerCase().includes(q) ||
+        u.first_name?.toLowerCase().includes(q) ||
+        u.username?.toLowerCase().includes(q),
+    );
+  }, [users, search]);
+
+  const toggleActive = async (id: number) => {
+    await usersApi.toggleActive(id);
+    void reload();
+  };
+
+  const totalActive = users.filter((u) => u.is_active).length;
+
   return (
-    <div className="flex h-full">
-      <div className="flex h-full flex-1 flex-col overflow-hidden">
-        {/* Header */}
-        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-line bg-bg-panel px-7 py-4">
-          <div>
-            <h1 className="text-[20px] font-bold leading-tight text-text-primary">
-              {t("nav.users")}
-            </h1>
-            <p className="mt-0.5 text-[12.5px] text-text-secondary">
-              {t("users.subtitle")}
-            </p>
-          </div>
-          <div className="flex items-center gap-2.5">
-            <button className="btn-secondary text-[12.5px]">
-              <Calendar className="h-4 w-4" />
-              01.05.2024 - 31.05.2024
-            </button>
-            <button className="btn-secondary text-[12.5px]">
-              <Download className="h-4 w-4" />
-              {t("common.export")}
-            </button>
-            <button className="btn-secondary text-[12.5px]">
-              <Filter className="h-4 w-4" />
-              {t("common.filter")}
-              <ChevronDown className="h-3.5 w-3.5" />
-            </button>
-            <button className="btn-primary text-[12.5px]">
-              <Plus className="h-4 w-4" />
-              {t("users.newUser")}
-            </button>
-          </div>
-        </header>
+    <div className="flex h-full flex-col">
+      <PageHeader
+        title={t("nav.users")}
+        subtitle={`${users.length} ta foydalanuvchi (${totalActive} faol)`}
+      />
 
-        {/* Body */}
-        <div className="flex-1 overflow-auto scrollbar-thin px-7 py-5">
-         <div className="min-w-[1500px]">
-          {/* Stats */}
-          <div className="grid grid-cols-5 gap-4">
-            <StatCard
-              label={t("users.stat.total")}
-              value="12,456"
-              delta="12.5%"
-              icon={UsersIcon}
-              iconColor="#3B82F6"
-              iconBg="rgba(59,130,246,0.15)"
-            />
-            <StatCard
-              label={t("users.stat.connected")}
-              value="8,325"
-              delta="10.2%"
-              icon={UserCheck}
-              iconColor="#10B981"
-              iconBg="rgba(16,185,129,0.15)"
-            />
-            <StatCard
-              label={t("users.stat.premium")}
-              value="3,682"
-              delta="8.4%"
-              icon={Crown}
-              iconColor="#8B5CF6"
-              iconBg="rgba(139,92,246,0.15)"
-            />
-            <StatCard
-              label={t("users.stat.revenue")}
-              value="120,450,000"
-              delta="15.3%"
-              icon={Wallet}
-              iconColor="#F59E0B"
-              iconBg="rgba(245,158,11,0.15)"
-            />
-            <StatCard
-              label={t("users.stat.blocked")}
-              value="245"
-              delta="3.1%"
-              icon={Ban}
-              iconColor="#EF4444"
-              iconBg="rgba(239,68,68,0.15)"
-            />
+      <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
+        {/* Filter + search */}
+        <div className="card p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[260px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Telefon yoki ism bo'yicha qidirish..."
+                className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+              />
+            </div>
+            {(["all", "active", "blocked"] as const).map((k) => (
+              <button
+                key={k}
+                onClick={() => setActiveFilter(k)}
+                className={
+                  "rounded-lg border px-3 py-1.5 text-[12px] font-medium " +
+                  (activeFilter === k
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-line bg-bg-input text-text-secondary hover:text-text-primary")
+                }
+              >
+                {k === "all" ? "Hammasi" : k === "active" ? "Faol" : "Bloklangan"}
+              </button>
+            ))}
           </div>
+        </div>
 
-          {/* Kanban */}
-          <div className="mt-5 grid grid-cols-6 gap-3">
-            {statusColumns.map((col) => {
-              const colUsers = usersByStatus.get(col.status) ?? [];
-              const isDragOver = dragOverCol === col.status;
-              const isAnotherDragging =
-                draggedId !== null &&
-                users.find((u) => u.id === draggedId)?.status !== col.status;
-
-              return (
-                <div
-                  key={col.status}
-                  className={cn(
-                    "flex flex-col rounded-xl p-1.5 transition-all",
-                    isDragOver
-                      ? "bg-brand-soft ring-2 ring-brand/40"
-                      : isAnotherDragging
-                        ? "ring-2 ring-dashed ring-line/80"
-                        : "ring-2 ring-transparent",
-                  )}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = "move";
-                    if (dragOverCol !== col.status) setDragOverCol(col.status);
-                  }}
-                  onDragLeave={(e) => {
-                    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-                    setDragOverCol((c) => (c === col.status ? null : c));
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    handleDrop(col.status);
-                  }}
+        {/* Table */}
+        <div className="card mt-4 overflow-hidden">
+          <table className="min-w-full text-[13px]">
+            <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+              <tr>
+                <th className="px-4 py-3">Foydalanuvchi</th>
+                <th className="px-4 py-3">Telefon</th>
+                <th className="px-4 py-3">Til</th>
+                <th className="px-4 py-3">Holati</th>
+                <th className="px-4 py-3">Qo'shilgan</th>
+                <th className="px-4 py-3 text-right">Amal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-text-muted">
+                    Yuklanmoqda...
+                  </td>
+                </tr>
+              )}
+              {!loading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-text-muted">
+                    <UsersIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                    Foydalanuvchilar topilmadi
+                  </td>
+                </tr>
+              )}
+              {filtered.map((u) => (
+                <tr
+                  key={u.id}
+                  className="border-b border-line/50 hover:bg-bg-hover"
                 >
-                  <div className="mb-2.5 flex items-center justify-between px-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className={`h-2 w-2 rounded-full ${col.color}`} />
-                      <span className="text-[12.5px] font-semibold text-text-primary">
-                        {t(`userStatus.${col.status}`)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[12px] font-medium text-text-secondary">
-                        {(
-                          col.count -
-                          (initialCountByStatus.get(col.status) ?? 0) +
-                          colUsers.length
-                        ).toLocaleString("ru-RU")}
-                      </span>
-                      <button
-                        type="button"
-                        title={t("users.addCard")}
-                        aria-label={t("users.addCard")}
-                        onClick={() =>
-                          addingInCol === col.status
-                            ? closeAddForm()
-                            : openAddForm(col.status)
-                        }
-                        className={cn(
-                          "group/add flex h-6 w-6 items-center justify-center rounded-md border shadow-sm transition-all duration-150 active:scale-95",
-                          addingInCol === col.status
-                            ? "border-brand/60 bg-brand-soft text-brand"
-                            : "border-line bg-bg-card text-text-secondary hover:border-brand/50 hover:bg-brand-soft hover:text-brand hover:shadow-md hover:shadow-brand/20",
-                        )}
-                      >
-                        <Plus
-                          className={cn(
-                            "h-3.5 w-3.5 transition-transform duration-150",
-                            addingInCol === col.status
-                              ? "rotate-45"
-                              : "group-hover/add:rotate-90",
-                          )}
-                          strokeWidth={2.4}
-                        />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    {addingInCol === col.status && (
-                      <form
-                        onSubmit={(e) => {
-                          e.preventDefault();
-                          handleCreateUser(col.status);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Escape") closeAddForm();
-                        }}
-                        className="rounded-xl border border-brand/40 bg-bg-card p-2.5 shadow-md shadow-brand/10"
-                      >
-                        <input
-                          ref={newNameRef}
-                          value={newName}
-                          onChange={(e) => setNewName(e.target.value)}
-                          placeholder={t("users.fullName")}
-                          className="w-full rounded-md border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] text-text-primary placeholder:text-text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/40"
-                        />
-                        <input
-                          value={newPhone}
-                          onChange={(e) => setNewPhone(e.target.value)}
-                          placeholder={t("users.phonePlaceholder")}
-                          inputMode="tel"
-                          className="mt-1.5 w-full rounded-md border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] text-text-primary placeholder:text-text-muted focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand/40"
-                        />
-                        <div className="mt-2 flex items-center gap-1.5">
-                          <button
-                            type="submit"
-                            disabled={!newName.trim()}
-                            className="flex-1 rounded-md bg-brand px-2.5 py-1.5 text-[12px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {t("common.add")}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={closeAddForm}
-                            aria-label={t("common.cancel")}
-                            className="flex h-7 w-7 items-center justify-center rounded-md border border-line text-text-secondary transition-colors hover:bg-bg-hover hover:text-text-primary"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={u.first_name || u.phone || u.username} size={32} />
+                      <div>
+                        <div className="font-medium text-text-primary">
+                          {u.first_name || u.username || "—"}
                         </div>
-                      </form>
-                    )}
-
-                    {colUsers.map((user) => (
-                      <UserCard
-                        key={user.id}
-                        user={user}
-                        selected={user.id === selectedId}
-                        dragging={user.id === draggedId}
-                        onClick={() => setSelectedId(user.id)}
-                        onDragStart={(e) => {
-                          setDraggedId(user.id);
-                          e.dataTransfer.effectAllowed = "move";
-                          e.dataTransfer.setData("text/plain", user.id);
-                        }}
-                        onDragEnd={() => {
-                          setDraggedId(null);
-                          setDragOverCol(null);
-                        }}
-                      />
-                    ))}
-
-                    {isDragOver && (
-                      <div className="rounded-xl border-2 border-dashed border-brand bg-brand-soft py-6 text-center text-[12px] font-medium text-brand">
-                        {t("users.dropHere")}
+                        <div className="text-[11px] text-text-muted">#{u.id}</div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-         </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-[12px] text-text-secondary">
+                    {u.phone || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary">{u.language || "—"}</td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={
+                        "rounded-full px-2.5 py-1 text-[11px] font-medium " +
+                        (u.is_active
+                          ? "bg-status-resolved/15 text-status-resolved"
+                          : "bg-status-blocked/15 text-status-blocked")
+                      }
+                    >
+                      {u.is_active ? "Faol" : "Bloklangan"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary">
+                    {new Date(u.date_joined).toLocaleDateString("uz-UZ")}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      onClick={() => toggleActive(u.id)}
+                      className={
+                        "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11.5px] font-medium " +
+                        (u.is_active
+                          ? "bg-status-blocked/15 text-status-blocked hover:bg-status-blocked/25"
+                          : "bg-status-resolved/15 text-status-resolved hover:bg-status-resolved/25")
+                      }
+                    >
+                      {u.is_active ? (
+                        <>
+                          <Ban className="h-3.5 w-3.5" /> Bloklash
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Faollashtirish
+                        </>
+                      )}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-
-      {selectedUser && (
-        <UserDetailPanel
-          user={selectedUser}
-          onClose={() => setSelectedId(null)}
-        />
-      )}
-
-      {toast && (
-        <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2">
-          <div className="rounded-xl border border-line bg-bg-panel px-4 py-3 text-[13px] font-medium text-text-primary shadow-panel">
-            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-status-resolved" />
-            <span className="text-text-secondary">{toast}</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

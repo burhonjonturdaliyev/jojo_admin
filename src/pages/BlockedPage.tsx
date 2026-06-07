@@ -1,95 +1,112 @@
-import { Search, Ban, UserCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Ban, UserCheck, Search } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
 import { useT } from "../lib/i18n";
-
-const blocked = [
-  { name: "Sultonbek Q.", phone: "+998 94 444 55 66", reason: "Qoidalarga zid xatti-harakat", blockedBy: "Jamshid K.", date: "31.05.2024", duration: "Doimiy" },
-  { name: "Fotima A.", phone: "+998 91 111 22 33", reason: "To'lov muammosi", blockedBy: "Sevinch A.", date: "30.05.2024", duration: "30 kun" },
-  { name: "Jamshid U.", phone: "+998 93 222 33 44", reason: "Spam yuborish", blockedBy: "Azizbek T.", date: "28.05.2024", duration: "Doimiy" },
-  { name: "Diyor X.", phone: "+998 90 333 44 55", reason: "Shubhali faollik", blockedBy: "Madina N.", date: "27.05.2024", duration: "7 kun" },
-  { name: "Saida M.", phone: "+998 91 444 55 66", reason: "Bir nechta hisob", blockedBy: "Jamshid K.", date: "26.05.2024", duration: "Doimiy" },
-];
+import { usersApi, type AdminUserRow } from "../lib/resources";
 
 export function BlockedPage() {
   const { t } = useT();
+  const [items, setItems] = useState<AdminUserRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const reload = async () => {
+    setLoading(true);
+    try {
+      const r = await usersApi.list({ is_active: false, page_size: 100 });
+      setItems(r.results);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void reload();
+  }, []);
+
+  const unblock = async (id: number) => {
+    await usersApi.toggleActive(id);
+    void reload();
+  };
+
+  const filtered = items.filter(
+    (u) =>
+      !search.trim() ||
+      [u.phone, u.first_name, u.username]
+        .filter(Boolean)
+        .some((v) => v!.toLowerCase().includes(search.toLowerCase())),
+  );
+
   return (
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.blocked")}
-        subtitle={t("blocked.subtitle")}
+        subtitle={`${items.length} ta bloklangan foydalanuvchi`}
       />
-
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
-        <div className="grid grid-cols-3 gap-4 mb-5">
-          {[
-            { label: t("blocked.stat.total"), value: "245", icon: Ban, color: "#EF4444" },
-            { label: t("blocked.stat.permanent"), value: "162", icon: Ban, color: "#F59E0B" },
-            { label: t("blocked.stat.temporary"), value: "83", icon: UserCheck, color: "#3B82F6" },
-          ].map((s) => (
-            <div key={s.label} className="card flex items-center gap-3 p-4">
-              <div
-                className="flex h-11 w-11 items-center justify-center rounded-lg"
-                style={{ backgroundColor: `${s.color}22`, color: s.color }}
-              >
-                <s.icon className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="text-[12px] text-text-secondary">{s.label}</div>
-                <div className="text-[20px] font-bold text-text-primary">
-                  {s.value}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="card overflow-hidden">
-          <div className="border-b border-line p-4">
-            <div className="relative max-w-md">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-              <input placeholder={t("blocked.searchPlaceholder")} className="input pl-9" />
-            </div>
+        <div className="card p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Qidirish..."
+              className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+            />
           </div>
-          <table className="w-full text-[13px]">
-            <thead className="bg-bg-input text-[12px] uppercase tracking-wider text-text-muted">
+        </div>
+        <div className="card mt-4 overflow-hidden">
+          <table className="min-w-full text-[13px]">
+            <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold">{t("blocked.tbl.user")}</th>
-                <th className="px-4 py-3 text-left font-semibold">{t("blocked.tbl.phone")}</th>
-                <th className="px-4 py-3 text-left font-semibold">{t("blocked.tbl.reason")}</th>
-                <th className="px-4 py-3 text-left font-semibold">{t("blocked.tbl.by")}</th>
-                <th className="px-4 py-3 text-left font-semibold">{t("common.date")}</th>
-                <th className="px-4 py-3 text-left font-semibold">{t("blocked.tbl.duration")}</th>
-                <th className="px-4 py-3 text-right font-semibold">{t("common.actions")}</th>
+                <th className="px-4 py-3">Foydalanuvchi</th>
+                <th className="px-4 py-3">Telefon</th>
+                <th className="px-4 py-3">Bloklangan sana</th>
+                <th className="px-4 py-3 text-right">Amal</th>
               </tr>
             </thead>
             <tbody>
-              {blocked.map((b, i) => (
-                <tr key={b.name} className={i ? "border-t border-line" : ""}>
+              {loading && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-text-muted">
+                    Yuklanmoqda...
+                  </td>
+                </tr>
+              )}
+              {!loading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-12 text-center text-text-muted">
+                    <Ban className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                    Bloklangan foydalanuvchi yo'q
+                  </td>
+                </tr>
+              )}
+              {filtered.map((u) => (
+                <tr key={u.id} className="border-b border-line/50 hover:bg-bg-hover">
                   <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Avatar name={b.name} size={28} />
-                      <span className="font-medium text-text-primary">{b.name}</span>
+                    <div className="flex items-center gap-3">
+                      <Avatar name={u.first_name || u.phone || u.username} size={32} />
+                      <div>
+                        <div className="font-medium text-text-primary">
+                          {u.first_name || u.username || "—"}
+                        </div>
+                        <div className="text-[11px] text-text-muted">#{u.id}</div>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-text-secondary">{b.phone}</td>
-                  <td className="px-4 py-3 text-text-primary">{b.reason}</td>
-                  <td className="px-4 py-3 text-text-secondary">{b.blockedBy}</td>
-                  <td className="px-4 py-3 text-text-secondary">{b.date}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                        b.duration === "Doimiy"
-                          ? "bg-status-blocked/15 text-status-blocked"
-                          : "bg-status-progress/15 text-status-progress"
-                      }`}
-                    >
-                      {b.duration === "Doimiy" ? t("blocked.permanent") : b.duration}
-                    </span>
+                  <td className="px-4 py-3 font-mono text-text-secondary">
+                    {u.phone || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary">
+                    {new Date(u.date_joined).toLocaleDateString("uz-UZ")}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button className="inline-flex items-center gap-1 rounded-lg border border-line bg-bg-card px-2.5 py-1 text-[11.5px] font-medium text-status-resolved hover:bg-bg-hover">
-                      <UserCheck className="h-3.5 w-3.5" /> {t("blocked.unblock")}
+                    <button
+                      onClick={() => unblock(u.id)}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-status-resolved/15 px-2.5 py-1.5 text-[11.5px] font-medium text-status-resolved hover:bg-status-resolved/25"
+                    >
+                      <UserCheck className="h-3.5 w-3.5" /> Blokdan chiqarish
                     </button>
                   </td>
                 </tr>

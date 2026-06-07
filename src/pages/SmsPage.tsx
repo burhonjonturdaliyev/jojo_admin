@@ -1,122 +1,101 @@
-import { Plus, Send, Users, MessageCircle } from "lucide-react";
 import { useState } from "react";
+import { Send, MessageCircle, CheckCircle2, AlertCircle } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
-import { LocalizedField } from "../components/LocalizedField";
-import { TranslateAllButton } from "../components/TranslateAllButton";
 import { useT } from "../lib/i18n";
-import { emptyLocalized } from "../types/locale";
+import { broadcastApi } from "../lib/resources";
 
-const smsHistory = [
-  { text: "Hurmatli mijoz, Premium obunangiz 3 kundan keyin tugaydi.", target: "Premium foydalanuvchilar", recipients: 3682, sentAt: "31.05.2024 11:20", delivered: 3640 },
-  { text: "JoJo: Tasdiqlash kodi 4821. Hech kimga bermang.", target: "Yangi ro'yxatdan o'tganlar", recipients: 412, sentAt: "31.05.2024 09:15", delivered: 410 },
-  { text: "Yangi chegirma! Premium obunaga 30% chegirma faqat bugun.", target: "Barcha foydalanuvchilar", recipients: 12456, sentAt: "30.05.2024 16:40", delivered: 12031 },
-  { text: "Hisobingizga 50 000 so'm qaytarildi. Rahmat!", target: "To'lov qaytarilganlar", recipients: 87, sentAt: "29.05.2024 14:00", delivered: 87 },
-];
-
-const SMS_LIMIT = 160;
-
+/**
+ * SMS — joriy backend SMS provider'siz, lekin push notification orqali
+ * barcha foydalanuvchilarga matn yuborish mumkin. Bu page xuddi
+ * AdsPage.broadcast'iga o'xshaydi, lekin alohida brending bilan.
+ */
 export function SmsPage() {
-  const { t, lang } = useT();
-  const [message, setMessage] = useState(emptyLocalized());
-  const charCount = message[lang].length;
-  const smsCount = Math.max(1, Math.ceil(charCount / SMS_LIMIT));
+  const { t } = useT();
+  const [body, setBody] = useState("");
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const send = async () => {
+    setError(null);
+    setResult(null);
+    if (!body.trim()) {
+      setError("Matn majburiy");
+      return;
+    }
+    setSending(true);
+    try {
+      const r = await broadcastApi.send({
+        title: "Jojo",
+        body: body.trim(),
+        category: "system",
+      });
+      setResult(`Yuborildi! ${r.sent_to} ta foydalanuvchiga yetkazildi.`);
+      setBody("");
+    } catch (e) {
+      const msg = (e as { message?: string }).message || "Xato yuz berdi";
+      setError(msg);
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.sms")}
-        subtitle={t("sms.subtitle")}
-        actions={
-          <button className="btn-primary text-[12.5px]">
-            <Plus className="h-4 w-4" /> {t("sms.new")}
-          </button>
-        }
+        subtitle="Barcha foydalanuvchilarga matnli xabar yuborish"
       />
-
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
-        <div className="grid grid-cols-2 gap-5">
-          <div className="card p-5">
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <h3 className="text-[15px] font-semibold text-text-primary">
-                {t("sms.quickSend")}
-              </h3>
-              <TranslateAllButton
-                from={lang}
-                fields={[{ value: message, onChange: setMessage }]}
-              />
+        <div className="card p-6 max-w-2xl">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500/15 text-green-500">
+              <MessageCircle className="h-5 w-5" />
             </div>
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                  {t("common.audience")}
-                </label>
-                <select className="input">
-                  <option>{t("common.allUsers")}</option>
-                  <option>{t("common.premiumUsers")}</option>
-                  <option>{t("common.newUsers")}</option>
-                  <option>{t("common.unconnectedChildren")}</option>
-                  <option>{t("sms.toOne")}</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                  {t("sms.phoneOptional")}
-                </label>
-                <input className="input" placeholder={t("sms.phonePlaceholder")} />
-              </div>
-              <div>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <label className="block text-[12px] font-medium text-text-secondary">
-                    {t("common.message")}
-                  </label>
-                  <span className="text-[11px] text-text-muted">
-                    {t("sms.charCounter", { count: charCount, limit: SMS_LIMIT, sms: smsCount })}
-                  </span>
-                </div>
-                <LocalizedField
-                  as="textarea"
-                  rows={7}
-                  value={message}
-                  onChange={setMessage}
-                  placeholder={t("sms.bodyPlaceholder")}
-                />
-              </div>
-              <button className="btn-primary w-full">
-                <Send className="h-4 w-4" /> {t("common.send")}
-              </button>
+            <div>
+              <h3 className="text-[15px] font-semibold text-text-primary">
+                Yangi xabar
+              </h3>
+              <p className="text-[12px] text-text-secondary">
+                Hozircha push notification orqali yuboriladi. SMS-provider
+                ulanmagan.
+              </p>
             </div>
           </div>
 
-          <div className="card p-5">
-            <h3 className="mb-4 text-[15px] font-semibold text-text-primary">
-              {t("sms.recent")}
-            </h3>
-            <div className="space-y-3">
-              {smsHistory.map((s) => (
-                <div key={s.text} className="rounded-lg border border-line bg-bg-input p-3">
-                  <div className="flex items-start gap-2">
-                    <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
-                    <div className="flex-1">
-                      <div className="text-[13px] font-medium text-text-primary">
-                        {s.text}
-                      </div>
-                      <div className="mt-1 flex items-center gap-1.5 text-[11.5px] text-text-secondary">
-                        <Users className="h-3 w-3" />
-                        {s.target} · {s.recipients.toLocaleString("ru-RU")} ta
-                      </div>
-                      <div className="mt-2 flex items-center justify-between text-[11px]">
-                        <span className="text-text-muted">{s.sentAt}</span>
-                        <span className="text-status-resolved">
-                          {t("notifications.deliveredLabel")}
-                          {((s.delivered / s.recipients) * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            rows={8}
+            placeholder="Xabar matnini kiriting..."
+            maxLength={500}
+            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] text-text-primary outline-none focus:border-primary"
+          />
+          <div className="mt-1 text-right text-[10.5px] text-text-muted">
+            {body.length}/500
           </div>
+
+          {error && (
+            <div className="mt-3 flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-[12.5px] font-medium text-red-500">
+              <AlertCircle className="h-4 w-4" />
+              {error}
+            </div>
+          )}
+          {result && (
+            <div className="mt-3 flex items-center gap-2 rounded-lg bg-green-500/10 px-3 py-2 text-[12.5px] font-medium text-green-500">
+              <CheckCircle2 className="h-4 w-4" />
+              {result}
+            </div>
+          )}
+
+          <button
+            onClick={send}
+            disabled={sending}
+            className="btn-primary mt-4 w-full justify-center py-2.5 text-[13px] disabled:opacity-60"
+          >
+            <Send className="h-4 w-4" />
+            {sending ? "Yuborilmoqda..." : "Hammaga yuborish"}
+          </button>
         </div>
       </div>
     </div>

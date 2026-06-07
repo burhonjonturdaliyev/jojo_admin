@@ -278,6 +278,191 @@ export const dashboardApi = {
 };
 
 // ============================================================================
+// Orders
+// ============================================================================
+
+export interface AdminOrder {
+  id: number;
+  status: string;
+  total_price?: number;
+  quantity?: number;
+  contact_phone?: string;
+  contact_name?: string;
+  address?: string;
+  note?: string;
+  product?: { id: number; name: string };
+  parent?: { id: number; name?: string; phone?: string };
+  created_at: string;
+}
+
+export const ordersApi = {
+  list: (query?: { status?: string }) =>
+    api<AdminOrder[] | { results: AdminOrder[] }>("/admin/orders/", {
+      query: query as Record<string, string>,
+    }),
+  update: (id: number, data: Partial<AdminOrder>) =>
+    api<AdminOrder>(`/admin/orders/${id}/`, { method: "PATCH", body: data }),
+};
+
+// ============================================================================
+// Subscription plans (Premium)
+// ============================================================================
+
+export interface AdminPlan {
+  id: number;
+  name: string;
+  description?: string;
+  price_uzs?: number;
+  duration_days?: number;
+  is_active?: boolean;
+  order?: number;
+}
+
+export const plansApi = {
+  list: () => api<AdminPlan[] | { results: AdminPlan[] }>("/admin/subscription/plans/"),
+  create: (data: Partial<AdminPlan>) =>
+    api<AdminPlan>("/admin/subscription/plans/", { method: "POST", body: data }),
+  update: (id: number, data: Partial<AdminPlan>) =>
+    api<AdminPlan>(`/admin/subscription/plans/${id}/`, { method: "PATCH", body: data }),
+  remove: (id: number) =>
+    api<void>(`/admin/subscription/plans/${id}/`, { method: "DELETE" }),
+};
+
+export interface AdminPayment {
+  id: number;
+  user?: { id: number; phone?: string };
+  plan?: { id: number; name: string };
+  amount_uzs?: number;
+  status: string;
+  payment_method?: string;
+  transaction_id?: string;
+  created_at: string;
+}
+
+export const paymentsApi = {
+  list: (query?: { status?: string }) =>
+    api<AdminPayment[] | { results: AdminPayment[] }>("/admin/subscription/payments/", {
+      query: query as Record<string, string>,
+    }),
+};
+
+// ============================================================================
+// Notifications (history)
+// ============================================================================
+
+export interface AdminNotificationRow {
+  id: number;
+  parent?: number;
+  child?: number | null;
+  category: string;
+  title: string;
+  body: string;
+  data?: Record<string, unknown>;
+  is_read: boolean;
+  created_at: string;
+}
+
+export const notificationsApi = {
+  list: (query?: { category?: string }) =>
+    api<AdminNotificationRow[] | { results: AdminNotificationRow[] }>("/admin/notifications/", {
+      query: query as Record<string, string>,
+    }),
+};
+
+// ============================================================================
+// Tickets / Call center
+// ============================================================================
+
+export interface AdminTicket {
+  id: number;
+  subject: string;
+  status: string;
+  priority?: string;
+  user?: { id: number; name?: string; phone?: string };
+  assignee?: { id: number; name?: string };
+  created_at: string;
+  updated_at?: string | null;
+}
+
+export const ticketsApi = {
+  list: (query?: { status?: string; offset?: number; page_size?: number }) =>
+    api<{
+      count: number;
+      results: AdminTicket[];
+      offset: number;
+      page_size: number;
+    }>("/admin/tickets/", { query: query as Record<string, string | number> }),
+  updateStatus: (id: number, status: string) =>
+    api<{ id: number; status: string }>(`/admin/tickets/${id}/status/`, {
+      method: "POST",
+      body: { status },
+    }),
+};
+
+// ============================================================================
+// Operators (call-center staff)
+// ============================================================================
+
+export interface AdminOperator {
+  id: number;
+  phone: string;
+  username: string;
+  first_name: string;
+  last_name?: string;
+  is_active: boolean;
+  date_joined: string;
+}
+
+export const operatorsApi = {
+  list: () =>
+    api<{ count: number; results: AdminOperator[] }>("/admin/operators/"),
+  create: (data: { phone: string; password: string; full_name?: string }) =>
+    api<AdminOperator>("/admin/operators/create/", {
+      method: "POST",
+      body: data,
+    }),
+};
+
+// ============================================================================
+// Children (read-only)
+// ============================================================================
+
+export interface AdminChild {
+  id: number;
+  phone?: string;
+  username: string;
+  first_name?: string;
+  child_status?: string | null;
+  age?: number | null;
+  gender?: string | null;
+  language?: string;
+  is_active: boolean;
+  date_joined: string;
+}
+
+export const childrenApi = {
+  list: (query?: { offset?: number; page_size?: number }) =>
+    api<{
+      count: number;
+      results: AdminChild[];
+      offset: number;
+      page_size: number;
+    }>("/admin/children/", { query: query as Record<string, number> }),
+};
+
+// ============================================================================
+// Settings — change password
+// ============================================================================
+
+export const settingsApi = {
+  changePassword: (old_password: string, new_password: string) =>
+    api<{ status: boolean }>("/admin/change-password/", {
+      method: "POST",
+      body: { old_password, new_password },
+    }),
+};
+
+// ============================================================================
 // Helpers — list response shape normallashtirish
 // ============================================================================
 

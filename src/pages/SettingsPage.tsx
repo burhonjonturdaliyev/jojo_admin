@@ -1,118 +1,146 @@
 import { useState } from "react";
-import { Save, Globe, Lock, Bell, CreditCard, Building2 } from "lucide-react";
+import { Lock, CheckCircle2, AlertCircle, LogOut, User } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
-import { cn } from "../lib/utils";
 import { useT } from "../lib/i18n";
+import { useAuth } from "../lib/auth";
+import { settingsApi } from "../lib/resources";
 
 export function SettingsPage() {
   const { t } = useT();
-  const [tab, setTab] = useState("general");
-  const tabs = [
-    { id: "general", label: t("settings.tab.general"), icon: Building2 },
-    { id: "security", label: t("settings.tab.security"), icon: Lock },
-    { id: "notifications", label: t("settings.tab.notifications"), icon: Bell },
-    { id: "billing", label: t("settings.tab.billing"), icon: CreditCard },
-    { id: "locale", label: t("settings.tab.locale"), icon: Globe },
-  ];
+  const { user, logout } = useAuth();
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const changePassword = async () => {
+    setError(null);
+    setSuccess(null);
+    if (newPassword.length < 4) {
+      setError("Yangi parol kamida 4 belgi");
+      return;
+    }
+    setBusy(true);
+    try {
+      await settingsApi.changePassword(oldPassword, newPassword);
+      setSuccess("Parol muvaffaqiyatli almashtirildi");
+      setOldPassword("");
+      setNewPassword("");
+    } catch (e) {
+      setError((e as { message?: string }).message || "Xato");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader
-        title={t("nav.settings")}
-        subtitle={t("settings.subtitle")}
-        actions={
-          <button className="btn-primary text-[12.5px]">
-            <Save className="h-4 w-4" /> {t("common.save")}
-          </button>
-        }
-      />
-
+      <PageHeader title={t("nav.settings")} subtitle="Profil va xavfsizlik" />
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
-        <div className="grid grid-cols-[240px_1fr] gap-5">
-          <nav className="card p-2 h-fit">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors",
-                  tab === t.id
-                    ? "bg-brand-soft text-brand"
-                    : "text-text-secondary hover:bg-bg-hover hover:text-text-primary",
-                )}
-              >
-                <t.icon className="h-4 w-4" />
-                {t.label}
-              </button>
-            ))}
-          </nav>
-
-          <div className="card p-6 space-y-5">
-            <div>
-              <h3 className="text-[16px] font-semibold text-text-primary">
-                {t("settings.companyInfo")}
-              </h3>
-              <p className="mt-1 text-[12.5px] text-text-secondary">
-                {t("settings.companyInfoSub")}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <Field label={t("settings.companyName")} value="Call Center LLC" />
-              <Field label={t("settings.taxNumber")} value="123456789" />
-              <Field label={t("userDetail.email")} value="admin@callcenter.uz" />
-              <Field label={t("settings.phone")} value="+998 71 123 45 67" />
-              <Field label={t("settings.address")} value="Toshkent shahar, Yunusobod tumani" full />
-              <Field label={t("settings.website")} value="https://callcenter.uz" />
-              <Field label={t("settings.workingHours")} value="09:00 - 18:00" />
-            </div>
-
-            <div className="border-t border-line pt-5">
-              <h3 className="text-[15px] font-semibold text-text-primary">
-                {t("settings.branding")}
-              </h3>
-              <div className="mt-3 grid grid-cols-2 gap-4">
-                <div>
-                  <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                    {t("settings.primaryColor")}
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <div className="h-10 w-10 rounded-lg border border-line bg-brand" />
-                    <input className="input" defaultValue="#3B82F6" />
-                  </div>
-                </div>
-                <div>
-                  <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                    {t("settings.logo")}
-                  </label>
-                  <button className="btn-secondary w-full justify-start">
-                    {t("settings.chooseFile")}
-                  </button>
-                </div>
+        <div className="grid grid-cols-2 gap-4 max-w-3xl">
+          {/* Profile */}
+          <div className="card p-5">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-500">
+                <User className="h-5 w-5" />
               </div>
+              <div>
+                <h3 className="text-[14.5px] font-semibold text-text-primary">
+                  Joriy profil
+                </h3>
+                <p className="text-[12px] text-text-secondary">
+                  Tizimga kirgan admin
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2 text-[13px]">
+              <div className="flex justify-between">
+                <span className="text-text-secondary">Ism:</span>
+                <span className="font-medium text-text-primary">
+                  {user?.full_name || "—"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-secondary">Telefon:</span>
+                <span className="font-mono text-text-primary">
+                  {user?.phone || "—"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-secondary">Username:</span>
+                <span className="font-mono text-text-primary">
+                  {user?.username || "—"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-secondary">Daraja:</span>
+                <span className="font-medium text-text-primary">
+                  {user?.is_superuser ? "Superuser" : "Admin"}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={logout}
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-[12.5px] font-medium text-red-500 hover:bg-red-500/10"
+            >
+              <LogOut className="h-4 w-4" /> Chiqish
+            </button>
+          </div>
+
+          {/* Change password */}
+          <div className="card p-5">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500/15 text-purple-500">
+                <Lock className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-[14.5px] font-semibold text-text-primary">
+                  Parolni almashtirish
+                </h3>
+                <p className="text-[12px] text-text-secondary">
+                  Xavfsizlik uchun muntazam yangilang
+                </p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <input
+                type="password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                placeholder="Joriy parol"
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+              />
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Yangi parol"
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+              />
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className="flex items-center gap-2 rounded-lg bg-green-500/10 px-3 py-2 text-[12px] text-green-500">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {success}
+                </div>
+              )}
+              <button
+                onClick={changePassword}
+                disabled={busy}
+                className="btn-primary w-full justify-center py-2 text-[12.5px] disabled:opacity-60"
+              >
+                {busy ? "Saqlanmoqda..." : "Saqlash"}
+              </button>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  full,
-}: {
-  label: string;
-  value: string;
-  full?: boolean;
-}) {
-  return (
-    <div className={full ? "col-span-2" : ""}>
-      <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-        {label}
-      </label>
-      <input className="input" defaultValue={value} />
     </div>
   );
 }
