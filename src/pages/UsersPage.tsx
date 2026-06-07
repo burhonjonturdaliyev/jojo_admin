@@ -103,7 +103,8 @@ export function UsersPage() {
         </header>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
+        <div className="flex-1 overflow-auto scrollbar-thin px-7 py-5">
+         <div className="min-w-[1500px]">
           {/* Stats */}
           <div className="grid grid-cols-5 gap-4">
             <StatCard
@@ -233,6 +234,7 @@ export function UsersPage() {
               );
             })}
           </div>
+         </div>
         </div>
       </div>
 
