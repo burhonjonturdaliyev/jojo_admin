@@ -26,6 +26,7 @@ import {
   type ProductType,
 } from "../data/products";
 import { initialOrders } from "../data/orders";
+import { computeOrderTotals, computeProductMetrics } from "../lib/analytics";
 import { cn } from "../lib/utils";
 
 type TypeFilter = "all" | ProductType;
@@ -63,22 +64,6 @@ const emptyForm = (): Product => ({
   updatedAt: new Date().toLocaleDateString("ru-RU"),
 });
 
-interface ProductStats {
-  orders: number;
-  sold: number;
-  cancelled: number;
-  active: number;
-  revenue: number;
-}
-
-const emptyStats: ProductStats = {
-  orders: 0,
-  sold: 0,
-  cancelled: 0,
-  active: 0,
-  revenue: 0,
-};
-
 export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [search, setSearch] = useState("");
@@ -86,35 +71,12 @@ export function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [editing, setEditing] = useState<Product | null>(null);
 
-  const statsByProduct = useMemo(() => {
-    const map = new Map<string, ProductStats>();
-    for (const o of initialOrders) {
-      const s = map.get(o.productId) ?? { ...emptyStats };
-      s.orders += 1;
-      if (o.status === "delivered") {
-        s.sold += 1;
-        s.revenue += o.productPrice;
-      } else if (o.status === "cancelled") {
-        s.cancelled += 1;
-      } else {
-        s.active += 1;
-      }
-      map.set(o.productId, s);
-    }
-    return map;
-  }, []);
+  const metricsByProduct = useMemo(() => {
+    const list = computeProductMetrics(initialOrders, products);
+    return new Map(list.map((m) => [m.productId, m]));
+  }, [products]);
 
-  const totals = useMemo(() => {
-    const acc: ProductStats = { ...emptyStats };
-    statsByProduct.forEach((s) => {
-      acc.orders += s.orders;
-      acc.sold += s.sold;
-      acc.cancelled += s.cancelled;
-      acc.active += s.active;
-      acc.revenue += s.revenue;
-    });
-    return acc;
-  }, [statsByProduct]);
+  const totals = useMemo(() => computeOrderTotals(initialOrders), []);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -199,10 +161,7 @@ export function ProductsPage() {
             {
               label: "Bekor qilingan",
               value: totals.cancelled.toLocaleString("ru-RU"),
-              hint:
-                totals.orders > 0
-                  ? `${Math.round((totals.cancelled / totals.orders) * 100)}% buyurtmalardan`
-                  : "0% buyurtmalardan",
+              hint: `${Math.round(totals.cancellationRate * 100)}% buyurtmalardan`,
               icon: XCircle,
               color: "#EF4444",
             },
@@ -296,9 +255,11 @@ export function ProductsPage() {
                   const discount = p.oldPrice
                     ? Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100)
                     : 0;
-                  const s = statsByProduct.get(p.id) ?? emptyStats;
-                  const conversion =
-                    s.orders > 0 ? Math.round((s.sold / s.orders) * 100) : 0;
+                  const m = metricsByProduct.get(p.id);
+                  const orders = m?.orders ?? 0;
+                  const sold = m?.sold ?? 0;
+                  const cancelled = m?.cancelled ?? 0;
+                  const conversion = Math.round((m?.conversionRate ?? 0) * 100);
                   return (
                     <tr key={p.id} className={i ? "border-t border-line" : ""}>
                       <td className="px-4 py-3">
@@ -350,23 +311,23 @@ export function ProductsPage() {
                           <StatPill
                             icon={ShoppingCart}
                             label="Buyurtma"
-                            value={s.orders}
+                            value={orders}
                             tone="brand"
                           />
                           <StatPill
                             icon={CheckCircle2}
                             label="Sotildi"
-                            value={s.sold}
+                            value={sold}
                             tone="success"
                           />
                           <StatPill
                             icon={XCircle}
                             label="Bekor"
-                            value={s.cancelled}
+                            value={cancelled}
                             tone="danger"
                           />
                         </div>
-                        {s.orders > 0 && (
+                        {orders > 0 && (
                           <div className="mt-1.5 flex items-center gap-1 text-[10.5px] text-text-muted">
                             <TrendingUp className="h-3 w-3" />
                             <span>Konversiya: {conversion}%</span>
