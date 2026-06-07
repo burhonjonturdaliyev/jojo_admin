@@ -75,7 +75,7 @@ export function SmsPage() {
                 </div>
                 <LocalizedField
                   as="textarea"
-                  rows={5}
+                  rows={7}
                   value={message}
                   onChange={setMessage}
                   placeholder={t("sms.bodyPlaceholder")}

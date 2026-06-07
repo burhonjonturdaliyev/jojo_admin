@@ -201,12 +201,12 @@ export function LocalizedField(props: Props) {
               return (
                 <textarea
                   key={l}
-                  rows={props.rows ?? 3}
+                  rows={props.rows ?? 5}
                   autoFocus={props.autoFocus}
                   value={value[l]}
                   placeholder={placeholderText}
                   onChange={(e) => setLang(l, e.target.value)}
-                  className="block w-full resize-none rounded-b-lg bg-transparent px-3 py-2.5 text-[13px] text-text-primary placeholder:text-text-muted focus:outline-none"
+                  className="block w-full resize-y min-h-[120px] rounded-b-lg bg-transparent px-3.5 py-3 text-[13.5px] leading-relaxed text-text-primary placeholder:text-text-muted focus:outline-none"
                 />
               );
             }

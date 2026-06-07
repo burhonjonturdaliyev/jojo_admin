@@ -798,7 +798,7 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
 
             <LocalizedField
               as="textarea"
-              rows={4}
+              rows={7}
               label={t("products.field.description")}
               value={draft.description}
               onChange={(v) => set("description", v)}

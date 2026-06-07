@@ -54,7 +54,7 @@ export function NotificationsPage() {
               />
               <LocalizedField
                 as="textarea"
-                rows={4}
+                rows={7}
                 label={t("common.message")}
                 value={body}
                 onChange={setBody}

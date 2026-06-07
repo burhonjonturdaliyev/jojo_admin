@@ -481,7 +481,7 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
 
           <LocalizedField
             as="textarea"
-            rows={3}
+            rows={5}
             label={t("banners.field.title")}
             value={draft.title}
             onChange={(v) => set("title", v)}
