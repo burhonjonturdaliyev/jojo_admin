@@ -63,6 +63,7 @@ export function isWithinDays(input: string, days: number, now = Date.now()): boo
 export function computeProductMetrics(
   orders: Order[],
   products?: Product[],
+  resolveName?: (p: Product) => string,
 ): ProductMetric[] {
   const map = new Map<string, ProductMetric>();
 
@@ -81,7 +82,14 @@ export function computeProductMetrics(
   });
 
   // Seed with all known products so zero-order items still surface in rankings.
-  products?.forEach((p) => map.set(p.id, init(p.id, p.name)));
+  products?.forEach((p) => {
+    const name = resolveName
+      ? resolveName(p)
+      : typeof p.name === "string"
+        ? p.name
+        : p.name.uz || p.name.ru || p.name.en || p.id;
+    map.set(p.id, init(p.id, name));
+  });
 
   let priceSumByProduct = new Map<string, number>();
 

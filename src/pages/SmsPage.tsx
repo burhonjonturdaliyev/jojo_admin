@@ -1,7 +1,10 @@
 import { Plus, Send, Users, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { PageHeader } from "../components/PageHeader";
+import { LocalizedField } from "../components/LocalizedField";
+import { TranslateAllButton } from "../components/TranslateAllButton";
 import { useT } from "../lib/i18n";
+import { emptyLocalized } from "../types/locale";
 
 const smsHistory = [
   { text: "Hurmatli mijoz, Premium obunangiz 3 kundan keyin tugaydi.", target: "Premium foydalanuvchilar", recipients: 3682, sentAt: "31.05.2024 11:20", delivered: 3640 },
@@ -13,9 +16,9 @@ const smsHistory = [
 const SMS_LIMIT = 160;
 
 export function SmsPage() {
-  const { t } = useT();
-  const [message, setMessage] = useState("");
-  const charCount = message.length;
+  const { t, lang } = useT();
+  const [message, setMessage] = useState(emptyLocalized());
+  const charCount = message[lang].length;
   const smsCount = Math.max(1, Math.ceil(charCount / SMS_LIMIT));
 
   return (
@@ -33,9 +36,15 @@ export function SmsPage() {
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
         <div className="grid grid-cols-2 gap-5">
           <div className="card p-5">
-            <h3 className="mb-4 text-[15px] font-semibold text-text-primary">
-              {t("sms.quickSend")}
-            </h3>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h3 className="text-[15px] font-semibold text-text-primary">
+                {t("sms.quickSend")}
+              </h3>
+              <TranslateAllButton
+                from={lang}
+                fields={[{ value: message, onChange: setMessage }]}
+              />
+            </div>
             <div className="space-y-3">
               <div>
                 <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
@@ -64,12 +73,12 @@ export function SmsPage() {
                     {t("sms.charCounter", { count: charCount, limit: SMS_LIMIT, sms: smsCount })}
                   </span>
                 </div>
-                <textarea
+                <LocalizedField
+                  as="textarea"
                   rows={5}
-                  className="input resize-none"
-                  placeholder={t("sms.bodyPlaceholder")}
                   value={message}
-                  onChange={(e) => setMessage(e.target.value)}
+                  onChange={setMessage}
+                  placeholder={t("sms.bodyPlaceholder")}
                 />
               </div>
               <button className="btn-primary w-full">

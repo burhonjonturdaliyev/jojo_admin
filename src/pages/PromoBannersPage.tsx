@@ -10,6 +10,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { LocalizedField } from "../components/LocalizedField";
+import { TranslateAllButton } from "../components/TranslateAllButton";
 import {
   initialBanners,
   themeStyles,
@@ -18,13 +20,19 @@ import {
   type PromoBanner,
 } from "../data/banners";
 import { cn } from "../lib/utils";
-import { useT } from "../lib/i18n";
+import { useT, type Lang } from "../lib/i18n";
+import {
+  emptyLocalized,
+  pickLocalized,
+  toLocalized,
+  type Localized,
+} from "../types/locale";
 
 const emptyBanner = (sortOrder: number): PromoBanner => ({
   id: `BNR-${Math.floor(Math.random() * 9000 + 1000)}`,
-  kicker: "",
-  title: "",
-  subtitle: "",
+  kicker: emptyLocalized(),
+  title: emptyLocalized(),
+  subtitle: emptyLocalized(),
   theme: "sky",
   imageUrl: null,
   actionType: "none",
@@ -34,7 +42,7 @@ const emptyBanner = (sortOrder: number): PromoBanner => ({
 });
 
 export function PromoBannersPage() {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [banners, setBanners] = useState<PromoBanner[]>(initialBanners);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<PromoBanner | null>(null);
@@ -83,7 +91,8 @@ export function PromoBannersPage() {
     setEditing(null);
   };
 
-  const nextSortOrder = (banners.reduce((m, b) => Math.max(m, b.sortOrder), 0) + 1);
+  const nextSortOrder =
+    banners.reduce((m, b) => Math.max(m, b.sortOrder), 0) + 1;
 
   return (
     <div className="flex h-full flex-col">
@@ -124,6 +133,9 @@ export function PromoBannersPage() {
               {sorted.map((b) => {
                 const theme = themeStyles[b.theme];
                 const isDragging = draggedId === b.id;
+                const kickerText = pickLocalized(b.kicker, lang);
+                const titleText = pickLocalized(b.title, lang);
+                const subtitleText = pickLocalized(b.subtitle, lang);
                 return (
                   <div
                     key={b.id}
@@ -152,10 +164,10 @@ export function PromoBannersPage() {
                         className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
                         style={{ background: theme.chip, color: theme.kicker }}
                       >
-                        {b.kicker || t("banners.kickerDefault")}
+                        {kickerText || t("banners.kickerDefault")}
                       </span>
                       <span className="line-clamp-2 text-[10px] font-bold leading-tight">
-                        {b.title.split("\n")[0]}
+                        {titleText.split("\n")[0]}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
@@ -164,11 +176,12 @@ export function PromoBannersPage() {
                           #{b.sortOrder}
                         </span>
                         <span className="text-[14px] font-semibold text-text-primary">
-                          {b.title.split("\n")[0] || t("banners.untitled")}
+                          {titleText.split("\n")[0] || t("banners.untitled")}
                         </span>
+                        <LocaleAvailabilityDots banner={b} />
                       </div>
                       <div className="mt-0.5 truncate text-[12px] text-text-secondary">
-                        {b.subtitle}
+                        {subtitleText}
                       </div>
                       <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-text-muted">
                         <span
@@ -232,6 +245,7 @@ export function PromoBannersPage() {
                 <>
                   <BannerPreview
                     banner={activeBanners[previewIdx % activeBanners.length]}
+                    previewLang={lang}
                   />
                   <div className="mt-3 flex items-center justify-center gap-1.5">
                     {activeBanners.map((_, i) => (
@@ -274,7 +288,9 @@ export function PromoBannersPage() {
                         {themeStyles[th].name}
                       </div>
                       <div className="text-[11px] text-text-muted">
-                        {t("banners.themeCount", { count: banners.filter((b) => b.theme === th).length })}
+                        {t("banners.themeCount", {
+                          count: banners.filter((b) => b.theme === th).length,
+                        })}
                       </div>
                     </div>
                   </div>
@@ -296,6 +312,27 @@ export function PromoBannersPage() {
   );
 }
 
+function LocaleAvailabilityDots({ banner }: { banner: PromoBanner }) {
+  const langs: Lang[] = ["uz", "ru", "en"];
+  return (
+    <span className="ml-1 inline-flex items-center gap-0.5 rounded-md border border-line bg-bg-card px-1 py-0.5">
+      {langs.map((l) => {
+        const hasTitle = !!pickLocalized(banner.title, l).trim();
+        return (
+          <span
+            key={l}
+            title={l.toUpperCase()}
+            className={cn(
+              "h-1.5 w-1.5 rounded-full",
+              hasTitle ? "bg-status-resolved" : "bg-line",
+            )}
+          />
+        );
+      })}
+    </span>
+  );
+}
+
 function actionLabel(
   t: (key: string, vars?: Record<string, string | number>) => string,
   type: BannerActionType,
@@ -312,9 +349,18 @@ function actionLabel(
   return t("banners.action.none");
 }
 
-function BannerPreview({ banner }: { banner: PromoBanner }) {
+function BannerPreview({
+  banner,
+  previewLang,
+}: {
+  banner: PromoBanner;
+  previewLang: Lang;
+}) {
   const { t } = useT();
   const theme = themeStyles[banner.theme];
+  const kicker = pickLocalized(banner.kicker, previewLang);
+  const title = pickLocalized(banner.title, previewLang);
+  const subtitle = pickLocalized(banner.subtitle, previewLang);
   return (
     <div
       className="relative h-44 overflow-hidden rounded-xl p-4"
@@ -324,21 +370,44 @@ function BannerPreview({ banner }: { banner: PromoBanner }) {
         className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
         style={{ background: theme.chip, color: theme.kicker }}
       >
-        {banner.kicker || t("banners.kickerDefault")}
+        {kicker || t("banners.kickerDefault")}
       </span>
       <div className="mt-2 whitespace-pre-line text-[16px] font-bold leading-tight">
-        {banner.title || t("banners.titleSample")}
+        {title || t("banners.titleSample")}
       </div>
-      <div
-        className="mt-1.5 text-[11.5px] font-medium opacity-80"
-      >
-        {banner.subtitle || t("banners.subtitleSample")}
+      <div className="mt-1.5 text-[11.5px] font-medium opacity-80">
+        {subtitle || t("banners.subtitleSample")}
       </div>
       <div className="absolute bottom-3 right-3 inline-flex items-center justify-center rounded-full bg-white/30 px-3 py-1 text-[10px] font-semibold">
         {t("banners.viewCta")} <ChevronRight className="ml-0.5 h-3 w-3" />
       </div>
+      <span className="absolute top-3 right-3 rounded-md bg-black/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/90">
+        {previewLang}
+      </span>
     </div>
   );
+}
+
+interface DraftBanner {
+  id: string;
+  kicker: Localized<string>;
+  title: Localized<string>;
+  subtitle: Localized<string>;
+  theme: BannerTheme;
+  imageUrl: string | null;
+  actionType: BannerActionType;
+  actionValue: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+function normalizeDraft(banner: PromoBanner): DraftBanner {
+  return {
+    ...banner,
+    kicker: toLocalized(banner.kicker),
+    title: toLocalized(banner.title),
+    subtitle: toLocalized(banner.subtitle),
+  };
 }
 
 interface DrawerProps {
@@ -348,10 +417,20 @@ interface DrawerProps {
 }
 
 function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
-  const { t } = useT();
-  const [draft, setDraft] = useState<PromoBanner>(banner);
-  const set = <K extends keyof PromoBanner>(key: K, value: PromoBanner[K]) =>
+  const { t, lang } = useT();
+  const [draft, setDraft] = useState<DraftBanner>(() => normalizeDraft(banner));
+  const [previewLang, setPreviewLang] = useState<Lang>(lang);
+  const set = <K extends keyof DraftBanner>(key: K, value: DraftBanner[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
+
+  const hasContent = !!(
+    draft.kicker.uz ||
+    draft.kicker.ru ||
+    draft.kicker.en ||
+    draft.title.uz ||
+    draft.title.ru ||
+    draft.title.en
+  );
 
   return (
     <div className="fixed inset-0 z-40 flex">
@@ -362,52 +441,59 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
       <div className="relative ml-auto flex h-full w-full max-w-xl flex-col border-l border-line bg-bg-panel shadow-panel">
         <div className="flex items-center justify-between border-b border-line px-6 py-4">
           <h2 className="text-[17px] font-bold text-text-primary">
-            {banner.kicker || banner.title ? t("banners.editTitle") : t("banners.new")}
+            {banner.id && hasContent ? t("banners.editTitle") : t("banners.new")}
           </h2>
-          <button className="icon-btn" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <TranslateAllButton
+              from={lang}
+              fields={[
+                { value: draft.kicker, onChange: (v) => set("kicker", v) },
+                { value: draft.title, onChange: (v) => set("title", v) },
+                { value: draft.subtitle, onChange: (v) => set("subtitle", v) },
+              ]}
+            />
+            <button className="icon-btn" onClick={onClose}>
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar-thin px-6 py-5 space-y-5">
-          <BannerPreview banner={draft} />
-
           <div>
-            <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              {t("banners.field.kicker")}
-            </label>
-            <input
-              className="input"
-              placeholder={t("banners.field.kickerPh")}
-              value={draft.kicker}
-              onChange={(e) => set("kicker", e.target.value)}
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <div className="text-[12px] font-medium text-text-secondary">
+                {t("banners.preview")}
+              </div>
+              <PreviewLangPicker active={previewLang} onChange={setPreviewLang} />
+            </div>
+            <BannerPreview
+              banner={draft as unknown as PromoBanner}
+              previewLang={previewLang}
             />
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              {t("banners.field.title")}
-            </label>
-            <textarea
-              rows={3}
-              className="input resize-none font-medium"
-              placeholder={t("banners.field.titlePh")}
-              value={draft.title}
-              onChange={(e) => set("title", e.target.value)}
-            />
-          </div>
+          <LocalizedField
+            label={t("banners.field.kicker")}
+            value={draft.kicker}
+            onChange={(v) => set("kicker", v)}
+            placeholder={t("banners.field.kickerPh")}
+          />
 
-          <div>
-            <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              {t("banners.field.subtitle")}
-            </label>
-            <input
-              className="input"
-              placeholder={t("banners.field.subtitlePh")}
-              value={draft.subtitle}
-              onChange={(e) => set("subtitle", e.target.value)}
-            />
-          </div>
+          <LocalizedField
+            as="textarea"
+            rows={3}
+            label={t("banners.field.title")}
+            value={draft.title}
+            onChange={(v) => set("title", v)}
+            placeholder={t("banners.field.titlePh")}
+          />
+
+          <LocalizedField
+            label={t("banners.field.subtitle")}
+            value={draft.subtitle}
+            onChange={(v) => set("subtitle", v)}
+            placeholder={t("banners.field.subtitlePh")}
+          />
 
           <div>
             <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
@@ -463,8 +549,12 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
                 }
               >
                 <option value="none">{t("common.none")}</option>
-                <option value="openProduct">{t("banners.action.openProduct")}</option>
-                <option value="filterByType">{t("banners.action.filterByType")}</option>
+                <option value="openProduct">
+                  {t("banners.action.openProduct")}
+                </option>
+                <option value="filterByType">
+                  {t("banners.action.filterByType")}
+                </option>
               </select>
             </div>
             <div>
@@ -534,12 +624,41 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
           </button>
           <button
             className="btn-primary text-[12.5px]"
-            onClick={() => onSave(draft)}
+            onClick={() => onSave(draft as PromoBanner)}
           >
             {t("common.save")}
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PreviewLangPicker({
+  active,
+  onChange,
+}: {
+  active: Lang;
+  onChange: (l: Lang) => void;
+}) {
+  const langs: Lang[] = ["uz", "ru", "en"];
+  return (
+    <div className="flex items-center gap-0.5 rounded-md border border-line bg-bg-input p-0.5">
+      {langs.map((l) => (
+        <button
+          key={l}
+          type="button"
+          onClick={() => onChange(l)}
+          className={cn(
+            "rounded px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide transition-colors",
+            active === l
+              ? "bg-brand text-white"
+              : "text-text-secondary hover:bg-bg-hover",
+          )}
+        >
+          {l}
+        </button>
+      ))}
     </div>
   );
 }

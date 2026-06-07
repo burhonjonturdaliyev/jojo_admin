@@ -1,11 +1,14 @@
+import type { Localized } from "../types/locale";
+
 export type BannerTheme = "cream" | "sky" | "green";
 export type BannerActionType = "openProduct" | "filterByType" | "none";
 
 export interface PromoBanner {
   id: string;
-  kicker: string;
-  title: string;
-  subtitle: string;
+  /** Localized; seed records may be plain strings (treated as UZ). */
+  kicker: Localized<string> | string;
+  title: Localized<string> | string;
+  subtitle: Localized<string> | string;
   theme: BannerTheme;
   imageUrl: string | null;
   actionType: BannerActionType;

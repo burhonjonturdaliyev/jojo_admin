@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { Plus, Send, Users, Bell } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { LocalizedField } from "../components/LocalizedField";
+import { TranslateAllButton } from "../components/TranslateAllButton";
 import { useT } from "../lib/i18n";
+import { emptyLocalized } from "../types/locale";
 
 const notifications = [
   { title: "Premium chegirma 30%", target: "Barcha foydalanuvchilar", recipients: 12456, sentAt: "31.05.2024 10:00", delivered: 12102 },
@@ -10,7 +14,10 @@ const notifications = [
 ];
 
 export function NotificationsPage() {
-  const { t } = useT();
+  const { t, lang } = useT();
+  const [title, setTitle] = useState(emptyLocalized());
+  const [body, setBody] = useState(emptyLocalized());
+
   return (
     <div className="flex h-full flex-col">
       <PageHeader
@@ -26,26 +33,33 @@ export function NotificationsPage() {
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
         <div className="grid grid-cols-2 gap-5">
           <div className="card p-5">
-            <h3 className="mb-4 text-[15px] font-semibold text-text-primary">
-              {t("notifications.quickSend")}
-            </h3>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h3 className="text-[15px] font-semibold text-text-primary">
+                {t("notifications.quickSend")}
+              </h3>
+              <TranslateAllButton
+                from={lang}
+                fields={[
+                  { value: title, onChange: setTitle },
+                  { value: body, onChange: setBody },
+                ]}
+              />
+            </div>
             <div className="space-y-3">
-              <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                  {t("common.title")}
-                </label>
-                <input className="input" placeholder={t("notifications.titlePlaceholder")} />
-              </div>
-              <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                  {t("common.message")}
-                </label>
-                <textarea
-                  rows={4}
-                  className="input resize-none"
-                  placeholder={t("notifications.bodyPlaceholder")}
-                />
-              </div>
+              <LocalizedField
+                label={t("common.title")}
+                value={title}
+                onChange={setTitle}
+                placeholder={t("notifications.titlePlaceholder")}
+              />
+              <LocalizedField
+                as="textarea"
+                rows={4}
+                label={t("common.message")}
+                value={body}
+                onChange={setBody}
+                placeholder={t("notifications.bodyPlaceholder")}
+              />
               <div>
                 <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
                   {t("common.audience")}

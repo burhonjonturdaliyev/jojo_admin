@@ -20,22 +20,30 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { LocalizedField } from "../components/LocalizedField";
+import { TranslateAllButton } from "../components/TranslateAllButton";
 import {
   initialAdvice,
   type AdviceItem,
   type AdviceType,
 } from "../data/advice";
 import { cn } from "../lib/utils";
-import { useT } from "../lib/i18n";
+import { useT, type Lang } from "../lib/i18n";
+import {
+  emptyLocalized,
+  pickLocalized,
+  toLocalized,
+  type Localized,
+} from "../types/locale";
 
 const swatches = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
 const emptyItem = (type: AdviceType, sortOrder: number): AdviceItem => ({
   id: `ADV-${type === "video" ? "V" : "B"}-${Math.floor(Math.random() * 900 + 100)}`,
   type,
-  title: "",
+  title: emptyLocalized(),
   imageUrl: swatches[Math.floor(Math.random() * swatches.length)],
-  body: type === "blog" ? "" : undefined,
+  body: type === "blog" ? emptyLocalized() : undefined,
   url: "",
   durationLabel: type === "video" ? "00:00" : undefined,
   readTimeMinutes: type === "blog" ? 5 : undefined,
@@ -208,7 +216,9 @@ function AdviceCard({
   onTogglePublish: () => void;
   onRemove: () => void;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
+  const title = pickLocalized(item.title, lang);
+  const langs: Lang[] = ["uz", "ru", "en"];
   return (
     <div
       className={cn(
@@ -246,8 +256,25 @@ function AdviceCard({
         </span>
       </div>
       <div className="p-4">
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-0.5 rounded-md border border-line bg-bg-input px-1 py-0.5">
+            {langs.map((l) => {
+              const has = !!pickLocalized(item.title, l).trim();
+              return (
+                <span
+                  key={l}
+                  title={l.toUpperCase()}
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    has ? "bg-status-resolved" : "bg-line",
+                  )}
+                />
+              );
+            })}
+          </span>
+        </div>
         <h3 className="line-clamp-2 text-[14px] font-semibold text-text-primary">
-          {item.title || t("advice.untitled")}
+          {title || t("advice.untitled")}
         </h3>
         <div className="mt-2 flex items-center gap-3 text-[11.5px] text-text-secondary">
           <span className="flex items-center gap-1">
@@ -315,6 +342,19 @@ function AdviceCard({
   );
 }
 
+interface DraftAdvice extends Omit<AdviceItem, "title" | "body"> {
+  title: Localized<string>;
+  body?: Localized<string>;
+}
+
+function normalizeAdvice(item: AdviceItem): DraftAdvice {
+  return {
+    ...item,
+    title: toLocalized(item.title),
+    body: item.body !== undefined ? toLocalized(item.body) : undefined,
+  };
+}
+
 function AdviceFormDrawer({
   item,
   onClose,
@@ -324,19 +364,30 @@ function AdviceFormDrawer({
   onClose: () => void;
   onSave: (i: AdviceItem) => void;
 }) {
-  const { t } = useT();
-  const [draft, setDraft] = useState<AdviceItem>(item);
+  const { t, lang } = useT();
+  const [draft, setDraft] = useState<DraftAdvice>(() => normalizeAdvice(item));
   const [dragOver, setDragOver] = useState(false);
+  const [bodyLang, setBodyLang] = useState<Lang>(lang);
 
-  const set = <K extends keyof AdviceItem>(key: K, value: AdviceItem[K]) =>
-    setDraft((d) => ({ ...d, [key]: value }));
+  const set = <K extends keyof DraftAdvice>(
+    key: K,
+    value: DraftAdvice[K],
+  ) => setDraft((d) => ({ ...d, [key]: value }));
 
   const wrap = (before: string, after = before) => {
-    const body = draft.body ?? "";
-    set("body", body + before + "matn" + after);
+    if (!draft.body) return;
+    const current = draft.body[bodyLang] ?? "";
+    set("body", {
+      ...draft.body,
+      [bodyLang]: current + before + "matn" + after,
+    });
   };
 
-  const valid = draft.title.trim() && draft.url.trim();
+  const valid =
+    draft.title.uz.trim() &&
+    draft.title.ru.trim() &&
+    draft.title.en.trim() &&
+    draft.url.trim();
 
   return (
     <div className="fixed inset-0 z-40 flex">
@@ -348,7 +399,7 @@ function AdviceFormDrawer({
         <div className="flex items-center justify-between border-b border-line px-6 py-4">
           <div>
             <h2 className="text-[17px] font-bold text-text-primary">
-              {draft.title
+              {draft.title.uz || draft.title.ru || draft.title.en
                 ? draft.type === "video"
                   ? t("advice.editTitle.video")
                   : t("advice.editTitle.blog")
@@ -360,23 +411,34 @@ function AdviceFormDrawer({
               {draft.id}
             </p>
           </div>
-          <button className="icon-btn" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <TranslateAllButton
+              from={lang}
+              fields={[
+                { value: draft.title, onChange: (v) => set("title", v) },
+                ...(draft.body
+                  ? [
+                      {
+                        value: draft.body,
+                        onChange: (v: Localized<string>) => set("body", v),
+                      },
+                    ]
+                  : []),
+              ]}
+            />
+            <button className="icon-btn" onClick={onClose}>
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar-thin px-6 py-5 space-y-5">
-          <div>
-            <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              {t("advice.field.title")}
-            </label>
-            <input
-              className="input"
-              placeholder={t("advice.field.titlePh")}
-              value={draft.title}
-              onChange={(e) => set("title", e.target.value)}
-            />
-          </div>
+          <LocalizedField
+            label={t("advice.field.title")}
+            value={draft.title}
+            onChange={(v) => set("title", v)}
+            placeholder={t("advice.field.titlePh")}
+          />
 
           <div>
             <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
@@ -465,20 +527,36 @@ function AdviceFormDrawer({
             </div>
           </div>
 
-          {draft.type === "blog" && (
+          {draft.type === "blog" && draft.body && (
             <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                {t("advice.field.body")}
-              </label>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <label className="text-[12px] font-medium text-text-secondary">
+                  {t("advice.field.body")}
+                </label>
+                <BodyLangTabs
+                  active={bodyLang}
+                  setActive={setBodyLang}
+                  body={draft.body}
+                />
+              </div>
               <div className="rounded-lg border border-line bg-bg-input">
                 <div className="flex items-center gap-1 border-b border-line p-1.5">
-                  <ToolbarButton onClick={() => wrap("**")} title={t("advice.toolbar.bold")}>
+                  <ToolbarButton
+                    onClick={() => wrap("**")}
+                    title={t("advice.toolbar.bold")}
+                  >
                     <Bold className="h-3.5 w-3.5" />
                   </ToolbarButton>
-                  <ToolbarButton onClick={() => wrap("*")} title={t("advice.toolbar.italic")}>
+                  <ToolbarButton
+                    onClick={() => wrap("*")}
+                    title={t("advice.toolbar.italic")}
+                  >
                     <Italic className="h-3.5 w-3.5" />
                   </ToolbarButton>
-                  <ToolbarButton onClick={() => wrap("\n- ", "")} title={t("advice.toolbar.list")}>
+                  <ToolbarButton
+                    onClick={() => wrap("\n- ", "")}
+                    title={t("advice.toolbar.list")}
+                  >
                     <List className="h-3.5 w-3.5" />
                   </ToolbarButton>
                   <span className="ml-auto pr-2 text-[10.5px] text-text-muted">
@@ -486,11 +564,17 @@ function AdviceFormDrawer({
                   </span>
                 </div>
                 <textarea
+                  key={bodyLang}
                   rows={10}
                   className="w-full resize-none rounded-b-lg bg-transparent px-3 py-2 text-[13px] text-text-primary placeholder:text-text-muted focus:outline-none"
                   placeholder={t("advice.bodyPlaceholder")}
-                  value={draft.body ?? ""}
-                  onChange={(e) => set("body", e.target.value)}
+                  value={draft.body[bodyLang]}
+                  onChange={(e) =>
+                    set("body", {
+                      ...(draft.body as Localized<string>),
+                      [bodyLang]: e.target.value,
+                    })
+                  }
                 />
               </div>
             </div>
@@ -574,12 +658,59 @@ function AdviceFormDrawer({
           <button
             className="btn-primary text-[12.5px] disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!valid}
-            onClick={() => onSave(draft)}
+            onClick={() => onSave(draft as AdviceItem)}
           >
             {t("common.save")}
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function BodyLangTabs({
+  active,
+  setActive,
+  body,
+}: {
+  active: Lang;
+  setActive: (l: Lang) => void;
+  body: Localized<string>;
+}) {
+  const langs: Lang[] = ["uz", "ru", "en"];
+  return (
+    <div className="flex items-center gap-0.5 rounded-md border border-line bg-bg-input p-0.5">
+      {langs.map((l) => {
+        const isActive = l === active;
+        const has = !!body[l].trim();
+        return (
+          <button
+            key={l}
+            type="button"
+            onClick={() => setActive(l)}
+            className={cn(
+              "inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide transition-colors",
+              isActive
+                ? "bg-brand text-white"
+                : "text-text-secondary hover:bg-bg-hover",
+            )}
+          >
+            {l}
+            <span
+              className={cn(
+                "h-1.5 w-1.5 rounded-full",
+                has
+                  ? isActive
+                    ? "bg-white"
+                    : "bg-status-resolved"
+                  : isActive
+                    ? "bg-white/40"
+                    : "bg-line",
+              )}
+            />
+          </button>
+        );
+      })}
     </div>
   );
 }

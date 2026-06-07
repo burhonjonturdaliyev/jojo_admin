@@ -17,6 +17,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { LocalizedField } from "../components/LocalizedField";
+import { TranslateAllButton } from "../components/TranslateAllButton";
 import {
   initialProducts,
   type Product,
@@ -26,22 +28,30 @@ import {
 import { initialOrders } from "../data/orders";
 import { computeOrderTotals, computeProductMetrics } from "../lib/analytics";
 import { cn } from "../lib/utils";
-import { useT } from "../lib/i18n";
+import { useT, type Lang } from "../lib/i18n";
+import {
+  emptyLocalized,
+  emptyLocalizedList,
+  pickLocalized,
+  toLocalized,
+  toLocalizedList,
+  type Localized,
+} from "../types/locale";
 
 type TypeFilter = "all" | ProductType;
 type StatusFilter = "all" | "active" | "inactive";
 
 const emptyForm = (): Product => ({
   id: "",
-  name: "",
-  category: "",
+  name: emptyLocalized(),
+  category: emptyLocalized(),
   type: "stem",
   age: "",
   price: 0,
   oldPrice: null,
   badge: "none",
-  features: [],
-  description: "",
+  features: emptyLocalizedList(),
+  description: emptyLocalized(),
   images: ["#3B82F6"],
   videoUrl: null,
   featured: false,
@@ -51,7 +61,7 @@ const emptyForm = (): Product => ({
 });
 
 export function ProductsPage() {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
@@ -72,9 +82,11 @@ export function ProductsPage() {
   ];
 
   const metricsByProduct = useMemo(() => {
-    const list = computeProductMetrics(initialOrders, products);
+    const list = computeProductMetrics(initialOrders, products, (p) =>
+      pickLocalized(p.name, lang),
+    );
     return new Map(list.map((m) => [m.productId, m]));
-  }, [products]);
+  }, [products, lang]);
 
   const totals = useMemo(() => computeOrderTotals(initialOrders), []);
 
@@ -85,12 +97,17 @@ export function ProductsPage() {
       if (statusFilter === "inactive" && p.isActive) return false;
       if (search) {
         const q = search.toLowerCase();
-        if (
-          !p.name.toLowerCase().includes(q) &&
-          !p.category.toLowerCase().includes(q) &&
-          !p.id.toLowerCase().includes(q)
-        )
-          return false;
+        // Search across every locale + id so admins find content regardless of view lang.
+        const haystacks = [
+          p.id,
+          pickLocalized(p.name, "uz"),
+          pickLocalized(p.name, "ru"),
+          pickLocalized(p.name, "en"),
+          pickLocalized(p.category, "uz"),
+          pickLocalized(p.category, "ru"),
+          pickLocalized(p.category, "en"),
+        ];
+        if (!haystacks.some((s) => s.toLowerCase().includes(q))) return false;
       }
       return true;
     });
@@ -113,8 +130,15 @@ export function ProductsPage() {
     setProducts((prev) => {
       const exists = prev.some((x) => x.id === p.id);
       return exists
-        ? prev.map((x) => (x.id === p.id ? { ...p, updatedAt: new Date().toLocaleDateString("ru-RU") } : x))
-        : [{ ...p, createdAt: new Date().toLocaleDateString("ru-RU") }, ...prev];
+        ? prev.map((x) =>
+            x.id === p.id
+              ? { ...p, updatedAt: new Date().toLocaleDateString("ru-RU") }
+              : x,
+          )
+        : [
+            { ...p, createdAt: new Date().toLocaleDateString("ru-RU") },
+            ...prev,
+          ];
     });
     setEditing(null);
   };
@@ -157,14 +181,18 @@ export function ProductsPage() {
             {
               label: t("products.stat.sold"),
               value: totals.sold.toLocaleString("ru-RU"),
-              hint: t("products.stat.soldSub", { revenue: totals.revenue.toLocaleString("ru-RU") }),
+              hint: t("products.stat.soldSub", {
+                revenue: totals.revenue.toLocaleString("ru-RU"),
+              }),
               icon: CheckCircle2,
               color: "#10B981",
             },
             {
               label: t("products.stat.cancelled"),
               value: totals.cancelled.toLocaleString("ru-RU"),
-              hint: t("products.stat.cancelledSub", { pct: Math.round(totals.cancellationRate * 100) }),
+              hint: t("products.stat.cancelledSub", {
+                pct: Math.round(totals.cancellationRate * 100),
+              }),
               icon: XCircle,
               color: "#EF4444",
             },
@@ -242,15 +270,33 @@ export function ProductsPage() {
             <table className="w-full text-[13px]">
               <thead className="bg-bg-input text-[12px] uppercase tracking-wider text-text-muted">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold">{t("products.tbl.product")}</th>
-                  <th className="px-4 py-3 text-left font-semibold">{t("products.tbl.category")}</th>
-                  <th className="px-4 py-3 text-left font-semibold">{t("products.tbl.price")}</th>
-                  <th className="px-4 py-3 text-left font-semibold">{t("products.tbl.orders")}</th>
-                  <th className="px-4 py-3 text-left font-semibold">{t("products.tbl.added")}</th>
-                  <th className="px-4 py-3 text-left font-semibold">{t("products.tbl.badge")}</th>
-                  <th className="px-4 py-3 text-center font-semibold">{t("products.tbl.featured")}</th>
-                  <th className="px-4 py-3 text-center font-semibold">{t("products.tbl.active")}</th>
-                  <th className="px-4 py-3 text-right font-semibold">{t("products.tbl.action")}</th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    {t("products.tbl.product")}
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    {t("products.tbl.category")}
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    {t("products.tbl.price")}
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    {t("products.tbl.orders")}
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    {t("products.tbl.added")}
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold">
+                    {t("products.tbl.badge")}
+                  </th>
+                  <th className="px-4 py-3 text-center font-semibold">
+                    {t("products.tbl.featured")}
+                  </th>
+                  <th className="px-4 py-3 text-center font-semibold">
+                    {t("products.tbl.active")}
+                  </th>
+                  <th className="px-4 py-3 text-right font-semibold">
+                    {t("products.tbl.action")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -273,10 +319,15 @@ export function ProductsPage() {
                               background: `linear-gradient(135deg, ${p.images[0]}, ${p.images[0]}88)`,
                             }}
                           >
-                            <ImageIcon className="h-5 w-5 text-white/70" strokeWidth={1.8} />
+                            <ImageIcon
+                              className="h-5 w-5 text-white/70"
+                              strokeWidth={1.8}
+                            />
                           </div>
-                          <div>
-                            <div className="font-semibold text-text-primary">{p.name}</div>
+                          <div className="min-w-0">
+                            <div className="font-semibold text-text-primary">
+                              {pickLocalized(p.name, lang)}
+                            </div>
                             <div className="flex items-center gap-2 font-mono text-[11px] text-text-muted">
                               <span>#{p.id}</span>
                               <span className="text-text-muted/60">·</span>
@@ -286,7 +337,9 @@ export function ProductsPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="text-text-secondary">{p.category}</div>
+                        <div className="text-text-secondary">
+                          {pickLocalized(p.category, lang)}
+                        </div>
                         <div className="text-[11px] text-text-muted">
                           {t(`productType.${p.type}`)}
                         </div>
@@ -296,7 +349,9 @@ export function ProductsPage() {
                           <span className="font-semibold text-text-primary">
                             {p.price.toLocaleString("ru-RU")}
                           </span>
-                          <span className="text-[10.5px] text-text-muted">{t("common.sum")}</span>
+                          <span className="text-[10.5px] text-text-muted">
+                            {t("common.sum")}
+                          </span>
                         </div>
                         {p.oldPrice && (
                           <div className="flex items-center gap-2">
@@ -333,7 +388,9 @@ export function ProductsPage() {
                         {orders > 0 && (
                           <div className="mt-1.5 flex items-center gap-1 text-[10.5px] text-text-muted">
                             <TrendingUp className="h-3 w-3" />
-                            <span>{t("products.conversion", { pct: conversion })}</span>
+                            <span>
+                              {t("products.conversion", { pct: conversion })}
+                            </span>
                           </div>
                         )}
                       </td>
@@ -373,7 +430,11 @@ export function ProductsPage() {
                               ? "bg-status-progress/15 text-status-progress"
                               : "text-text-muted hover:bg-bg-hover",
                           )}
-                          title={p.featured ? t("products.unrecommend") : t("products.recommend")}
+                          title={
+                            p.featured
+                              ? t("products.unrecommend")
+                              : t("products.recommend")
+                          }
                         >
                           <Star
                             className="h-4 w-4"
@@ -451,27 +512,60 @@ interface DrawerProps {
   onSave: (p: Product) => void;
 }
 
+interface DraftProduct {
+  id: string;
+  name: Localized<string>;
+  category: Localized<string>;
+  type: ProductType;
+  age: string;
+  price: number;
+  oldPrice: number | null;
+  badge: ProductBadge;
+  features: Localized<string[]>;
+  description: Localized<string>;
+  images: string[];
+  videoUrl: string | null;
+  featured: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function normalizeDraft(product: Product): DraftProduct {
+  return {
+    ...product,
+    name: toLocalized(product.name),
+    category: toLocalized(product.category),
+    description: toLocalized(product.description),
+    features: toLocalizedList(product.features),
+  };
+}
+
 function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
-  const { t } = useT();
-  const [draft, setDraft] = useState<Product>(product);
+  const { t, lang } = useT();
+  const [draft, setDraft] = useState<DraftProduct>(() => normalizeDraft(product));
   const [featureInput, setFeatureInput] = useState("");
+  const [featureLang, setFeatureLang] = useState<Lang>(lang);
   const [dragOver, setDragOver] = useState(false);
 
-  const set = <K extends keyof Product>(key: K, value: Product[K]) =>
+  const set = <K extends keyof DraftProduct>(key: K, value: DraftProduct[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
   const addFeature = () => {
     const v = featureInput.trim();
     if (!v) return;
-    set("features", [...draft.features, v]);
+    set("features", {
+      ...draft.features,
+      [featureLang]: [...draft.features[featureLang], v],
+    });
     setFeatureInput("");
   };
 
   const removeFeature = (idx: number) =>
-    set(
-      "features",
-      draft.features.filter((_, i) => i !== idx),
-    );
+    set("features", {
+      ...draft.features,
+      [featureLang]: draft.features[featureLang].filter((_, i) => i !== idx),
+    });
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -492,7 +586,12 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
       ? Math.round(((draft.oldPrice - draft.price) / draft.oldPrice) * 100)
       : 0;
 
-  const valid = draft.id.trim() && draft.name.trim() && draft.price > 0;
+  const valid =
+    draft.id.trim() &&
+    draft.name.uz.trim() &&
+    draft.name.ru.trim() &&
+    draft.name.en.trim() &&
+    draft.price > 0;
 
   return (
     <div className="fixed inset-0 z-40 flex">
@@ -510,15 +609,40 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
               {t("products.fillAll")}
             </p>
           </div>
-          <button className="icon-btn" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <TranslateAllButton
+              from={lang}
+              fields={[
+                {
+                  value: draft.name,
+                  onChange: (v) => set("name", v),
+                },
+                {
+                  value: draft.category,
+                  onChange: (v) => set("category", v),
+                },
+                {
+                  value: draft.description,
+                  onChange: (v) => set("description", v),
+                },
+              ]}
+              listFields={[
+                {
+                  value: draft.features,
+                  onChange: (v) => set("features", v),
+                },
+              ]}
+            />
+            <button className="icon-btn" onClick={onClose}>
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar-thin px-6 py-5">
           <div className="space-y-5">
             <div className="grid grid-cols-2 gap-3">
-              <Field label={t("products.field.slug")}>
+              <PlainField label={t("products.field.slug")}>
                 <input
                   className="input"
                   placeholder="codybot"
@@ -526,38 +650,37 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
                   onChange={(e) =>
                     set(
                       "id",
-                      e.target.value
-                        .toLowerCase()
-                        .replace(/[^a-z0-9-]/g, "-"),
+                      e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
                     )
                   }
                 />
-              </Field>
-              <Field label={t("products.field.name")}>
-                <input
-                  className="input"
-                  placeholder="CodyBot — dasturlash roboti"
-                  value={draft.name}
-                  onChange={(e) => set("name", e.target.value)}
-                />
-              </Field>
-              <Field label={t("products.field.category")}>
-                <input
-                  className="input"
-                  placeholder="STEM"
-                  value={draft.category}
-                  onChange={(e) => set("category", e.target.value)}
-                />
-              </Field>
-              <Field label={t("products.field.age")}>
+              </PlainField>
+              <PlainField label={t("products.field.age")}>
                 <input
                   className="input"
                   placeholder="6+"
                   value={draft.age}
                   onChange={(e) => set("age", e.target.value)}
                 />
-              </Field>
-              <Field label={t("products.field.type")}>
+              </PlainField>
+            </div>
+
+            <LocalizedField
+              label={t("products.field.name")}
+              value={draft.name}
+              onChange={(v) => set("name", v)}
+              placeholder="CodyBot"
+            />
+
+            <LocalizedField
+              label={t("products.field.category")}
+              value={draft.category}
+              onChange={(v) => set("category", v)}
+              placeholder="STEM"
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <PlainField label={t("products.field.type")}>
                 <select
                   className="input"
                   value={draft.type}
@@ -567,21 +690,19 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
                   <option value="book">{t("productType.book")}</option>
                   <option value="other">{t("productType.other")}</option>
                 </select>
-              </Field>
-              <Field label={t("products.field.badge")}>
+              </PlainField>
+              <PlainField label={t("products.field.badge")}>
                 <select
                   className="input"
                   value={draft.badge}
-                  onChange={(e) =>
-                    set("badge", e.target.value as ProductBadge)
-                  }
+                  onChange={(e) => set("badge", e.target.value as ProductBadge)}
                 >
                   <option value="none">{t("common.none")}</option>
                   <option value="top">{t("productBadge.top")}</option>
                   <option value="yangi">{t("productBadge.yangi")}</option>
                 </select>
-              </Field>
-              <Field label={t("products.field.price")}>
+              </PlainField>
+              <PlainField label={t("products.field.price")}>
                 <input
                   type="number"
                   className="input"
@@ -589,8 +710,8 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
                   value={draft.price || ""}
                   onChange={(e) => set("price", Number(e.target.value))}
                 />
-              </Field>
-              <Field
+              </PlainField>
+              <PlainField
                 label={
                   <span className="flex items-center gap-1">
                     {t("products.field.oldPrice")}
@@ -614,53 +735,77 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
                     )
                   }
                 />
-              </Field>
+              </PlainField>
             </div>
 
-            <Field label={t("products.field.features")}>
-              <div className="flex flex-wrap gap-1.5">
-                {draft.features.map((f, i) => (
-                  <span
-                    key={`${f}-${i}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-1 text-[11.5px] text-brand"
-                  >
-                    {f}
-                    <button onClick={() => removeFeature(i)} className="hover:text-white">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <div className="mt-2 flex gap-2">
-                <input
-                  className="input"
-                  placeholder={t("products.field.featurePh")}
-                  value={featureInput}
-                  onChange={(e) => setFeatureInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addFeature();
-                    }
-                  }}
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="text-[12px] font-medium text-text-secondary">
+                  {t("products.field.features")}
+                </label>
+                <FeatureLangTabs
+                  active={featureLang}
+                  setActive={setFeatureLang}
+                  features={draft.features}
                 />
-                <button className="btn-secondary text-[12.5px]" onClick={addFeature}>
-                  {t("common.add")}
-                </button>
               </div>
-            </Field>
+              <div className="rounded-lg border border-line bg-bg-input p-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {draft.features[featureLang].map((f, i) => (
+                    <span
+                      key={`${f}-${i}`}
+                      className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2.5 py-1 text-[11.5px] text-brand"
+                    >
+                      {f}
+                      <button
+                        onClick={() => removeFeature(i)}
+                        className="hover:text-white"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  ))}
+                  {!draft.features[featureLang].length && (
+                    <span className="text-[11px] text-text-muted">
+                      {t("loc.fillTab", {
+                        lang: featureLang === "uz" ? "UZ" : featureLang === "ru" ? "RU" : "EN",
+                      })}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    className="input"
+                    placeholder={t("products.field.featurePh")}
+                    value={featureInput}
+                    onChange={(e) => setFeatureInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addFeature();
+                      }
+                    }}
+                  />
+                  <button
+                    className="btn-secondary text-[12.5px]"
+                    onClick={addFeature}
+                  >
+                    {t("common.add")}
+                  </button>
+                </div>
+              </div>
+            </div>
 
-            <Field label={t("products.field.description")}>
-              <textarea
-                rows={4}
-                className="input resize-none"
-                placeholder={t("products.field.descriptionPh")}
-                value={draft.description}
-                onChange={(e) => set("description", e.target.value)}
-              />
-            </Field>
+            <LocalizedField
+              as="textarea"
+              rows={4}
+              label={t("products.field.description")}
+              value={draft.description}
+              onChange={(v) => set("description", v)}
+              placeholder={t("products.field.descriptionPh")}
+            />
 
-            <Field label={t("products.field.images")}>
+            <PlainField label={t("products.field.images")}>
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -706,9 +851,9 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
                   ))}
                 </div>
               )}
-            </Field>
+            </PlainField>
 
-            <Field label={t("products.field.video")}>
+            <PlainField label={t("products.field.video")}>
               <div className="relative">
                 <Video className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
                 <input
@@ -720,7 +865,7 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
                   }
                 />
               </div>
-            </Field>
+            </PlainField>
 
             <div className="grid grid-cols-2 gap-3">
               <ToggleField
@@ -744,12 +889,55 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
           <button
             className="btn-primary text-[12.5px] disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!valid}
-            onClick={() => onSave(draft)}
+            onClick={() => onSave(draft as Product)}
           >
             {t("common.save")}
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function FeatureLangTabs({
+  active,
+  setActive,
+  features,
+}: {
+  active: Lang;
+  setActive: (l: Lang) => void;
+  features: Localized<string[]>;
+}) {
+  const langs: Lang[] = ["uz", "ru", "en"];
+  return (
+    <div className="flex items-center gap-0.5 rounded-md border border-line bg-bg-input p-0.5">
+      {langs.map((l) => {
+        const count = features[l].length;
+        const isActive = l === active;
+        return (
+          <button
+            key={l}
+            type="button"
+            onClick={() => setActive(l)}
+            className={cn(
+              "inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide transition-colors",
+              isActive
+                ? "bg-brand text-white"
+                : "text-text-secondary hover:bg-bg-hover",
+            )}
+          >
+            {l}
+            <span
+              className={cn(
+                "rounded-full px-1 text-[9px] tabular-nums",
+                isActive ? "bg-white/20" : "bg-bg-hover",
+              )}
+            >
+              {count}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -785,7 +973,7 @@ function StatPill({
   );
 }
 
-function Field({
+function PlainField({
   label,
   children,
 }: {
@@ -817,7 +1005,9 @@ function ToggleField({
       onClick={() => onChange(!value)}
       className="flex items-center justify-between rounded-lg border border-line bg-bg-input px-3 py-2.5 text-left transition-colors hover:bg-bg-hover"
     >
-      <span className="text-[12.5px] font-medium text-text-secondary">{label}</span>
+      <span className="text-[12.5px] font-medium text-text-secondary">
+        {label}
+      </span>
       <span
         className={cn(
           "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",

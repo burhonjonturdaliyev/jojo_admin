@@ -518,6 +518,26 @@ const uz: Dict = {
   "lang.uz": "O'zbekcha",
   "lang.ru": "Ruscha",
   "lang.en": "Inglizcha",
+
+  // ───── Localized content / auto-translate
+  "loc.tab.uz": "UZ",
+  "loc.tab.ru": "RU",
+  "loc.tab.en": "EN",
+  "loc.fillTab": "{lang} tilida to'ldiring",
+  "loc.translateFrom": "{lang}'dan tarjima qilish",
+  "loc.translateToOthers": "Boshqa tillarga avtomatik tarjima",
+  "loc.translating": "Tarjima qilinmoqda...",
+  "loc.translateAll": "Barchasini tarjima qilish",
+  "loc.translateField": "Tarjima qilish",
+  "loc.sourceEmpty": "Manba til bo'sh — avval matn kiriting",
+  "loc.translateError": "Tarjima xatosi. Qayta urinib ko'ring.",
+  "loc.translatedJust": "Tarjima qilindi",
+  "loc.completeness": "{filled}/3 til to'ldirilgan",
+  "loc.allLanguages": "Barcha tillarda mavjud",
+  "loc.missingLangs": "{count} til to'ldirilmagan",
+  "loc.translateOpenAccordion": "Tarjimalarni ko'rish",
+  "loc.viewingAs": "Ko'rinish: {lang}",
+  "loc.copyFrom": "{lang}'dan ko'chirish",
 };
 
 const ru: Dict = {
@@ -1038,6 +1058,26 @@ const ru: Dict = {
   "lang.uz": "Узбекский",
   "lang.ru": "Русский",
   "lang.en": "Английский",
+
+  // ───── Localized content / auto-translate
+  "loc.tab.uz": "UZ",
+  "loc.tab.ru": "RU",
+  "loc.tab.en": "EN",
+  "loc.fillTab": "Заполнить на {lang}",
+  "loc.translateFrom": "Перевести с {lang}",
+  "loc.translateToOthers": "Авто-перевод на другие языки",
+  "loc.translating": "Перевод...",
+  "loc.translateAll": "Перевести всё",
+  "loc.translateField": "Перевести",
+  "loc.sourceEmpty": "Исходный язык пуст — сначала введите текст",
+  "loc.translateError": "Ошибка перевода. Попробуйте ещё раз.",
+  "loc.translatedJust": "Переведено",
+  "loc.completeness": "{filled}/3 заполнено",
+  "loc.allLanguages": "Есть на всех языках",
+  "loc.missingLangs": "{count} не заполнено",
+  "loc.translateOpenAccordion": "Показать переводы",
+  "loc.viewingAs": "Вид: {lang}",
+  "loc.copyFrom": "Скопировать с {lang}",
 };
 
 const en: Dict = {
@@ -1558,6 +1598,26 @@ const en: Dict = {
   "lang.uz": "Uzbek",
   "lang.ru": "Russian",
   "lang.en": "English",
+
+  // ───── Localized content / auto-translate
+  "loc.tab.uz": "UZ",
+  "loc.tab.ru": "RU",
+  "loc.tab.en": "EN",
+  "loc.fillTab": "Fill in {lang}",
+  "loc.translateFrom": "Translate from {lang}",
+  "loc.translateToOthers": "Auto-translate to the other languages",
+  "loc.translating": "Translating...",
+  "loc.translateAll": "Translate all",
+  "loc.translateField": "Translate",
+  "loc.sourceEmpty": "Source language is empty — type some text first",
+  "loc.translateError": "Translation failed. Please try again.",
+  "loc.translatedJust": "Translated",
+  "loc.completeness": "{filled}/3 languages filled",
+  "loc.allLanguages": "Available in all languages",
+  "loc.missingLangs": "{count} not filled",
+  "loc.translateOpenAccordion": "Show translations",
+  "loc.viewingAs": "Viewing: {lang}",
+  "loc.copyFrom": "Copy from {lang}",
 };
 
 export const translations: Record<"uz" | "ru" | "en", Dict> = { uz, ru, en };

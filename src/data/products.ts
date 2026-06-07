@@ -1,17 +1,20 @@
+import type { Localized } from "../types/locale";
+
 export type ProductType = "stem" | "book" | "other";
 export type ProductBadge = "none" | "top" | "yangi";
 
 export interface Product {
   id: string;
-  name: string;
-  category: string;
+  /** Name in each locale; legacy seed records may be a plain string. */
+  name: Localized<string> | string;
+  category: Localized<string> | string;
   type: ProductType;
   age: string;
   price: number;
   oldPrice: number | null;
   badge: ProductBadge;
-  features: string[];
-  description: string;
+  features: Localized<string[]> | string[];
+  description: Localized<string> | string;
   images: string[];
   videoUrl: string | null;
   featured: boolean;

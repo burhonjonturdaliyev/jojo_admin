@@ -1,11 +1,14 @@
+import type { Localized } from "../types/locale";
+
 export type AdviceType = "video" | "blog";
 
 export interface AdviceItem {
   id: string;
   type: AdviceType;
-  title: string;
+  /** Localized; seed records may be plain strings. */
+  title: Localized<string> | string;
   imageUrl: string;
-  body?: string;
+  body?: Localized<string> | string;
   url: string;
   durationLabel?: string;
   readTimeMinutes?: number;
