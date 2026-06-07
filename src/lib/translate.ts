@@ -1,6 +1,6 @@
 import type { Lang } from "./i18n";
 
-const CACHE_KEY = "jojo_admin_translate_cache";
+const CACHE_KEY = "jojo_admin_translate_cache_v2";
 const ENDPOINT = "https://api.mymemory.translated.net/get";
 
 /**
@@ -9,6 +9,17 @@ const ENDPOINT = "https://api.mymemory.translated.net/get";
  * the byte count, so we keep the per-chunk byte ceiling well under the limit.
  */
 const MAX_CHUNK_BYTES = 450;
+
+/**
+ * MyMemory is much more reliable with full IETF locale tags than with the
+ * bare ISO-639 code. Uzbek in particular often returns "language pair not
+ * supported" against just `uz`, but works against `uz-UZ`.
+ */
+const MM_LOCALE: Record<Lang, string> = {
+  uz: "uz-UZ",
+  ru: "ru-RU",
+  en: "en-GB",
+};
 
 type Cache = Record<string, string>;
 
@@ -123,12 +134,12 @@ function chunkText(text: string): { parts: string[]; seps: string[] } {
 
 export class TranslateError extends Error {}
 
-async function translateChunk(
+async function callMyMemory(
   chunk: string,
-  from: Lang,
-  to: Lang,
+  fromTag: string,
+  toTag: string,
 ): Promise<string> {
-  const url = `${ENDPOINT}?q=${encodeURIComponent(chunk)}&langpair=${from}|${to}`;
+  const url = `${ENDPOINT}?q=${encodeURIComponent(chunk)}&langpair=${fromTag}|${toTag}`;
   let response: Response;
   try {
     response = await fetch(url);
@@ -142,9 +153,9 @@ async function translateChunk(
   }
 
   let data: {
-    responseStatus?: number;
+    responseStatus?: number | string;
     responseDetails?: string;
-    responseData?: { translatedText?: string };
+    responseData?: { translatedText?: string; match?: number };
   };
   try {
     data = await response.json();
@@ -152,14 +163,14 @@ async function translateChunk(
     throw new TranslateError("Tarjima javobini o'qib bo'lmadi.");
   }
 
+  const status =
+    typeof data.responseStatus === "string"
+      ? parseInt(data.responseStatus, 10) || 0
+      : data.responseStatus ?? 0;
+
   // MyMemory returns 200 with an error string in responseDetails when, e.g.,
-  // the query is over the byte ceiling — surface it instead of returning it
-  // as if it were a translation.
-  if (
-    data.responseStatus &&
-    data.responseStatus >= 400 &&
-    data.responseDetails
-  ) {
+  // the language pair is unsupported or the query is oversized.
+  if (status >= 400 && data.responseDetails) {
     throw new TranslateError(`Tarjima xatosi: ${data.responseDetails}`);
   }
 
@@ -167,7 +178,44 @@ async function translateChunk(
   if (!translated) {
     throw new TranslateError("Tarjima qaytarilmadi. Keyinroq urinib ko'ring.");
   }
+
+  // MyMemory sometimes echoes the source back unchanged with match=0 when
+  // it had no real hit for the requested pair. Treat that as a failure so
+  // the bridge fallback can take over.
+  if (
+    data.responseData?.match === 0 &&
+    translated.toLowerCase() === chunk.toLowerCase()
+  ) {
+    throw new TranslateError("Tarjima topilmadi.");
+  }
+
   return translated;
+}
+
+/**
+ * Translate one chunk with a bridge fallback. The `uz|ru` direction is the
+ * weakest in MyMemory's free corpus — when the direct call fails or echoes
+ * the source back, we route through `en` (uz → en → ru and vice versa).
+ */
+async function translateChunk(
+  chunk: string,
+  from: Lang,
+  to: Lang,
+): Promise<string> {
+  try {
+    return await callMyMemory(chunk, MM_LOCALE[from], MM_LOCALE[to]);
+  } catch (directErr) {
+    // Bridge through English if neither side is already English.
+    if (from !== "en" && to !== "en") {
+      try {
+        const viaEn = await callMyMemory(chunk, MM_LOCALE[from], MM_LOCALE.en);
+        return await callMyMemory(viaEn, MM_LOCALE.en, MM_LOCALE[to]);
+      } catch {
+        // Fall through to the original error so the user sees the real cause.
+      }
+    }
+    throw directErr;
+  }
 }
 
 /**
