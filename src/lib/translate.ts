@@ -1,20 +1,23 @@
 import type { Lang } from "./i18n";
 
-const CACHE_KEY = "jojo_admin_translate_cache_v2";
-const ENDPOINT = "https://api.mymemory.translated.net/get";
-
 /**
- * MyMemory's free endpoint rejects requests where the URL-encoded `q`
- * parameter exceeds ~500 bytes. Multibyte chars (Cyrillic, etc.) inflate
- * the byte count, so we keep the per-chunk byte ceiling well under the limit.
+ * Two-tier translation pipeline:
+ *  1. Google's free public endpoint (translate.googleapis.com `gtx` client) —
+ *     wide character allowance, supports uz↔ru cleanly. Primary engine.
+ *  2. MyMemory — kept as a fallback when Google is unreachable / blocked.
+ *
+ * Results are cached in localStorage so re-edits are free.
  */
-const MAX_CHUNK_BYTES = 450;
 
-/**
- * MyMemory is much more reliable with full IETF locale tags than with the
- * bare ISO-639 code. Uzbek in particular often returns "language pair not
- * supported" against just `uz`, but works against `uz-UZ`.
- */
+const CACHE_KEY = "jojo_admin_translate_cache_v3";
+const MAX_CHUNK_BYTES = 1200;
+
+const GOOGLE_ENDPOINT =
+  "https://translate.googleapis.com/translate_a/single";
+const MYMEMORY_ENDPOINT = "https://api.mymemory.translated.net/get";
+
+/** MyMemory needs full IETF tags for Uzbek; Google accepts the bare code. */
+const GOOGLE_CODE: Record<Lang, string> = { uz: "uz", ru: "ru", en: "en" };
 const MM_LOCALE: Record<Lang, string> = {
   uz: "uz-UZ",
   ru: "ru-RU",
@@ -57,20 +60,14 @@ const byteLen = (s: string) => new TextEncoder().encode(s).length;
 function chunkText(text: string): { parts: string[]; seps: string[] } {
   if (byteLen(text) <= MAX_CHUNK_BYTES) return { parts: [text], seps: [] };
 
-  // Tokenise the source into atoms with their following separator. The
-  // separator is whatever whitespace follows the atom (paragraph break,
-  // sentence-ending space, plain space, newline) so we can recompose later.
   const atoms: { text: string; sep: string }[] = [];
 
-  // First level: paragraphs. \n{2,} is a strong boundary.
   const paragraphs = text.split(/(\n{2,})/);
   for (let i = 0; i < paragraphs.length; i += 2) {
     const para = paragraphs[i];
     const sep = paragraphs[i + 1] ?? "";
     if (!para) continue;
 
-    // Inside a paragraph: split by sentence terminator. Keep the terminator
-    // attached to the left side.
     const sentences = para
       .split(/(?<=[.!?。！？…])\s+/)
       .filter((s) => s.length > 0);
@@ -84,8 +81,6 @@ function chunkText(text: string): { parts: string[]; seps: string[] } {
     }
   }
 
-  // Greedy pack atoms into chunks under MAX_CHUNK_BYTES. If a single atom is
-  // still too large (one very long sentence), break it further by words.
   const parts: string[] = [];
   const seps: string[] = [];
   let current = "";
@@ -103,7 +98,6 @@ function chunkText(text: string): { parts: string[]; seps: string[] } {
   const pushAtom = (txt: string, sep: string) => {
     if (!txt) return;
     if (byteLen(txt) > MAX_CHUNK_BYTES) {
-      // Break this oversize atom by words.
       const words = txt.split(/(\s+)/);
       let buf = "";
       for (const w of words) {
@@ -134,12 +128,60 @@ function chunkText(text: string): { parts: string[]; seps: string[] } {
 
 export class TranslateError extends Error {}
 
+/**
+ * Google Translate's public `gtx` client returns a deeply nested array.
+ * Top-level shape: `[[ [translatedSegment, sourceSegment, ?, ?, ?], ... ], ...]`
+ * Each top-level row in `data[0]` is one segment; concatenating them gives
+ * the full translation.
+ */
+async function callGoogle(
+  chunk: string,
+  fromCode: string,
+  toCode: string,
+): Promise<string> {
+  const url = `${GOOGLE_ENDPOINT}?client=gtx&sl=${fromCode}&tl=${toCode}&dt=t&q=${encodeURIComponent(chunk)}`;
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch {
+    throw new TranslateError(
+      "Tarjima xizmati bilan bog'lana olmadi. Internet ulanishini tekshiring.",
+    );
+  }
+  if (!response.ok) {
+    throw new TranslateError(`Tarjima xatoligi: HTTP ${response.status}`);
+  }
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    throw new TranslateError("Tarjima javobini o'qib bo'lmadi.");
+  }
+
+  // Validate structure defensively — public endpoints can change.
+  if (!Array.isArray(data) || !Array.isArray((data as unknown[])[0])) {
+    throw new TranslateError("Tarjima formati noto'g'ri.");
+  }
+
+  const segments = (data as unknown[][])[0] as unknown[];
+  const pieces: string[] = [];
+  for (const segRaw of segments) {
+    const seg = segRaw as unknown[];
+    if (typeof seg?.[0] === "string") pieces.push(seg[0] as string);
+  }
+  const joined = pieces.join("").trim();
+  if (!joined) {
+    throw new TranslateError("Tarjima qaytarilmadi.");
+  }
+  return joined;
+}
+
 async function callMyMemory(
   chunk: string,
   fromTag: string,
   toTag: string,
 ): Promise<string> {
-  const url = `${ENDPOINT}?q=${encodeURIComponent(chunk)}&langpair=${fromTag}|${toTag}`;
+  const url = `${MYMEMORY_ENDPOINT}?q=${encodeURIComponent(chunk)}&langpair=${fromTag}|${toTag}`;
   let response: Response;
   try {
     response = await fetch(url);
@@ -168,20 +210,15 @@ async function callMyMemory(
       ? parseInt(data.responseStatus, 10) || 0
       : data.responseStatus ?? 0;
 
-  // MyMemory returns 200 with an error string in responseDetails when, e.g.,
-  // the language pair is unsupported or the query is oversized.
   if (status >= 400 && data.responseDetails) {
     throw new TranslateError(`Tarjima xatosi: ${data.responseDetails}`);
   }
 
   const translated = data.responseData?.translatedText?.trim();
   if (!translated) {
-    throw new TranslateError("Tarjima qaytarilmadi. Keyinroq urinib ko'ring.");
+    throw new TranslateError("Tarjima qaytarilmadi.");
   }
 
-  // MyMemory sometimes echoes the source back unchanged with match=0 when
-  // it had no real hit for the requested pair. Treat that as a failure so
-  // the bridge fallback can take over.
   if (
     data.responseData?.match === 0 &&
     translated.toLowerCase() === chunk.toLowerCase()
@@ -193,25 +230,31 @@ async function callMyMemory(
 }
 
 /**
- * Translate one chunk with a bridge fallback. The `uz|ru` direction is the
- * weakest in MyMemory's free corpus — when the direct call fails or echoes
- * the source back, we route through `en` (uz → en → ru and vice versa).
+ * Try Google first (high quality, generous limits, real uz↔ru support);
+ * if it fails (network/CORS/quota), fall back to MyMemory. When the direct
+ * MyMemory pair is unsupported we bridge through English.
  */
 async function translateChunk(
   chunk: string,
   from: Lang,
   to: Lang,
 ): Promise<string> {
+  // Primary: Google.
+  try {
+    return await callGoogle(chunk, GOOGLE_CODE[from], GOOGLE_CODE[to]);
+  } catch {
+    // Fallback to MyMemory.
+  }
+
   try {
     return await callMyMemory(chunk, MM_LOCALE[from], MM_LOCALE[to]);
   } catch (directErr) {
-    // Bridge through English if neither side is already English.
     if (from !== "en" && to !== "en") {
       try {
         const viaEn = await callMyMemory(chunk, MM_LOCALE[from], MM_LOCALE.en);
         return await callMyMemory(viaEn, MM_LOCALE.en, MM_LOCALE[to]);
       } catch {
-        // Fall through to the original error so the user sees the real cause.
+        // Surface the original direct error so it's the most informative.
       }
     }
     throw directErr;
@@ -220,8 +263,8 @@ async function translateChunk(
 
 /**
  * Translate a string. Cached in localStorage. Long inputs are split into
- * sub-500-byte chunks at sentence / paragraph boundaries, translated in
- * parallel, and rejoined with the original separators.
+ * chunks at sentence / paragraph boundaries, translated in parallel, and
+ * rejoined with the original separators.
  */
 export async function translateText(
   text: string,
@@ -238,8 +281,6 @@ export async function translateText(
 
   const { parts, seps } = chunkText(trimmed);
 
-  // Translate each chunk (cache them too so re-edits only re-translate what
-  // changed). Run in parallel for speed.
   const translated = await Promise.all(
     parts.map(async (chunk) => {
       const key = cacheKey(chunk, from, to);
@@ -250,8 +291,6 @@ export async function translateText(
     }),
   );
 
-  // Recompose with original separators (parts.length === seps.length + 1 or
-  // matches; we tolerate both).
   let joined = "";
   for (let i = 0; i < translated.length; i++) {
     joined += translated[i];
@@ -284,7 +323,6 @@ export async function translateInto(
       try {
         out[lang] = await translateText(text, from, lang);
       } catch (e) {
-        // Surface as empty; the caller can re-try.
         out[lang] = "";
         throw e;
       }
