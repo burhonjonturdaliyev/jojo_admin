@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AdminLayout } from "./layouts/AdminLayout";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { UsersPage } from "./pages/UsersPage";
 import { ChildrenPage } from "./pages/ChildrenPage";
@@ -20,25 +22,29 @@ import { AdvicePage } from "./pages/AdvicePage";
 export default function App() {
   return (
     <Routes>
-      <Route element={<AdminLayout />}>
-        <Route index element={<Navigate to="/users" replace />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/users" element={<UsersPage />} />
-        <Route path="/children" element={<ChildrenPage />} />
-        <Route path="/premium" element={<PremiumPage />} />
-        <Route path="/payments" element={<PaymentsPage />} />
-        <Route path="/requests" element={<RequestsPage />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/sms" element={<SmsPage />} />
-        <Route path="/ads" element={<AdsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/operators" element={<OperatorsPage />} />
-        <Route path="/blocked" element={<BlockedPage />} />
-        <Route path="/products" element={<ProductsPage />} />
-        <Route path="/banners" element={<PromoBannersPage />} />
-        <Route path="/orders" element={<OrdersPage />} />
-        <Route path="/advice" element={<AdvicePage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<AdminLayout />}>
+          <Route index element={<Navigate to="/users" replace />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/users" element={<UsersPage />} />
+          <Route path="/children" element={<ChildrenPage />} />
+          <Route path="/premium" element={<PremiumPage />} />
+          <Route path="/payments" element={<PaymentsPage />} />
+          <Route path="/requests" element={<RequestsPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+          <Route path="/sms" element={<SmsPage />} />
+          <Route path="/ads" element={<AdsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/operators" element={<OperatorsPage />} />
+          <Route path="/blocked" element={<BlockedPage />} />
+          <Route path="/products" element={<ProductsPage />} />
+          <Route path="/banners" element={<PromoBannersPage />} />
+          <Route path="/orders" element={<OrdersPage />} />
+          <Route path="/advice" element={<AdvicePage />} />
+        </Route>
       </Route>
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
