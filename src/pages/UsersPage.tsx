@@ -190,13 +190,23 @@ export function UsersPage() {
                         {col.label}
                       </span>
                     </div>
-                    <span className="text-[12px] font-medium text-text-secondary">
-                      {(
-                        col.count -
-                        (initialCountByStatus.get(col.status) ?? 0) +
-                        colUsers.length
-                      ).toLocaleString("ru-RU")}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[12px] font-medium text-text-secondary">
+                        {(
+                          col.count -
+                          (initialCountByStatus.get(col.status) ?? 0) +
+                          colUsers.length
+                        ).toLocaleString("ru-RU")}
+                      </span>
+                      <button
+                        type="button"
+                        title="Karta qo'shish"
+                        aria-label="Karta qo'shish"
+                        className="flex h-5 w-5 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-bg-hover hover:text-text-primary"
+                      >
+                        <Plus className="h-3.5 w-3.5" strokeWidth={2.2} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-2.5">
@@ -224,11 +234,6 @@ export function UsersPage() {
                         Bu yerga tashlang
                       </div>
                     )}
-
-                    <button className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-line py-2 text-[12px] font-medium text-text-muted transition-colors hover:border-line/80 hover:bg-bg-card/50 hover:text-text-secondary">
-                      <Plus className="h-3.5 w-3.5" />
-                      Karta qo'shish
-                    </button>
                   </div>
                 </div>
               );
