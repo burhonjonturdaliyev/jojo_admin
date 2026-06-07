@@ -10,6 +10,11 @@ import {
   UploadCloud,
   Video,
   Package,
+  ShoppingCart,
+  CheckCircle2,
+  XCircle,
+  CalendarDays,
+  TrendingUp,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import {
@@ -20,6 +25,7 @@ import {
   type ProductBadge,
   type ProductType,
 } from "../data/products";
+import { initialOrders } from "../data/orders";
 import { cn } from "../lib/utils";
 
 type TypeFilter = "all" | ProductType;
@@ -57,12 +63,58 @@ const emptyForm = (): Product => ({
   updatedAt: new Date().toLocaleDateString("ru-RU"),
 });
 
+interface ProductStats {
+  orders: number;
+  sold: number;
+  cancelled: number;
+  active: number;
+  revenue: number;
+}
+
+const emptyStats: ProductStats = {
+  orders: 0,
+  sold: 0,
+  cancelled: 0,
+  active: 0,
+  revenue: 0,
+};
+
 export function ProductsPage() {
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [editing, setEditing] = useState<Product | null>(null);
+
+  const statsByProduct = useMemo(() => {
+    const map = new Map<string, ProductStats>();
+    for (const o of initialOrders) {
+      const s = map.get(o.productId) ?? { ...emptyStats };
+      s.orders += 1;
+      if (o.status === "delivered") {
+        s.sold += 1;
+        s.revenue += o.productPrice;
+      } else if (o.status === "cancelled") {
+        s.cancelled += 1;
+      } else {
+        s.active += 1;
+      }
+      map.set(o.productId, s);
+    }
+    return map;
+  }, []);
+
+  const totals = useMemo(() => {
+    const acc: ProductStats = { ...emptyStats };
+    statsByProduct.forEach((s) => {
+      acc.orders += s.orders;
+      acc.sold += s.sold;
+      acc.cancelled += s.cancelled;
+      acc.active += s.active;
+      acc.revenue += s.revenue;
+    });
+    return acc;
+  }, [statsByProduct]);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -123,36 +175,51 @@ export function ProductsPage() {
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
         <div className="grid grid-cols-4 gap-4">
           {[
-            { label: "Jami mahsulotlar", value: products.length, icon: Package, color: "#3B82F6" },
             {
-              label: "Faol",
-              value: products.filter((p) => p.isActive).length,
+              label: "Jami mahsulotlar",
+              value: products.length.toLocaleString("ru-RU"),
+              hint: `${products.filter((p) => p.isActive).length} faol · ${products.filter((p) => p.featured).length} tavsiya`,
               icon: Package,
+              color: "#3B82F6",
+            },
+            {
+              label: "Jami buyurtmalar",
+              value: totals.orders.toLocaleString("ru-RU"),
+              hint: `${totals.active} jarayonda`,
+              icon: ShoppingCart,
+              color: "#6366F1",
+            },
+            {
+              label: "Sotilgan",
+              value: totals.sold.toLocaleString("ru-RU"),
+              hint: `${totals.revenue.toLocaleString("ru-RU")} so'm tushum`,
+              icon: CheckCircle2,
               color: "#10B981",
             },
             {
-              label: "Tavsiya etilgan",
-              value: products.filter((p) => p.featured).length,
-              icon: Star,
-              color: "#F59E0B",
-            },
-            {
-              label: "Chegirmadagi",
-              value: products.filter((p) => p.oldPrice).length,
-              icon: Package,
+              label: "Bekor qilingan",
+              value: totals.cancelled.toLocaleString("ru-RU"),
+              hint:
+                totals.orders > 0
+                  ? `${Math.round((totals.cancelled / totals.orders) * 100)}% buyurtmalardan`
+                  : "0% buyurtmalardan",
+              icon: XCircle,
               color: "#EF4444",
             },
           ].map((s) => (
             <div key={s.label} className="card p-4">
               <div className="flex items-start justify-between">
-                <div>
+                <div className="min-w-0">
                   <div className="text-[12px] text-text-secondary">{s.label}</div>
-                  <div className="mt-1 text-[22px] font-bold text-text-primary">
+                  <div className="mt-1 text-[22px] font-bold leading-none text-text-primary">
                     {s.value}
+                  </div>
+                  <div className="mt-1.5 truncate text-[11px] text-text-muted">
+                    {s.hint}
                   </div>
                 </div>
                 <div
-                  className="flex h-9 w-9 items-center justify-center rounded-lg"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
                   style={{ background: `${s.color}26`, color: s.color }}
                 >
                   <s.icon className="h-4 w-4" />
@@ -215,8 +282,9 @@ export function ProductsPage() {
                 <tr>
                   <th className="px-4 py-3 text-left font-semibold">Mahsulot</th>
                   <th className="px-4 py-3 text-left font-semibold">Kategoriya</th>
-                  <th className="px-4 py-3 text-left font-semibold">Yosh</th>
                   <th className="px-4 py-3 text-left font-semibold">Narx</th>
+                  <th className="px-4 py-3 text-left font-semibold">Buyurtmalar</th>
+                  <th className="px-4 py-3 text-left font-semibold">Qo'shilgan</th>
                   <th className="px-4 py-3 text-left font-semibold">Belgi</th>
                   <th className="px-4 py-3 text-center font-semibold">Tavsiya</th>
                   <th className="px-4 py-3 text-center font-semibold">Faol</th>
@@ -228,6 +296,9 @@ export function ProductsPage() {
                   const discount = p.oldPrice
                     ? Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100)
                     : 0;
+                  const s = statsByProduct.get(p.id) ?? emptyStats;
+                  const conversion =
+                    s.orders > 0 ? Math.round((s.sold / s.orders) * 100) : 0;
                   return (
                     <tr key={p.id} className={i ? "border-t border-line" : ""}>
                       <td className="px-4 py-3">
@@ -242,8 +313,10 @@ export function ProductsPage() {
                           </div>
                           <div>
                             <div className="font-semibold text-text-primary">{p.name}</div>
-                            <div className="font-mono text-[11px] text-text-muted">
-                              #{p.id}
+                            <div className="flex items-center gap-2 font-mono text-[11px] text-text-muted">
+                              <span>#{p.id}</span>
+                              <span className="text-text-muted/60">·</span>
+                              <span className="font-sans">{p.age}</span>
                             </div>
                           </div>
                         </div>
@@ -254,7 +327,6 @@ export function ProductsPage() {
                           {productTypeLabels[p.type]}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-text-secondary">{p.age}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-baseline gap-2">
                           <span className="font-semibold text-text-primary">
@@ -270,6 +342,45 @@ export function ProductsPage() {
                             <span className="rounded bg-status-blocked/15 px-1.5 py-0.5 text-[10px] font-semibold text-status-blocked">
                               -{discount}%
                             </span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap items-center gap-1">
+                          <StatPill
+                            icon={ShoppingCart}
+                            label="Buyurtma"
+                            value={s.orders}
+                            tone="brand"
+                          />
+                          <StatPill
+                            icon={CheckCircle2}
+                            label="Sotildi"
+                            value={s.sold}
+                            tone="success"
+                          />
+                          <StatPill
+                            icon={XCircle}
+                            label="Bekor"
+                            value={s.cancelled}
+                            tone="danger"
+                          />
+                        </div>
+                        {s.orders > 0 && (
+                          <div className="mt-1.5 flex items-center gap-1 text-[10.5px] text-text-muted">
+                            <TrendingUp className="h-3 w-3" />
+                            <span>Konversiya: {conversion}%</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5 text-text-secondary">
+                          <CalendarDays className="h-3.5 w-3.5 text-text-muted" />
+                          <span className="text-[12.5px]">{p.createdAt}</span>
+                        </div>
+                        {p.updatedAt && p.updatedAt !== p.createdAt && (
+                          <div className="mt-0.5 text-[10.5px] text-text-muted">
+                            Yangilandi: {p.updatedAt}
                           </div>
                         )}
                       </td>
@@ -346,7 +457,7 @@ export function ProductsPage() {
                 {filtered.length === 0 && (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={9}
                       className="px-4 py-12 text-center text-[13px] text-text-muted"
                     >
                       Mahsulot topilmadi
@@ -675,6 +786,37 @@ function ProductFormDrawer({ product, onClose, onSave }: DrawerProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+const pillTones = {
+  brand: "bg-brand-soft text-brand",
+  success: "bg-status-resolved/15 text-status-resolved",
+  danger: "bg-status-blocked/15 text-status-blocked",
+} as const;
+
+function StatPill({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+  tone: keyof typeof pillTones;
+}) {
+  return (
+    <span
+      title={`${label}: ${value}`}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold tabular-nums",
+        pillTones[tone],
+      )}
+    >
+      <Icon className="h-3 w-3" />
+      {value}
+    </span>
   );
 }
 
