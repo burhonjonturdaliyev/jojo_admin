@@ -265,8 +265,13 @@ export const broadcastApi = {
 
 export interface AdminDashboardStats {
   parents: number;
+  parents_delta_pct?: number;
   children: number;
+  children_connected?: number;
   active_24h: number;
+  premium_users?: number;
+  premium_revenue?: number;
+  blocked_users?: number;
   products: number;
   blog_posts: number;
   banners: number;
@@ -485,24 +490,64 @@ export type LeadStatus =
   | "closed"
   | "blocked";
 
+export interface AdminLeadParent {
+  id: number;
+  name: string;
+  phone: string | null;
+  email?: string;
+  gender?: string;
+  avatar: string | null;
+  child_count?: number;
+  child_connected?: boolean;
+  premium_active?: boolean;
+  premium_expires_at?: string | null;
+  premium_days_left?: number | null;
+  is_active?: boolean;
+  registered_at?: string | null;
+  last_activity?: string | null;
+  language?: string;
+}
+
 export interface AdminLead {
   id: number;
   title: string;
   description: string;
   status: LeadStatus;
   priority: string;
-  parent: {
-    id: number;
-    name: string;
-    phone: string | null;
-    avatar: string | null;
-  } | null;
+  parent: AdminLeadParent | null;
   operator: { id: number; name: string } | null;
   last_contact_at: string | null;
   closed_at: string | null;
   created_at: string;
   updated_at: string;
   comments_count: number;
+}
+
+export interface AdminLeadFull {
+  lead: AdminLead;
+  children: Array<{
+    id: number;
+    name: string;
+    age: number | null;
+    gender: string | null;
+    status: string;
+    avatar: string | null;
+    phone: string | null;
+    linked_at: string | null;
+  }>;
+  payments: Array<{
+    id: number;
+    amount: number;
+    currency: string;
+    status: string;
+    plan_name: string | null;
+    created_at: string;
+  }>;
+  activity: Array<{
+    type: string;
+    label: string;
+    at: string | null;
+  }>;
 }
 
 export interface LeadBoardResponse {
@@ -532,6 +577,7 @@ export const leadsApi = {
     status?: LeadStatus;
   }) => api<AdminLead>("/admin/leads/", { method: "POST", body: data }),
   detail: (id: number) => api<AdminLead>(`/admin/leads/${id}/`),
+  full: (id: number) => api<AdminLeadFull>(`/admin/leads/${id}/full/`),
   update: (
     id: number,
     data: Partial<{
