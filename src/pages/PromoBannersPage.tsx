@@ -6,12 +6,12 @@ import {
   Trash2,
   X,
   Eye,
-  Image as ImageIcon,
   ChevronRight,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { LocalizedField } from "../components/LocalizedField";
 import { TranslateAllButton } from "../components/TranslateAllButton";
+import { ImageUpload } from "../components/ImageUpload";
 import {
   themeStyles,
   type BannerActionType,
@@ -571,20 +571,12 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
             </div>
           </div>
 
-          <div>
-            <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              {t("banners.field.imageUrl")}
-            </label>
-            <div className="relative">
-              <ImageIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-              <input
-                className="input pl-9"
-                placeholder="https://..."
-                value={draft.imageUrl ?? ""}
-                onChange={(e) => set("imageUrl", e.target.value.trim() || null)}
-              />
-            </div>
-          </div>
+          <ImageUpload
+            value={draft.imageUrl}
+            onChange={(url) => set("imageUrl", url)}
+            folder="banners"
+            label={t("banners.field.imageUrl")}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <div>

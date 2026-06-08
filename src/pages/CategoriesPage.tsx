@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, FolderTree, Pencil, Trash2, Package, BookOpen } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { ImageUpload } from "../components/ImageUpload";
 import {
   storeCategoriesApi,
   blogCategoriesApi,
@@ -15,7 +16,7 @@ interface CategoryDraft {
   id?: number;
   name: string;
   slug?: string;
-  icon?: string;
+  icon?: string | null;
   order?: number;
   is_active?: boolean;
 }
@@ -265,11 +266,11 @@ function CategoryEditor({
             className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] font-mono text-text-primary outline-none focus:border-primary"
           />
           {showIcon && (
-            <input
-              value={d.icon ?? ""}
-              onChange={(e) => setD({ ...d, icon: e.target.value })}
-              placeholder="Belgi (emoji yoki nom)"
-              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+            <ImageUpload
+              value={d.icon ?? null}
+              onChange={(url) => setD({ ...d, icon: url })}
+              folder="categories"
+              label="Kategoriya rasmi (ixtiyoriy)"
             />
           )}
           <input

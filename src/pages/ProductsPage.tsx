@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Plus, Package, Pencil, Trash2, Search } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { ImageUpload } from "../components/ImageUpload";
 import { useT } from "../lib/i18n";
 import {
   storeProductsApi,
@@ -296,13 +297,11 @@ function ProductEditor({
               className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
             />
           </div>
-          <input
-            value={draft.image ?? ""}
-            onChange={(e) =>
-              setDraft({ ...draft, image: e.target.value || null })
-            }
-            placeholder="Rasm URL"
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+          <ImageUpload
+            value={draft.image}
+            onChange={(url) => setDraft({ ...draft, image: url })}
+            folder="products"
+            label="Mahsulot rasmi"
           />
           <div className="flex gap-4 pt-2">
             <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">

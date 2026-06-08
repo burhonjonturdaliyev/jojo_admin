@@ -179,3 +179,28 @@ export async function adminMe() {
 export function adminLogout() {
   clearTokens();
 }
+
+/** Faylni yuklash — multipart/form-data. URL va path qaytaradi. */
+export async function uploadMedia(
+  file: File,
+  folder:
+    | "products"
+    | "categories"
+    | "banners"
+    | "blog"
+    | "blog/thumbnails"
+    | "blog/banners"
+    | "uploads" = "uploads",
+) {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("folder", folder);
+  return api<{ url: string; path: string; name: string; size: number }>(
+    "/admin/upload/",
+    {
+      method: "POST",
+      body: fd,
+      multipart: true,
+    },
+  );
+}
