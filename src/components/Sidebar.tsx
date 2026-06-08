@@ -19,6 +19,7 @@ import {
   Lightbulb,
   Ban,
   FolderTree,
+  Shield,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useAuth } from "../lib/auth";
@@ -71,6 +72,7 @@ export function Sidebar() {
         { to: "/ads", label: t("nav.ads"), icon: Megaphone },
         { to: "/settings", label: t("nav.settings"), icon: Settings },
         { to: "/operators", label: t("nav.operators"), icon: Headphones },
+        { to: "/roles", label: t("nav.roles"), icon: Shield },
         { to: "/blocked", label: t("nav.blocked"), icon: Ban },
       ],
     },
