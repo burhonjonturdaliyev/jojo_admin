@@ -20,6 +20,7 @@ import {
   Ban,
   FolderTree,
   Shield,
+  Kanban,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useAuth } from "../lib/auth";
@@ -44,6 +45,7 @@ export function Sidebar() {
     {
       label: t("nav.section.users"),
       items: [
+        { to: "/leads", label: t("nav.leads"), icon: Kanban },
         { to: "/users", label: t("nav.users"), icon: Users },
         { to: "/children", label: t("nav.children"), icon: Baby },
         { to: "/premium", label: t("nav.premium"), icon: Crown },

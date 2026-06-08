@@ -20,6 +20,7 @@ import { OrdersPage } from "./pages/OrdersPage";
 import { AdvicePage } from "./pages/AdvicePage";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { RolesPage } from "./pages/RolesPage";
+import { LeadsPage } from "./pages/LeadsPage";
 
 export default function App() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/advice" element={<AdvicePage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/roles" element={<RolesPage />} />
+          <Route path="/leads" element={<LeadsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />

@@ -472,3 +472,83 @@ export function unwrapList<T>(value: T[] | { results?: T[] } | undefined): T[] {
   if (Array.isArray(value)) return value;
   return value.results ?? [];
 }
+
+// ============================================================================
+// Leads (kanban)
+// ============================================================================
+
+export type LeadStatus =
+  | "new"
+  | "in_progress"
+  | "waiting"
+  | "resolved"
+  | "closed"
+  | "blocked";
+
+export interface AdminLead {
+  id: number;
+  title: string;
+  description: string;
+  status: LeadStatus;
+  priority: string;
+  parent: {
+    id: number;
+    name: string;
+    phone: string | null;
+    avatar: string | null;
+  } | null;
+  operator: { id: number; name: string } | null;
+  last_contact_at: string | null;
+  closed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  comments_count: number;
+}
+
+export interface LeadBoardResponse {
+  statuses: LeadStatus[];
+  counts: Record<LeadStatus, number>;
+  columns: Record<LeadStatus, AdminLead[]>;
+}
+
+export interface LeadComment {
+  id: number;
+  ticket_id: number;
+  text: string;
+  old_status: string;
+  new_status: string;
+  operator: { id: number; name: string } | null;
+  created_at: string;
+}
+
+export const leadsApi = {
+  board: (params?: { q?: string; operator_id?: number; per_column?: number }) =>
+    api<LeadBoardResponse>("/admin/leads/board/", { query: params }),
+  create: (data: {
+    parent_id: number;
+    title?: string;
+    description?: string;
+    priority?: string;
+    status?: LeadStatus;
+  }) => api<AdminLead>("/admin/leads/", { method: "POST", body: data }),
+  detail: (id: number) => api<AdminLead>(`/admin/leads/${id}/`),
+  update: (
+    id: number,
+    data: Partial<{
+      title: string;
+      description: string;
+      status: LeadStatus;
+      priority: string;
+      operator_id: number | null;
+    }>,
+  ) => api<AdminLead>(`/admin/leads/${id}/`, { method: "PATCH", body: data }),
+  remove: (id: number) =>
+    api<void>(`/admin/leads/${id}/`, { method: "DELETE" }),
+  comments: (id: number) =>
+    api<{ results: LeadComment[] }>(`/admin/leads/${id}/comments/`),
+  addComment: (id: number, text: string) =>
+    api<LeadComment>(`/admin/leads/${id}/comments/`, {
+      method: "POST",
+      body: { text },
+    }),
+};

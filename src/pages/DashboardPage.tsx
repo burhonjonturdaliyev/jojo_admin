@@ -1,47 +1,82 @@
 import { useEffect, useState } from "react";
 import {
   Users,
-  Crown,
+  Baby,
   PhoneCall,
-  Wallet,
+  Package,
+  BookOpen,
+  Image as ImageIcon,
+  AlertTriangle,
   Calendar,
   Download,
-  ArrowUp,
-  ArrowDown,
+  ArrowRight,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { StatCard } from "../components/StatCard";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
 import { useT } from "../lib/i18n";
-import { dashboardApi, type AdminDashboardStats } from "../lib/resources";
+import {
+  dashboardApi,
+  leadsApi,
+  usersApi,
+  unwrapList,
+  type AdminDashboardStats,
+  type LeadBoardResponse,
+  type AdminUserRow,
+  type AdminLead,
+} from "../lib/resources";
 
-const recent = [
-  { name: "Zarina Abdurahmonova", action: "Premium sotib oldi", time: "5 min" },
-  { name: "Abdulla Karimov", action: "Ro'yxatdan o'tdi", time: "12 min" },
-  { name: "Sardorbek M.", action: "So'rov yuborildi", time: "28 min" },
-  { name: "Nilufar Usmonova", action: "Bola qo'shildi", time: "45 min" },
-  { name: "Behzod Rahimov", action: "Operator bilan suhbat", time: "1 soat" },
-];
-
-const operators = [
-  { name: "Jamshid Karimov", calls: 142, resolved: 138, rating: 4.9 },
-  { name: "Sevinch A.", calls: 128, resolved: 122, rating: 4.8 },
-  { name: "Azizbek T.", calls: 96, resolved: 89, rating: 4.7 },
-  { name: "Madina N.", calls: 84, resolved: 80, rating: 4.9 },
-];
+const STATUS_META: Record<
+  string,
+  { label: string; color: string }
+> = {
+  new: { label: "Yangi", color: "#3B82F6" },
+  in_progress: { label: "Jarayonda", color: "#F59E0B" },
+  waiting: { label: "Kutilmoqda", color: "#A855F7" },
+  resolved: { label: "Hal qilingan", color: "#10B981" },
+  closed: { label: "Yopilgan", color: "#6B7280" },
+  blocked: { label: "Bloklangan", color: "#EF4444" },
+};
 
 export function DashboardPage() {
   const { t } = useT();
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
+  const [board, setBoard] = useState<LeadBoardResponse | null>(null);
+  const [recentUsers, setRecentUsers] = useState<AdminUserRow[]>([]);
+  const [recentLeads, setRecentLeads] = useState<AdminLead[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void dashboardApi.stats().then(setStats).catch((e) => {
-      console.error("dashboard stats failed", e);
-    });
+    (async () => {
+      try {
+        const [s, b, u] = await Promise.all([
+          dashboardApi.stats(),
+          leadsApi.board({ per_column: 5 }),
+          usersApi.list({ page_size: 6 }),
+        ]);
+        setStats(s);
+        setBoard(b);
+        setRecentUsers(unwrapList(u).slice(0, 6));
+        const all: AdminLead[] = Object.values(b.columns).flat();
+        all.sort(
+          (a, c) =>
+            new Date(c.updated_at).getTime() - new Date(a.updated_at).getTime(),
+        );
+        setRecentLeads(all.slice(0, 6));
+      } catch (e) {
+        console.error("dashboard load failed", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
   const fmt = (n: number | undefined) =>
     (n ?? 0).toLocaleString("uz-UZ").replace(/,/g, " ");
+
+  const totalLeads =
+    board ? Object.values(board.counts).reduce((a, b) => a + b, 0) : 0;
 
   return (
     <div className="flex h-full flex-col">
@@ -51,7 +86,8 @@ export function DashboardPage() {
         actions={
           <>
             <button className="btn-secondary text-[12.5px]">
-              <Calendar className="h-4 w-4" /> 01.05.2024 - 31.05.2024
+              <Calendar className="h-4 w-4" />{" "}
+              {new Date().toLocaleDateString("uz-UZ")}
             </button>
             <button className="btn-secondary text-[12.5px]">
               <Download className="h-4 w-4" /> {t("common.export")}
@@ -61,9 +97,10 @@ export function DashboardPage() {
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
+        {/* Stat tiles */}
         <div className="grid grid-cols-4 gap-4">
           <StatCard
-            label={t("dashboard.stat.total")}
+            label="Ota-onalar"
             value={fmt(stats?.parents)}
             delta=""
             icon={Users}
@@ -71,15 +108,15 @@ export function DashboardPage() {
             iconBg="rgba(59,130,246,0.15)"
           />
           <StatCard
-            label={"Bolalar"}
+            label="Farzandlar"
             value={fmt(stats?.children)}
             delta=""
-            icon={Crown}
+            icon={Baby}
             iconColor="#8B5CF6"
             iconBg="rgba(139,92,246,0.15)"
           />
           <StatCard
-            label={"24 soat ichida faol"}
+            label="24 soatda faol"
             value={fmt(stats?.active_24h)}
             delta=""
             icon={PhoneCall}
@@ -87,152 +124,207 @@ export function DashboardPage() {
             iconBg="rgba(245,158,11,0.15)"
           />
           <StatCard
-            label={"Faol mahsulotlar"}
-            value={fmt(stats?.products)}
+            label="SOS bildirishnomalar"
+            value={fmt(stats?.sos_alerts)}
             delta=""
-            icon={Wallet}
-            iconColor="#10B981"
-            iconBg="rgba(16,185,129,0.15)"
+            icon={AlertTriangle}
+            iconColor="#EF4444"
+            iconBg="rgba(239,68,68,0.15)"
           />
         </div>
 
+        <div className="mt-4 grid grid-cols-4 gap-4">
+          <SmallStat
+            label="Mahsulotlar"
+            value={fmt(stats?.products)}
+            icon={Package}
+            color="#10B981"
+          />
+          <SmallStat
+            label="Maqolalar"
+            value={fmt(stats?.blog_posts)}
+            icon={BookOpen}
+            color="#0EA5E9"
+          />
+          <SmallStat
+            label="Bannerlar"
+            value={fmt(stats?.banners)}
+            icon={ImageIcon}
+            color="#EC4899"
+          />
+          <SmallStat
+            label="Leadlar"
+            value={fmt(totalLeads)}
+            icon={PhoneCall}
+            color="#6366F1"
+            link="/leads"
+          />
+        </div>
+
+        {/* Lead status distribution + Recent leads */}
         <div className="mt-5 grid grid-cols-3 gap-4">
-          <div className="card col-span-2 p-5">
-            <div className="mb-4 flex items-center justify-between">
+          <div className="card p-5">
+            <div className="mb-3 flex items-center justify-between">
               <div>
                 <h3 className="text-[15px] font-semibold text-text-primary">
-                  {t("dashboard.userFlow")}
+                  Lead statuslari
                 </h3>
                 <p className="text-[12px] text-text-secondary">
-                  {t("dashboard.userFlowSub")}
+                  Joriy taqsimot
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 rounded-lg border border-line bg-bg-input p-1 text-[12px]">
-                <button className="rounded-md bg-bg-hover px-2 py-1 text-text-primary">
-                  {t("common.day")}
-                </button>
-                <button className="px-2 py-1 text-text-secondary">{t("common.week")}</button>
-                <button className="px-2 py-1 text-text-secondary">{t("common.month")}</button>
-              </div>
+              <Link
+                to="/leads"
+                className="text-[11.5px] text-primary hover:underline inline-flex items-center gap-0.5"
+              >
+                Ko'rish <ArrowRight className="h-3 w-3" />
+              </Link>
             </div>
-            <ChartMock />
+            <div className="space-y-3">
+              {board ? (
+                board.statuses.map((s) => {
+                  const meta = STATUS_META[s] || { label: s, color: "#9CA3AF" };
+                  const count = board.counts[s] || 0;
+                  const pct = totalLeads
+                    ? Math.round((count / totalLeads) * 100)
+                    : 0;
+                  return (
+                    <div key={s}>
+                      <div className="mb-1 flex items-center justify-between text-[12.5px]">
+                        <span className="text-text-secondary">{meta.label}</span>
+                        <span className="font-medium text-text-primary">
+                          {count}{" "}
+                          <span className="text-text-muted text-[11px]">
+                            ({pct}%)
+                          </span>
+                        </span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-bg-input">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${pct}%`,
+                            backgroundColor: meta.color,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-[12px] text-text-muted">Yuklanmoqda...</div>
+              )}
+            </div>
           </div>
 
-          <div className="card p-5">
-            <h3 className="mb-3 text-[15px] font-semibold text-text-primary">
-              {t("dashboard.recent")}
-            </h3>
-            <div className="space-y-3">
-              {recent.map((r) => (
-                <div key={r.name + r.time} className="flex items-center gap-3">
-                  <Avatar name={r.name} size={34} />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[13px] font-medium text-text-primary">
-                      {r.name}
-                    </div>
-                    <div className="truncate text-[11.5px] text-text-secondary">
-                      {r.action}
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-[11px] text-text-muted">
-                    {r.time}
-                  </div>
+          <div className="card col-span-2 p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <h3 className="text-[15px] font-semibold text-text-primary">
+                  So'nggi murojaatlar
+                </h3>
+                <p className="text-[12px] text-text-secondary">
+                  Kanban'dan oxirgi 6 ta
+                </p>
+              </div>
+              <Link
+                to="/leads"
+                className="text-[11.5px] text-primary hover:underline inline-flex items-center gap-0.5"
+              >
+                Hammasi <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+            <div className="space-y-2">
+              {recentLeads.length === 0 && (
+                <div className="text-center py-6 text-[12px] text-text-muted">
+                  {loading ? "Yuklanmoqda..." : "Lead yo'q"}
                 </div>
-              ))}
+              )}
+              {recentLeads.map((l) => {
+                const meta = STATUS_META[l.status] || {
+                  label: l.status,
+                  color: "#9CA3AF",
+                };
+                return (
+                  <Link
+                    to="/leads"
+                    key={l.id}
+                    className="flex items-center gap-3 rounded-lg border border-line p-2.5 hover:bg-bg-hover transition-colors"
+                  >
+                    <Avatar name={l.parent?.name || "?"} size={32} />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[12.5px] font-medium text-text-primary truncate">
+                        {l.title}
+                      </div>
+                      <div className="text-[11px] text-text-muted truncate">
+                        {l.parent?.name} • {l.parent?.phone}
+                      </div>
+                    </div>
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[10.5px] font-medium"
+                      style={{
+                        backgroundColor: meta.color + "20",
+                        color: meta.color,
+                      }}
+                    >
+                      {meta.label}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-3 gap-4">
-          <div className="card p-5">
-            <h3 className="mb-1 text-[15px] font-semibold text-text-primary">
-              {t("dashboard.statusDist")}
-            </h3>
-            <p className="mb-4 text-[12px] text-text-secondary">
-              {t("dashboard.statusDistSub")}
-            </p>
-            <div className="space-y-3">
-              {[
-                { label: t("userStatus.hal_qilingan"), value: 4256, pct: 56, color: "#10B981" },
-                { label: t("userStatus.yopilgan"), value: 2310, pct: 30, color: "#6B7280" },
-                { label: t("userStatus.jarayonda"), value: 98, pct: 6, color: "#F59E0B" },
-                { label: t("userStatus.kutilmoqda"), value: 67, pct: 4, color: "#3B82F6" },
-                { label: t("userStatus.bloklangan"), value: 245, pct: 4, color: "#EF4444" },
-              ].map((s) => (
-                <div key={s.label}>
-                  <div className="mb-1 flex items-center justify-between text-[12.5px]">
-                    <span className="text-text-secondary">{s.label}</span>
-                    <span className="font-medium text-text-primary">
-                      {s.value.toLocaleString("ru-RU")}
-                    </span>
+        {/* Recent users */}
+        <div className="mt-5 card p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h3 className="text-[15px] font-semibold text-text-primary">
+                Yangi foydalanuvchilar
+              </h3>
+              <p className="text-[12px] text-text-secondary">
+                Oxirgi ro'yxatdan o'tganlar
+              </p>
+            </div>
+            <Link
+              to="/users"
+              className="text-[11.5px] text-primary hover:underline inline-flex items-center gap-0.5"
+            >
+              Hammasi <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {recentUsers.length === 0 && (
+              <div className="col-span-3 text-center py-6 text-[12px] text-text-muted">
+                {loading ? "Yuklanmoqda..." : "Foydalanuvchilar yo'q"}
+              </div>
+            )}
+            {recentUsers.map((u) => (
+              <div
+                key={u.id}
+                className="flex items-center gap-3 rounded-lg border border-line p-3"
+              >
+                <Avatar name={u.first_name || u.phone || "?"} size={36} />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-medium text-text-primary truncate">
+                    {u.first_name || u.last_name || u.phone || "Noma'lum"}
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-bg-input">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${s.pct}%`, backgroundColor: s.color }}
-                    />
+                  <div className="text-[11px] text-text-muted font-mono truncate">
+                    {u.phone}
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="card col-span-2 p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-[15px] font-semibold text-text-primary">
-                {t("dashboard.topOperators")}
-              </h3>
-              <button className="text-[12px] text-brand hover:underline">
-                {t("common.viewAll")}
-              </button>
-            </div>
-            <div className="overflow-hidden rounded-lg border border-line">
-              <table className="w-full text-[12.5px]">
-                <thead className="bg-bg-input text-text-muted">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-medium">{t("dashboard.tbl.operator")}</th>
-                    <th className="px-3 py-2 text-left font-medium">{t("dashboard.tbl.calls")}</th>
-                    <th className="px-3 py-2 text-left font-medium">{t("dashboard.tbl.resolved")}</th>
-                    <th className="px-3 py-2 text-left font-medium">{t("dashboard.tbl.rating")}</th>
-                    <th className="px-3 py-2 text-left font-medium">{t("dashboard.tbl.trend")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {operators.map((op, i) => (
-                    <tr key={op.name} className={i ? "border-t border-line" : ""}>
-                      <td className="px-3 py-2.5">
-                        <div className="flex items-center gap-2">
-                          <Avatar name={op.name} size={28} />
-                          <span className="font-medium text-text-primary">
-                            {op.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5 text-text-secondary">
-                        {op.calls}
-                      </td>
-                      <td className="px-3 py-2.5 text-text-secondary">
-                        {op.resolved}
-                      </td>
-                      <td className="px-3 py-2.5 text-text-primary font-medium">
-                        ⭐ {op.rating}
-                      </td>
-                      <td className="px-3 py-2.5">
-                        {i % 2 === 0 ? (
-                          <span className="flex items-center gap-1 text-status-resolved">
-                            <ArrowUp className="h-3 w-3" /> 12%
-                          </span>
-                        ) : (
-                          <span className="flex items-center gap-1 text-status-blocked">
-                            <ArrowDown className="h-3 w-3" /> 3%
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                {u.is_active ? (
+                  <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
+                    Faol
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-text-muted/15 px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
+                    Faol emas
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -240,18 +332,36 @@ export function DashboardPage() {
   );
 }
 
-function ChartMock() {
-  const bars = [40, 65, 55, 80, 60, 90, 75, 95, 70, 85, 65, 78, 88, 72, 92, 80];
-  return (
-    <div className="flex h-48 items-end gap-2">
-      {bars.map((h, i) => (
-        <div key={i} className="flex flex-1 flex-col gap-1">
-          <div
-            className="rounded-md bg-gradient-to-t from-brand to-blue-400 opacity-90"
-            style={{ height: `${h}%` }}
-          />
+function SmallStat({
+  label,
+  value,
+  icon: Icon,
+  color,
+  link,
+}: {
+  label: string;
+  value: string;
+  icon: typeof Users;
+  color: string;
+  link?: string;
+}) {
+  const inner = (
+    <div className="card p-4 flex items-center gap-3 hover:shadow-sm transition-shadow">
+      <div
+        className="flex h-10 w-10 items-center justify-center rounded-xl shrink-0"
+        style={{ backgroundColor: color + "20" }}
+      >
+        <Icon className="h-5 w-5" style={{ color }} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[18px] font-bold text-text-primary leading-tight">
+          {value}
         </div>
-      ))}
+        <div className="text-[11.5px] text-text-secondary truncate">
+          {label}
+        </div>
+      </div>
     </div>
   );
+  return link ? <Link to={link}>{inner}</Link> : inner;
 }
