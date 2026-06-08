@@ -18,6 +18,7 @@ import {
   ShoppingBag,
   Lightbulb,
   Ban,
+  FolderTree,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useAuth } from "../lib/auth";
@@ -53,6 +54,7 @@ export function Sidebar() {
       label: t("nav.section.shop"),
       items: [
         { to: "/products", label: t("nav.products"), icon: Package },
+        { to: "/categories", label: t("nav.categories"), icon: FolderTree },
         { to: "/banners", label: t("nav.banners"), icon: ImageIcon },
         { to: "/orders", label: t("nav.orders"), icon: ShoppingBag },
       ],

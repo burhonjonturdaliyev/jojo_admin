@@ -18,6 +18,7 @@ import { ProductsPage } from "./pages/ProductsPage";
 import { PromoBannersPage } from "./pages/PromoBannersPage";
 import { OrdersPage } from "./pages/OrdersPage";
 import { AdvicePage } from "./pages/AdvicePage";
+import { CategoriesPage } from "./pages/CategoriesPage";
 
 export default function App() {
   return (
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/banners" element={<PromoBannersPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/advice" element={<AdvicePage />} />
+          <Route path="/categories" element={<CategoriesPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
