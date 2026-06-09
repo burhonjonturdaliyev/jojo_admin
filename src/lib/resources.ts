@@ -256,12 +256,26 @@ export const sosApi = {
 // Broadcast (Elon / Announcement) — barcha parentlarga umumiy notif.
 // ============================================================================
 
+export interface AdminBroadcastHistoryRow {
+  title: string;
+  body: string;
+  category: string;
+  count: number;
+  first_sent: string;
+  last_sent: string;
+}
+
 export const broadcastApi = {
   send: (data: { title: string; body: string; category?: string }) =>
     api<{ status: boolean; sent_to: number }>("/admin/broadcast/", {
       method: "POST",
       body: data,
     }),
+  history: (params?: { category?: string }) =>
+    api<{ results: AdminBroadcastHistoryRow[] }>(
+      "/admin/broadcast/history/",
+      { query: params },
+    ),
 };
 
 // ============================================================================
@@ -379,6 +393,16 @@ export const notificationsApi = {
     api<AdminNotificationRow[] | { results: AdminNotificationRow[] }>("/admin/notifications/", {
       query: query as Record<string, string>,
     }),
+  update: (
+    id: number,
+    data: Partial<{ title: string; body: string; category: string }>,
+  ) =>
+    api<{ id: number; title: string; body: string; category: string }>(
+      `/admin/notifications/${id}/`,
+      { method: "PATCH", body: data },
+    ),
+  remove: (id: number) =>
+    api<void>(`/admin/notifications/${id}/`, { method: "DELETE" }),
 };
 
 // ============================================================================

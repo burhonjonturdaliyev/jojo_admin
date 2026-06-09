@@ -1,8 +1,19 @@
-import { useState } from "react";
-import { Send, MessageCircle, CheckCircle2, AlertCircle } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Send,
+  MessageCircle,
+  CheckCircle2,
+  AlertCircle,
+  History,
+  RotateCcw,
+  Users as UsersIcon,
+} from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { useT } from "../lib/i18n";
-import { broadcastApi } from "../lib/resources";
+import {
+  broadcastApi,
+  type AdminBroadcastHistoryRow,
+} from "../lib/resources";
 
 /**
  * SMS — joriy backend SMS provider'siz, lekin push notification orqali
@@ -15,6 +26,26 @@ export function SmsPage() {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<AdminBroadcastHistoryRow[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+
+  const loadHistory = useCallback(() => {
+    setHistoryLoading(true);
+    broadcastApi
+      .history({ category: "system" })
+      .then((r) => setHistory((r.results || []).filter((x) => x.title === "Jojo")))
+      .catch((e) => console.error("sms history", e))
+      .finally(() => setHistoryLoading(false));
+  }, []);
+
+  useEffect(() => {
+    loadHistory();
+  }, [loadHistory]);
+
+  const resend = (row: AdminBroadcastHistoryRow) => {
+    setBody(row.body);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const send = async () => {
     setError(null);
@@ -32,6 +63,7 @@ export function SmsPage() {
       });
       setResult(`Yuborildi! ${r.sent_to} ta foydalanuvchiga yetkazildi.`);
       setBody("");
+      loadHistory();
     } catch (e) {
       const msg = (e as { message?: string }).message || "Xato yuz berdi";
       setError(msg);
@@ -96,6 +128,61 @@ export function SmsPage() {
             <Send className="h-4 w-4" />
             {sending ? "Yuborilmoqda..." : "Hammaga yuborish"}
           </button>
+        </div>
+
+        {/* Yuborilgan xabarlar tarixi */}
+        <div className="mt-5 max-w-2xl">
+          <div className="flex items-center gap-2 mb-3">
+            <History className="h-4 w-4 text-text-muted" />
+            <h3 className="text-[15px] font-semibold text-text-primary">
+              Yuborilgan xabarlar
+            </h3>
+            <span className="text-[11.5px] text-text-muted">
+              ({history.length} ta unikal)
+            </span>
+          </div>
+          <div className="grid gap-2">
+            {historyLoading && (
+              <div className="card p-8 text-center text-text-muted">
+                Yuklanmoqda...
+              </div>
+            )}
+            {!historyLoading && history.length === 0 && (
+              <div className="card p-12 text-center text-text-muted">
+                <MessageCircle className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                Xabarlar yuborilmagan
+              </div>
+            )}
+            {history.map((row, i) => (
+              <div key={i} className="card p-3 group">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-500/15 text-green-500">
+                    <MessageCircle className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[12.5px] text-text-primary line-clamp-2">
+                      {row.body}
+                    </div>
+                    <div className="mt-1.5 flex items-center gap-3 text-[11px] text-text-muted">
+                      <span className="inline-flex items-center gap-1">
+                        <UsersIcon className="h-3 w-3" />
+                        {row.count} qabul qildi
+                      </span>
+                      <span>
+                        {new Date(row.last_sent).toLocaleString("uz-UZ")}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => resend(row)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1 text-[11.5px] font-medium text-primary hover:bg-primary/10 shrink-0"
+                  >
+                    <RotateCcw className="h-3 w-3" /> Qaytarish
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
