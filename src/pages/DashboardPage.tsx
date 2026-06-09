@@ -436,7 +436,7 @@ function ChartCard({
       </div>
       <div className="mt-4 flex h-32 items-end gap-1.5">
         {data.length === 0
-          ? Array.from({ length: 8 }).map((_, i) => (
+          ? Array.from({ length: 7 }).map((_, i) => (
               <div
                 key={i}
                 className="flex-1 rounded-md bg-bg-input/50"
@@ -448,21 +448,17 @@ function ChartCard({
               return (
                 <div
                   key={i}
-                  className="group relative flex flex-1 flex-col items-center gap-1"
-                >
-                  <div
-                    className="w-full rounded-md transition-all hover:opacity-80"
-                    style={{
-                      height: `${Math.max(h, 3)}%`,
-                      backgroundColor: color,
-                      opacity: 0.85,
-                    }}
-                    title={
-                      (valueFormatter ? valueFormatter(d.value) : d.value.toString()) +
-                      (suffix ?? "")
-                    }
-                  />
-                </div>
+                  className="flex-1 rounded-md transition-all hover:opacity-100"
+                  style={{
+                    height: `${Math.max(h, 4)}%`,
+                    backgroundColor: color,
+                    opacity: 0.85,
+                  }}
+                  title={
+                    (valueFormatter ? valueFormatter(d.value) : d.value.toString()) +
+                    (suffix ?? "")
+                  }
+                />
               );
             })}
       </div>
