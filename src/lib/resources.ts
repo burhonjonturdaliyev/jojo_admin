@@ -266,11 +266,16 @@ export interface AdminBroadcastHistoryRow {
 }
 
 export const broadcastApi = {
-  send: (data: { title: string; body: string; category?: string }) =>
-    api<{ status: boolean; sent_to: number }>("/admin/broadcast/", {
-      method: "POST",
-      body: data,
-    }),
+  send: (data: {
+    title: string;
+    body: string;
+    category?: string;
+    send_sms?: boolean;
+  }) =>
+    api<{ status: boolean; sent_to: number; sms_sent?: number }>(
+      "/admin/broadcast/",
+      { method: "POST", body: data },
+    ),
   history: (params?: { category?: string }) =>
     api<{ results: AdminBroadcastHistoryRow[] }>(
       "/admin/broadcast/history/",

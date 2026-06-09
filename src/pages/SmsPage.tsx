@@ -60,8 +60,12 @@ export function SmsPage() {
         title: "Jojo",
         body: body.trim(),
         category: "system",
+        send_sms: true,
       });
-      setResult(`Yuborildi! ${r.sent_to} ta foydalanuvchiga yetkazildi.`);
+      const smsLine = r.sms_sent ? ` (${r.sms_sent} ta SMS)` : "";
+      setResult(
+        `Yuborildi! ${r.sent_to} ta foydalanuvchiga yetkazildi${smsLine}.`,
+      );
       setBody("");
       loadHistory();
     } catch (e) {

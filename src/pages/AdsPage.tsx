@@ -30,6 +30,7 @@ export function AdsPage() {
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [withSms, setWithSms] = useState(false);
 
   const [history, setHistory] = useState<AdminBroadcastHistoryRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -67,8 +68,10 @@ export function AdsPage() {
         title: title.trim(),
         body: body.trim(),
         category,
+        send_sms: withSms,
       });
-      setResult(`${r.sent_to} ta ota-onaga yetkazildi`);
+      const smsLine = r.sms_sent ? ` + ${r.sms_sent} ta SMS` : "";
+      setResult(`${r.sent_to} ta ota-onaga yetkazildi${smsLine}`);
       setTitle("");
       setBody("");
       loadHistory();
@@ -166,6 +169,30 @@ export function AdsPage() {
                   ))}
                 </div>
               </div>
+
+              <label
+                className={
+                  "flex items-center gap-3 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors " +
+                  (withSms
+                    ? "border-blue-500/40 bg-blue-500/5"
+                    : "border-line bg-bg-input hover:border-blue-500/20")
+                }
+              >
+                <input
+                  type="checkbox"
+                  checked={withSms}
+                  onChange={(e) => setWithSms(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                <div className="flex-1">
+                  <div className="text-[12.5px] font-semibold text-text-primary">
+                    SMS bilan dublikat yuborish
+                  </div>
+                  <div className="text-[11px] text-text-muted">
+                    SMSFLY orqali ham bittadan SMS yuboriladi
+                  </div>
+                </div>
+              </label>
 
               {error && (
                 <div className="flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-[12.5px] font-medium text-red-500">
