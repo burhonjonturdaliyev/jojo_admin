@@ -269,6 +269,10 @@ export const broadcastApi = {
   send: (data: {
     title: string;
     body: string;
+    title_ru?: string;
+    title_en?: string;
+    body_ru?: string;
+    body_en?: string;
     category?: string;
     send_sms?: boolean;
   }) =>
@@ -454,11 +458,16 @@ export interface AdminOperator {
   date_joined: string;
 }
 
+export interface AdminOperatorWithRole extends AdminOperator {
+  role_id: number | null;
+  role_name: string | null;
+}
+
 export const operatorsApi = {
   list: () =>
-    api<{ count: number; results: AdminOperator[] }>("/admin/operators/"),
-  create: (data: { phone: string; password: string; full_name?: string }) =>
-    api<AdminOperator>("/admin/operators/create/", {
+    api<{ count: number; results: AdminOperatorWithRole[] }>("/admin/operators/"),
+  create: (data: { phone: string; password: string; full_name?: string; role_id?: number | null }) =>
+    api<AdminOperatorWithRole>("/admin/operators/create/", {
       method: "POST",
       body: data,
     }),
@@ -469,14 +478,67 @@ export const operatorsApi = {
       phone: string;
       is_active: boolean;
       new_password: string;
+      role_id: number | null;
     }>,
   ) =>
-    api<AdminOperator>(`/admin/operators/${id}/`, {
+    api<AdminOperatorWithRole>(`/admin/operators/${id}/`, {
       method: "PATCH",
       body: data,
     }),
   remove: (id: number) =>
     api<void>(`/admin/operators/${id}/`, { method: "DELETE" }),
+};
+
+// ============================================================================
+// Admin Roles
+// ============================================================================
+
+export interface AdminRole {
+  id: number;
+  name: string;
+  description: string;
+  permissions: string[];
+  is_system: boolean;
+  users_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export const adminRolesApi = {
+  list: () =>
+    api<{
+      count: number;
+      results: AdminRole[];
+      available_permissions: string[];
+    }>("/admin/roles/"),
+  create: (data: { name: string; description?: string; permissions?: string[] }) =>
+    api<AdminRole>("/admin/roles/", { method: "POST", body: data }),
+  update: (id: number, data: Partial<{ name: string; description: string; permissions: string[] }>) =>
+    api<AdminRole>(`/admin/roles/${id}/`, { method: "PATCH", body: data }),
+  remove: (id: number) =>
+    api<void>(`/admin/roles/${id}/`, { method: "DELETE" }),
+};
+
+// ============================================================================
+// Auto-translate (admin "Auto" tugmasi)
+// ============================================================================
+
+export type TranslateLang = "uz" | "ru" | "en";
+
+export const translateApi = {
+  one: (text: string, source: TranslateLang, target: TranslateLang) =>
+    api<{ text: string; source: string; target: string }>("/admin/translate/", {
+      method: "POST",
+      body: { text, source, target },
+    }),
+  all: (text: string, source: TranslateLang) =>
+    api<{
+      translations: Record<TranslateLang, string>;
+      source: string;
+    }>("/admin/translate/", {
+      method: "POST",
+      body: { text, source },
+    }),
 };
 
 // ============================================================================
@@ -505,7 +567,11 @@ export interface AdminNotifRule {
   audience: NotifAudience;
   audience_params: Record<string, unknown>;
   title: string;
+  title_ru?: string;
+  title_en?: string;
   body: string;
+  body_ru?: string;
+  body_en?: string;
   category: string;
   send_push: boolean;
   send_sms: boolean;

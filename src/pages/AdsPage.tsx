@@ -9,6 +9,7 @@ import {
   Users as UsersIcon,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { MultilangInput, type LangValue } from "../components/MultilangInput";
 import { useT } from "../lib/i18n";
 import {
   broadcastApi,
@@ -22,8 +23,8 @@ import {
  */
 export function AdsPage() {
   const { t } = useT();
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
+  const [titleL, setTitleL] = useState<LangValue>({ uz: "", ru: "", en: "" });
+  const [bodyL, setBodyL] = useState<LangValue>({ uz: "", ru: "", en: "" });
   const [category, setCategory] = useState<"system" | "tip" | "premium">(
     "system",
   );
@@ -31,6 +32,8 @@ export function AdsPage() {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [withSms, setWithSms] = useState(false);
+  const title = titleL.uz;
+  const body = bodyL.uz;
 
   const [history, setHistory] = useState<AdminBroadcastHistoryRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -49,8 +52,8 @@ export function AdsPage() {
   }, [loadHistory]);
 
   const resend = (row: AdminBroadcastHistoryRow) => {
-    setTitle(row.title);
-    setBody(row.body);
+    setTitleL({ uz: row.title, ru: "", en: "" });
+    setBodyL({ uz: row.body, ru: "", en: "" });
     setCategory(row.category as "system" | "tip" | "premium");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -58,22 +61,26 @@ export function AdsPage() {
   const send = async () => {
     setError(null);
     setResult(null);
-    if (!title.trim() || !body.trim()) {
-      setError("Sarlavha va matn majburiy");
+    if (!titleL.uz.trim() || !bodyL.uz.trim()) {
+      setError("O'zbek tilidagi sarlavha va matn majburiy");
       return;
     }
     setSending(true);
     try {
       const r = await broadcastApi.send({
-        title: title.trim(),
-        body: body.trim(),
+        title: titleL.uz.trim(),
+        body: bodyL.uz.trim(),
+        title_ru: titleL.ru.trim() || undefined,
+        title_en: titleL.en.trim() || undefined,
+        body_ru: bodyL.ru.trim() || undefined,
+        body_en: bodyL.en.trim() || undefined,
         category,
         send_sms: withSms,
       });
       const smsLine = r.sms_sent ? ` + ${r.sms_sent} ta SMS` : "";
       setResult(`${r.sent_to} ta ota-onaga yetkazildi${smsLine}`);
-      setTitle("");
-      setBody("");
+      setTitleL({ uz: "", ru: "", en: "" });
+      setBodyL({ uz: "", ru: "", en: "" });
       loadHistory();
     } catch (e) {
       const msg = (e as { message?: string }).message || "Xato yuz berdi";
@@ -109,38 +116,20 @@ export function AdsPage() {
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                  Sarlavha
-                </label>
-                <input
-                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] text-text-primary outline-none focus:border-primary"
-                  placeholder="Masalan: Yangi maslahatlar qo'shildi"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  maxLength={150}
-                />
-                <div className="mt-1 text-right text-[10.5px] text-text-muted">
-                  {title.length}/150
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                  Matn
-                </label>
-                <textarea
-                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] text-text-primary outline-none focus:border-primary"
-                  rows={6}
-                  placeholder="Elon matnini kiriting..."
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  maxLength={500}
-                />
-                <div className="mt-1 text-right text-[10.5px] text-text-muted">
-                  {body.length}/500
-                </div>
-              </div>
+              <MultilangInput
+                label="Sarlavha"
+                value={titleL}
+                onChange={setTitleL}
+                placeholder="Masalan: Yangi maslahatlar qo'shildi"
+              />
+              <MultilangInput
+                label="Matn"
+                value={bodyL}
+                onChange={setBodyL}
+                placeholder="Elon matnini kiriting..."
+                multiline
+                rows={6}
+              />
 
               <div>
                 <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">

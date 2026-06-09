@@ -1,16 +1,22 @@
 import { useEffect, useState } from "react";
-import { Plus, Headset, Pencil, Trash2, X, KeyRound } from "lucide-react";
+import { Plus, Headset, Pencil, Trash2, X, KeyRound, Shield } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
 import { useT } from "../lib/i18n";
-import { operatorsApi, type AdminOperator } from "../lib/resources";
+import {
+  operatorsApi,
+  adminRolesApi,
+  type AdminOperatorWithRole,
+  type AdminRole,
+} from "../lib/resources";
 
 export function OperatorsPage() {
   const { t } = useT();
-  const [items, setItems] = useState<AdminOperator[]>([]);
+  const [items, setItems] = useState<AdminOperatorWithRole[]>([]);
+  const [roles, setRoles] = useState<AdminRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
-  const [editing, setEditing] = useState<AdminOperator | null>(null);
+  const [editing, setEditing] = useState<AdminOperatorWithRole | null>(null);
 
   const removeOperator = async (id: number, name: string) => {
     if (!confirm(`${name} ni o'chirasizmi?`)) return;
@@ -25,8 +31,12 @@ export function OperatorsPage() {
   const reload = async () => {
     setLoading(true);
     try {
-      const r = await operatorsApi.list();
+      const [r, rolesRes] = await Promise.all([
+        operatorsApi.list(),
+        adminRolesApi.list(),
+      ]);
       setItems(r.results);
+      setRoles(rolesRes.results || []);
     } finally {
       setLoading(false);
     }
@@ -86,6 +96,16 @@ export function OperatorsPage() {
                   {op.is_active ? "Faol" : "Nofaol"}
                 </span>
               </div>
+              {op.role_name && (
+                <div className="mt-2 inline-flex items-center gap-1 rounded-md bg-blue-500/15 px-2 py-0.5 text-[11px] font-medium text-blue-500">
+                  <Shield className="h-3 w-3" /> {op.role_name}
+                </div>
+              )}
+              {!op.role_name && (
+                <div className="mt-2 text-[11px] text-text-muted italic">
+                  Rolsiz
+                </div>
+              )}
               <div className="mt-3 flex items-center justify-between">
                 <div className="text-[11px] text-text-muted">
                   Qo'shilgan: {new Date(op.date_joined).toLocaleDateString("uz-UZ")}
@@ -116,6 +136,7 @@ export function OperatorsPage() {
 
       {adding && (
         <CreateOperatorModal
+          roles={roles}
           onClose={() => setAdding(false)}
           onCreated={async () => {
             setAdding(false);
@@ -126,6 +147,7 @@ export function OperatorsPage() {
       {editing && (
         <EditOperatorModal
           op={editing}
+          roles={roles}
           onClose={() => setEditing(null)}
           onSaved={async () => {
             setEditing(null);
@@ -139,10 +161,12 @@ export function OperatorsPage() {
 
 function EditOperatorModal({
   op,
+  roles,
   onClose,
   onSaved,
 }: {
-  op: AdminOperator;
+  op: AdminOperatorWithRole;
+  roles: AdminRole[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -150,6 +174,7 @@ function EditOperatorModal({
   const [phone, setPhone] = useState(op.phone);
   const [isActive, setIsActive] = useState(op.is_active);
   const [newPassword, setNewPassword] = useState("");
+  const [roleId, setRoleId] = useState<number | null>(op.role_id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -162,6 +187,7 @@ function EditOperatorModal({
         phone: phone.trim(),
         is_active: isActive,
         new_password: newPassword || undefined,
+        role_id: roleId,
       });
       onSaved();
     } catch (e) {
@@ -211,6 +237,23 @@ function EditOperatorModal({
               className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] outline-none focus:border-primary"
             />
           </div>
+          <div>
+            <div className="text-[11.5px] font-medium text-text-secondary mb-1">
+              Rol
+            </div>
+            <select
+              value={roleId ?? ""}
+              onChange={(e) => setRoleId(e.target.value ? Number(e.target.value) : null)}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            >
+              <option value="">— Rolsiz —</option>
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <label className="flex items-center gap-2 text-[12.5px] text-text-secondary cursor-pointer">
             <input
               type="checkbox"
@@ -243,15 +286,18 @@ function EditOperatorModal({
 }
 
 function CreateOperatorModal({
+  roles,
   onClose,
   onCreated,
 }: {
+  roles: AdminRole[];
   onClose: () => void;
   onCreated: () => void;
 }) {
   const [phone, setPhone] = useState("+998");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
+  const [roleId, setRoleId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -267,6 +313,7 @@ function CreateOperatorModal({
         phone: phone.trim(),
         password,
         full_name: fullName.trim() || undefined,
+        role_id: roleId,
       });
       onCreated();
     } catch (e) {
@@ -302,6 +349,23 @@ function CreateOperatorModal({
             placeholder="Parol"
             className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
           />
+          <div>
+            <div className="text-[11.5px] font-medium text-text-secondary mb-1">
+              Rol
+            </div>
+            <select
+              value={roleId ?? ""}
+              onChange={(e) => setRoleId(e.target.value ? Number(e.target.value) : null)}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            >
+              <option value="">— Rolsiz —</option>
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </div>
           {error && (
             <div className="rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
               {error}

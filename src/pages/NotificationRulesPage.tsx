@@ -16,6 +16,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { MultilangInput, type LangValue } from "../components/MultilangInput";
 import {
   notifRulesApi,
   type AdminNotifRule,
@@ -124,7 +125,11 @@ export function NotificationRulesPage() {
     audience: "premium_active",
     audience_params: {},
     title: "",
+    title_ru: "",
+    title_en: "",
     body: "",
+    body_ru: "",
+    body_en: "",
     category: "premium",
     send_push: true,
     send_sms: false,
@@ -510,34 +515,47 @@ function RuleEditor({
             </div>
           )}
 
-          {/* Title + body */}
-          <div>
-            <div className="text-[12px] font-medium text-text-secondary mb-1.5">
-              Sarlavha
-            </div>
-            <input
-              value={draft.title}
-              onChange={(e) => setDraft({ ...draft, title: e.target.value })}
-              placeholder="Hurmatli {name}, premium muddati tugayapti!"
-              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] font-medium outline-none focus:border-primary"
-            />
-            <div className="mt-1 text-[10.5px] text-text-muted">
-              O'zgaruvchilar: <code>{"{name}"}</code>, <code>{"{phone}"}</code>,{" "}
-              <code>{"{days_left}"}</code>
-            </div>
+          {/* Title + body (multilingual) */}
+          <MultilangInput
+            label="Sarlavha"
+            value={{
+              uz: draft.title,
+              ru: draft.title_ru || "",
+              en: draft.title_en || "",
+            }}
+            onChange={(v: LangValue) =>
+              setDraft({
+                ...draft,
+                title: v.uz,
+                title_ru: v.ru,
+                title_en: v.en,
+              })
+            }
+            placeholder="Hurmatli {name}, premium muddati tugayapti!"
+          />
+          <div className="text-[10.5px] text-text-muted -mt-2">
+            O'zgaruvchilar: <code>{"{name}"}</code>, <code>{"{phone}"}</code>,{" "}
+            <code>{"{days_left}"}</code>
           </div>
-          <div>
-            <div className="text-[12px] font-medium text-text-secondary mb-1.5">
-              Matn
-            </div>
-            <textarea
-              value={draft.body}
-              onChange={(e) => setDraft({ ...draft, body: e.target.value })}
-              rows={4}
-              placeholder="Premium {days_left} kun ichida tugaydi. Hozir uzaytirib qo'ying!"
-              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-            />
-          </div>
+          <MultilangInput
+            label="Matn"
+            value={{
+              uz: draft.body,
+              ru: draft.body_ru || "",
+              en: draft.body_en || "",
+            }}
+            onChange={(v: LangValue) =>
+              setDraft({
+                ...draft,
+                body: v.uz,
+                body_ru: v.ru,
+                body_en: v.en,
+              })
+            }
+            placeholder="Premium {days_left} kun ichida tugaydi. Hozir uzaytirib qo'ying!"
+            multiline
+            rows={4}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <div>
