@@ -161,6 +161,41 @@ export function DashboardPage() {
           />
         </div>
 
+        {/* 7-day signups bar chart + revenue */}
+        <div className="mt-5 grid grid-cols-2 gap-4">
+          <ChartCard
+            title="7 kunlik ro'yxatdan o'tish"
+            subtitle="Yangi ota-onalar / kun"
+            data={(stats?.signups_7d ?? []).map((d) => ({
+              label: new Date(d.date).toLocaleDateString("uz-UZ", {
+                day: "2-digit",
+                month: "2-digit",
+              }),
+              value: d.count,
+            }))}
+            color="#3B82F6"
+            suffix=" ta"
+          />
+          <ChartCard
+            title="7 kunlik daromad"
+            subtitle="Premium to'lovlar / kun"
+            data={(stats?.revenue_7d ?? []).map((d) => ({
+              label: new Date(d.date).toLocaleDateString("uz-UZ", {
+                day: "2-digit",
+                month: "2-digit",
+              }),
+              value: d.amount,
+            }))}
+            color="#F59E0B"
+            valueFormatter={(v) =>
+              v > 1000
+                ? `${(v / 1000).toFixed(0)}k`
+                : v.toString()
+            }
+            suffix=" so'm"
+          />
+        </div>
+
         {/* Lead status distribution + Recent leads */}
         <div className="mt-5 grid grid-cols-3 gap-4">
           <div className="card p-5">
@@ -364,4 +399,83 @@ function SmallStat({
     </div>
   );
   return link ? <Link to={link}>{inner}</Link> : inner;
+}
+
+function ChartCard({
+  title,
+  subtitle,
+  data,
+  color,
+  suffix,
+  valueFormatter,
+}: {
+  title: string;
+  subtitle: string;
+  data: Array<{ label: string; value: number }>;
+  color: string;
+  suffix?: string;
+  valueFormatter?: (v: number) => string;
+}) {
+  const maxValue = Math.max(...data.map((d) => d.value), 1);
+  const total = data.reduce((a, b) => a + b.value, 0);
+  return (
+    <div className="card p-5">
+      <div className="mb-1 flex items-center justify-between">
+        <div>
+          <h3 className="text-[15px] font-semibold text-text-primary">
+            {title}
+          </h3>
+          <p className="text-[12px] text-text-secondary">{subtitle}</p>
+        </div>
+        <div className="text-right">
+          <div className="text-[20px] font-bold text-text-primary">
+            {(valueFormatter ? valueFormatter(total) : total.toLocaleString("uz-UZ"))}
+          </div>
+          <div className="text-[10.5px] text-text-muted">{suffix ?? "jami"}</div>
+        </div>
+      </div>
+      <div className="mt-4 flex h-32 items-end gap-1.5">
+        {data.length === 0
+          ? Array.from({ length: 8 }).map((_, i) => (
+              <div
+                key={i}
+                className="flex-1 rounded-md bg-bg-input/50"
+                style={{ height: "30%" }}
+              />
+            ))
+          : data.map((d, i) => {
+              const h = (d.value / maxValue) * 100;
+              return (
+                <div
+                  key={i}
+                  className="group relative flex flex-1 flex-col items-center gap-1"
+                >
+                  <div
+                    className="w-full rounded-md transition-all hover:opacity-80"
+                    style={{
+                      height: `${Math.max(h, 3)}%`,
+                      backgroundColor: color,
+                      opacity: 0.85,
+                    }}
+                    title={
+                      (valueFormatter ? valueFormatter(d.value) : d.value.toString()) +
+                      (suffix ?? "")
+                    }
+                  />
+                </div>
+              );
+            })}
+      </div>
+      <div className="mt-2 flex gap-1.5">
+        {data.map((d, i) => (
+          <div
+            key={i}
+            className="flex-1 text-center text-[9.5px] text-text-muted truncate"
+          >
+            {d.label}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }

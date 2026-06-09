@@ -21,6 +21,7 @@ import { AdvicePage } from "./pages/AdvicePage";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { RolesPage } from "./pages/RolesPage";
 import { LeadsPage } from "./pages/LeadsPage";
+import { KidsContentPage } from "./pages/KidsContentPage";
 
 export default function App() {
   return (
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/roles" element={<RolesPage />} />
           <Route path="/leads" element={<LeadsPage />} />
+          <Route path="/kids-content" element={<KidsContentPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />

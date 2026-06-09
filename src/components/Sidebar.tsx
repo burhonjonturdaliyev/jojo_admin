@@ -21,6 +21,7 @@ import {
   FolderTree,
   Shield,
   Kanban,
+  Gamepad2,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useAuth } from "../lib/auth";
@@ -64,7 +65,10 @@ export function Sidebar() {
     },
     {
       label: t("nav.section.content"),
-      items: [{ to: "/advice", label: t("nav.advice"), icon: Lightbulb }],
+      items: [
+        { to: "/advice", label: t("nav.advice"), icon: Lightbulb },
+        { to: "/kids-content", label: t("nav.kidsContent"), icon: Gamepad2 },
+      ],
     },
     {
       label: t("nav.section.management"),

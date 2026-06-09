@@ -189,14 +189,19 @@ export interface AdminUserRow {
   username: string;
   first_name: string;
   last_name: string;
+  full_name?: string;
   role: string;
   is_active: boolean;
   is_staff: boolean;
+  is_premium?: boolean;
   date_joined: string;
+  last_login?: string | null;
   age?: number | null;
   gender?: string | null;
   language?: string;
   child_status?: string | null;
+  device_count?: number;
+  last_device?: { type: string; id: string } | null;
 }
 
 export const usersApi = {
@@ -276,6 +281,8 @@ export interface AdminDashboardStats {
   blog_posts: number;
   banners: number;
   sos_alerts: number;
+  signups_7d?: Array<{ date: string; count: number }>;
+  revenue_7d?: Array<{ date: string; amount: number }>;
 }
 
 export const dashboardApi = {

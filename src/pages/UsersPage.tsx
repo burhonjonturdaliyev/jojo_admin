@@ -106,9 +106,10 @@ export function UsersPage() {
           <table className="min-w-full text-[13px]">
             <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
-                <th className="px-4 py-3">Foydalanuvchi</th>
+                <th className="px-4 py-3">Ota-ona</th>
                 <th className="px-4 py-3">Telefon</th>
-                <th className="px-4 py-3">Til</th>
+                <th className="px-4 py-3">Qurilma</th>
+                <th className="px-4 py-3">Oxirgi faollik</th>
                 <th className="px-4 py-3">Holati</th>
                 <th className="px-4 py-3">Qo'shilgan</th>
                 <th className="px-4 py-3 text-right">Amal</th>
@@ -117,16 +118,16 @@ export function UsersPage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-text-muted">
+                  <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
                     Yuklanmoqda...
                   </td>
                 </tr>
               )}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-text-muted">
+                  <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
                     <UsersIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                    Foydalanuvchilar topilmadi
+                    Ota-onalar topilmadi
                   </td>
                 </tr>
               )}
@@ -149,7 +150,32 @@ export function UsersPage() {
                   <td className="px-4 py-3 font-mono text-[12px] text-text-secondary">
                     {u.phone || "—"}
                   </td>
-                  <td className="px-4 py-3 text-text-secondary">{u.language || "—"}</td>
+                  <td className="px-4 py-3">
+                    {u.device_count != null && u.device_count > 0 ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                        <span className="text-[12px] text-text-secondary">
+                          {u.last_device?.type === "ios" ? "iPhone" : "Android"}
+                        </span>
+                        <span className="text-[10.5px] text-text-muted">
+                          ×{u.device_count}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[12px] text-text-muted">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary text-[12px]">
+                    {u.last_login
+                      ? new Date(u.last_login).toLocaleString("uz-UZ", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : "—"}
+                  </td>
                   <td className="px-4 py-3">
                     <span
                       className={

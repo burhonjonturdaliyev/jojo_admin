@@ -62,12 +62,15 @@ export function ProductsPage() {
     id: "0",
     name: "",
     description: "",
+    shortDescription: "",
     priceUzs: 0,
     oldPriceUzs: null,
     categoryId: categories[0] ? String(categories[0].id) : null,
     image: null,
     type: "",
     brand: "",
+    videoUrl: "",
+    ageLabel: "",
     isActive: true,
     isFeatured: false,
     stock: 0,
@@ -221,118 +224,234 @@ function ProductEditor({
   onSave: (p: UiProduct) => void;
 }) {
   const [draft, setDraft] = useState(product);
+  const youtubeId = parseYouTubeId(draft.videoUrl);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-bg p-5">
-        <h3 className="text-[16px] font-semibold text-text-primary mb-4">
-          {product.id !== "0" ? "Mahsulot tahrirlash" : "Yangi mahsulot"}
-        </h3>
-        <div className="space-y-3">
-          <input
-            value={draft.name}
-            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-            placeholder="Nom"
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-          />
-          <textarea
-            value={draft.description}
-            onChange={(e) =>
-              setDraft({ ...draft, description: e.target.value })
-            }
-            placeholder="Tavsif"
-            rows={4}
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-          />
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              type="number"
-              value={draft.priceUzs}
-              onChange={(e) =>
-                setDraft({ ...draft, priceUzs: Number(e.target.value) })
-              }
-              placeholder="Narx"
-              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-            />
-            <input
-              type="number"
-              value={draft.oldPriceUzs ?? ""}
-              onChange={(e) =>
-                setDraft({
-                  ...draft,
-                  oldPriceUzs: e.target.value ? Number(e.target.value) : null,
-                })
-              }
-              placeholder="Eski narx (chegirma)"
-              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-            />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-3xl bg-bg shadow-2xl">
+        <div className="sticky top-0 bg-bg/95 backdrop-blur border-b border-line px-6 py-4 flex items-center justify-between rounded-t-3xl">
+          <div>
+            <h3 className="text-[17px] font-bold text-text-primary">
+              {product.id !== "0" ? "Mahsulotni tahrirlash" : "Yangi mahsulot"}
+            </h3>
+            <p className="text-[12px] text-text-muted">
+              Nom, narx, rasm va video havolasi
+            </p>
           </div>
-          <select
-            value={draft.categoryId ?? ""}
-            onChange={(e) =>
-              setDraft({ ...draft, categoryId: e.target.value || null })
-            }
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-          >
-            <option value="">Kategoriya tanlash</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              value={draft.brand}
-              onChange={(e) => setDraft({ ...draft, brand: e.target.value })}
-              placeholder="Brand"
-              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+          <button onClick={onClose} className="icon-btn h-8 w-8">
+            ×
+          </button>
+        </div>
+        <div className="px-6 py-5 grid grid-cols-5 gap-5">
+          {/* Left column — media */}
+          <div className="col-span-2 space-y-4">
+            <ImageUpload
+              value={draft.image}
+              onChange={(url) => setDraft({ ...draft, image: url })}
+              folder="products"
+              label="Mahsulot rasmi"
             />
-            <input
-              type="number"
-              value={draft.stock}
-              onChange={(e) =>
-                setDraft({ ...draft, stock: Number(e.target.value) })
-              }
-              placeholder="Stok"
-              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-            />
+            <div>
+              <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
+                YouTube video URL
+              </div>
+              <input
+                value={draft.videoUrl}
+                onChange={(e) =>
+                  setDraft({ ...draft, videoUrl: e.target.value })
+                }
+                placeholder="https://youtube.com/watch?v=..."
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] font-mono text-text-primary outline-none focus:border-primary"
+              />
+              {youtubeId && (
+                <div className="mt-2 rounded-xl overflow-hidden border border-line bg-black">
+                  <iframe
+                    width="100%"
+                    height="180"
+                    src={`https://www.youtube.com/embed/${youtubeId}`}
+                    title="Video preview"
+                    allowFullScreen
+                  />
+                </div>
+              )}
+              {!youtubeId && draft.videoUrl && (
+                <div className="mt-1 text-[11px] text-amber-600">
+                  YouTube havolasi noto'g'ri
+                </div>
+              )}
+            </div>
           </div>
-          <ImageUpload
-            value={draft.image}
-            onChange={(url) => setDraft({ ...draft, image: url })}
-            folder="products"
-            label="Mahsulot rasmi"
-          />
-          <div className="flex gap-4 pt-2">
-            <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
+
+          {/* Right column — details */}
+          <div className="col-span-3 space-y-3">
+            <div>
+              <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
+                Nomi
+              </div>
               <input
-                type="checkbox"
-                checked={draft.isActive}
-                onChange={(e) =>
-                  setDraft({ ...draft, isActive: e.target.checked })
-                }
+                value={draft.name}
+                onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                placeholder="Masalan: LEGO Education STEM kit"
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] font-semibold text-text-primary outline-none focus:border-primary"
               />
-              Faol
-            </label>
-            <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
-              <input
-                type="checkbox"
-                checked={draft.isFeatured}
+            </div>
+            <div>
+              <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
+                Qisqa tavsif
+              </div>
+              <textarea
+                value={draft.shortDescription}
                 onChange={(e) =>
-                  setDraft({ ...draft, isFeatured: e.target.checked })
+                  setDraft({ ...draft, shortDescription: e.target.value })
                 }
+                rows={2}
+                placeholder="Bir-ikki gap..."
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
               />
-              Tavsiya
-            </label>
+            </div>
+            <div>
+              <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
+                To'liq tavsif
+              </div>
+              <textarea
+                value={draft.description}
+                onChange={(e) =>
+                  setDraft({ ...draft, description: e.target.value })
+                }
+                rows={4}
+                placeholder="Mahsulot haqida batafsil..."
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
+                  Narx (so'm)
+                </div>
+                <input
+                  type="number"
+                  value={draft.priceUzs}
+                  onChange={(e) =>
+                    setDraft({ ...draft, priceUzs: Number(e.target.value) })
+                  }
+                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] font-semibold text-text-primary outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
+                  Eski narx (ixtiyoriy)
+                </div>
+                <input
+                  type="number"
+                  value={draft.oldPriceUzs ?? ""}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      oldPriceUzs: e.target.value
+                        ? Number(e.target.value)
+                        : null,
+                    })
+                  }
+                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
+                  Kategoriya
+                </div>
+                <select
+                  value={draft.categoryId ?? ""}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      categoryId: e.target.value || null,
+                    })
+                  }
+                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+                >
+                  <option value="">— tanlang —</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
+                  Yosh chegarasi
+                </div>
+                <input
+                  value={draft.ageLabel}
+                  onChange={(e) =>
+                    setDraft({ ...draft, ageLabel: e.target.value })
+                  }
+                  placeholder="6+ yosh"
+                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
+                  Brand
+                </div>
+                <input
+                  value={draft.brand}
+                  onChange={(e) =>
+                    setDraft({ ...draft, brand: e.target.value })
+                  }
+                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
+                  Stok soni
+                </div>
+                <input
+                  type="number"
+                  value={draft.stock}
+                  onChange={(e) =>
+                    setDraft({ ...draft, stock: Number(e.target.value) })
+                  }
+                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+            <div className="flex gap-5 pt-2">
+              <label className="flex items-center gap-2 text-[12.5px] text-text-secondary cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={draft.isActive}
+                  onChange={(e) =>
+                    setDraft({ ...draft, isActive: e.target.checked })
+                  }
+                />
+                Faol
+              </label>
+              <label className="flex items-center gap-2 text-[12.5px] text-text-secondary cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={draft.isFeatured}
+                  onChange={(e) =>
+                    setDraft({ ...draft, isFeatured: e.target.checked })
+                  }
+                />
+                Tavsiya etiladi
+              </label>
+            </div>
           </div>
         </div>
-        <div className="mt-5 flex justify-end gap-2">
+
+        <div className="sticky bottom-0 bg-bg/95 backdrop-blur border-t border-line px-6 py-3 flex justify-end gap-2 rounded-b-3xl">
           <button className="btn-secondary text-[12.5px]" onClick={onClose}>
-            Bekor
+            Bekor qilish
           </button>
           <button
             className="btn-primary text-[12.5px]"
             onClick={() => onSave(draft)}
+            disabled={!draft.name.trim()}
           >
             Saqlash
           </button>
@@ -340,4 +459,19 @@ function ProductEditor({
       </div>
     </div>
   );
+}
+
+function parseYouTubeId(url: string): string | null {
+  if (!url) return null;
+  const patterns = [
+    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
 }

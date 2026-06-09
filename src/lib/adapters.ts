@@ -76,12 +76,15 @@ export interface UiProduct {
   id: string;
   name: string;
   description: string;
+  shortDescription: string;
   priceUzs: number;
   oldPriceUzs: number | null;
   categoryId: string | null;
   image: string | null;
   type: string;
   brand: string;
+  videoUrl: string;  // YouTube URL
+  ageLabel: string;
   isActive: boolean;
   isFeatured: boolean;
   stock: number;
@@ -92,28 +95,34 @@ export function productToUi(p: AdminStoreProduct): UiProduct {
     id: String(p.id),
     name: p.name || "",
     description: p.description || "",
+    shortDescription: (p as { short_description?: string }).short_description || "",
     priceUzs: p.price ?? 0,
     oldPriceUzs: p.old_price ?? null,
     categoryId: p.category != null ? String(p.category) : null,
     image: p.cover_image ?? null,
     type: p.product_type || "",
     brand: p.brand || "",
+    videoUrl: (p as { video_url?: string }).video_url || "",
+    ageLabel: (p as { age_label?: string }).age_label || "",
     isActive: p.is_active ?? true,
     isFeatured: p.is_featured ?? false,
     stock: p.stock_count ?? 0,
   };
 }
 
-export function productToApi(u: UiProduct): Partial<AdminStoreProduct> {
+export function productToApi(u: UiProduct): Partial<AdminStoreProduct> & Record<string, unknown> {
   return {
     name: u.name,
     description: u.description,
+    short_description: u.shortDescription,
     price: u.priceUzs,
     old_price: u.oldPriceUzs,
     category: u.categoryId != null ? Number(u.categoryId) : null,
     cover_image: u.image,
     product_type: u.type,
     brand: u.brand,
+    video_url: u.videoUrl,
+    age_label: u.ageLabel,
     is_active: u.isActive,
     is_featured: u.isFeatured,
     stock_count: u.stock,
