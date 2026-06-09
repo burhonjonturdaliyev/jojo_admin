@@ -22,6 +22,7 @@ import {
   Shield,
   Kanban,
   Gamepad2,
+  AlarmClock,
 } from "lucide-react";
 import { cn } from "../lib/utils";
 import { useAuth } from "../lib/auth";
@@ -74,6 +75,7 @@ export function Sidebar() {
       label: t("nav.section.management"),
       items: [
         { to: "/notifications", label: t("nav.notifications"), icon: Bell },
+        { to: "/notification-rules", label: t("nav.notifRules"), icon: AlarmClock },
         { to: "/sms", label: t("nav.sms"), icon: MessageCircle },
         { to: "/ads", label: t("nav.ads"), icon: Megaphone },
         { to: "/settings", label: t("nav.settings"), icon: Settings },

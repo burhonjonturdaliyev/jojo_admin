@@ -480,6 +480,81 @@ export const operatorsApi = {
 };
 
 // ============================================================================
+// Notification Rules — avtomatik rejaviy bildirishnomalar
+// ============================================================================
+
+export type NotifTriggerType =
+  | "premium_expiry"
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "one_off";
+
+export type NotifAudience =
+  | "all_parents"
+  | "premium_active"
+  | "premium_expiring"
+  | "free_users"
+  | "no_active_child";
+
+export interface AdminNotifRule {
+  id: number;
+  name: string;
+  trigger_type: NotifTriggerType;
+  trigger_params: Record<string, unknown>;
+  audience: NotifAudience;
+  audience_params: Record<string, unknown>;
+  title: string;
+  body: string;
+  category: string;
+  send_push: boolean;
+  send_sms: boolean;
+  is_active: boolean;
+  last_run_at?: string | null;
+  next_run_at?: string | null;
+  created_at: string;
+}
+
+export interface AdminNotifRuleLog {
+  id: number;
+  fired_at: string;
+  recipients_count: number;
+  push_sent: number;
+  sms_sent: number;
+  success: boolean;
+  detail: string;
+}
+
+export const notifRulesApi = {
+  list: () => api<{ results: AdminNotifRule[] }>("/admin/notification-rules/"),
+  create: (data: Partial<AdminNotifRule>) =>
+    api<AdminNotifRule>("/admin/notification-rules/", {
+      method: "POST",
+      body: data,
+    }),
+  update: (id: number, data: Partial<AdminNotifRule>) =>
+    api<AdminNotifRule>(`/admin/notification-rules/${id}/`, {
+      method: "PATCH",
+      body: data,
+    }),
+  remove: (id: number) =>
+    api<void>(`/admin/notification-rules/${id}/`, { method: "DELETE" }),
+  runNow: (id: number) =>
+    api<{
+      id: number;
+      recipients_count: number;
+      push_sent: number;
+      sms_sent: number;
+      success: boolean;
+      detail: string;
+    }>(`/admin/notification-rules/${id}/run-now/`, { method: "POST" }),
+  logs: (id: number) =>
+    api<{ results: AdminNotifRuleLog[] }>(
+      `/admin/notification-rules/${id}/logs/`,
+    ),
+};
+
+// ============================================================================
 // Kids kontent — Games
 // ============================================================================
 

@@ -22,6 +22,7 @@ import { CategoriesPage } from "./pages/CategoriesPage";
 import { RolesPage } from "./pages/RolesPage";
 import { LeadsPage } from "./pages/LeadsPage";
 import { KidsContentPage } from "./pages/KidsContentPage";
+import { NotificationRulesPage } from "./pages/NotificationRulesPage";
 
 export default function App() {
   return (
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/roles" element={<RolesPage />} />
           <Route path="/leads" element={<LeadsPage />} />
           <Route path="/kids-content" element={<KidsContentPage />} />
+          <Route path="/notification-rules" element={<NotificationRulesPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/login" replace />} />
