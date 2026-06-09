@@ -173,6 +173,7 @@ export interface UiAdvice {
   excerpt: string;
   body: string;
   image: string | null;
+  videoUrl: string;
   categoryId: string | null;
   type: string;
   readMinutes: number;
@@ -187,6 +188,7 @@ export function adviceToUi(p: AdminBlogPost): UiAdvice {
     excerpt: p.excerpt || "",
     body: p.body || "",
     image: p.cover_image ?? null,
+    videoUrl: (p as { video_url?: string }).video_url || "",
     categoryId: p.category != null ? String(p.category) : null,
     type: p.post_type || "",
     readMinutes: p.read_minutes ?? 0,
@@ -195,14 +197,16 @@ export function adviceToUi(p: AdminBlogPost): UiAdvice {
   };
 }
 
-export function adviceToApi(u: UiAdvice): Partial<AdminBlogPost> {
+export function adviceToApi(u: UiAdvice): Partial<AdminBlogPost> & Record<string, unknown> {
   return {
     title: u.title,
     excerpt: u.excerpt,
     body: u.body,
     cover_image: u.image,
+    video_url: u.videoUrl,
     category: u.categoryId != null ? Number(u.categoryId) : null,
-    post_type: u.type,
+    // Agar video_url berilgan bo'lsa avtomatik "video" tipga o'tkazamiz.
+    post_type: u.videoUrl && u.videoUrl.trim() ? "video" : (u.type || "blog"),
     read_minutes: u.readMinutes,
     is_active: u.isActive,
     is_featured: u.isFeatured,

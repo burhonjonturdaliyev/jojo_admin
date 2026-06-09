@@ -457,6 +457,84 @@ export const operatorsApi = {
       method: "POST",
       body: data,
     }),
+  update: (
+    id: number,
+    data: Partial<{
+      full_name: string;
+      phone: string;
+      is_active: boolean;
+      new_password: string;
+    }>,
+  ) =>
+    api<AdminOperator>(`/admin/operators/${id}/`, {
+      method: "PATCH",
+      body: data,
+    }),
+  remove: (id: number) =>
+    api<void>(`/admin/operators/${id}/`, { method: "DELETE" }),
+};
+
+// ============================================================================
+// Kids kontent — Games
+// ============================================================================
+
+export interface AdminGameCategory {
+  id: number;
+  name: string;
+  icon: string | null;
+  is_active: boolean;
+  order: number;
+  games_count: number;
+}
+
+export interface AdminGame {
+  id: number;
+  category: number;
+  category_name?: string | null;
+  title: string;
+  description: string;
+  thumbnail: string | null;
+  banner: string | null;
+  game_url: string;
+  screen_key: string;
+  age_min: number;
+  age_max: number;
+  reward_points: number;
+  is_active: boolean;
+  is_featured: boolean;
+  order: number;
+}
+
+export const kidsContentApi = {
+  categories: {
+    list: () =>
+      api<{ results: AdminGameCategory[] }>("/admin/kids/categories/"),
+    create: (data: Partial<AdminGameCategory>) =>
+      api<AdminGameCategory>("/admin/kids/categories/", {
+        method: "POST",
+        body: data,
+      }),
+    update: (id: number, data: Partial<AdminGameCategory>) =>
+      api<AdminGameCategory>(`/admin/kids/categories/${id}/`, {
+        method: "PATCH",
+        body: data,
+      }),
+    remove: (id: number) =>
+      api<void>(`/admin/kids/categories/${id}/`, { method: "DELETE" }),
+  },
+  games: {
+    list: (q?: { category_id?: number; q?: string }) =>
+      api<{ results: AdminGame[] }>("/admin/kids/games/", { query: q }),
+    create: (data: Partial<AdminGame>) =>
+      api<AdminGame>("/admin/kids/games/", { method: "POST", body: data }),
+    update: (id: number, data: Partial<AdminGame>) =>
+      api<AdminGame>(`/admin/kids/games/${id}/`, {
+        method: "PATCH",
+        body: data,
+      }),
+    remove: (id: number) =>
+      api<void>(`/admin/kids/games/${id}/`, { method: "DELETE" }),
+  },
 };
 
 // ============================================================================

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Headset } from "lucide-react";
+import { Plus, Headset, Pencil, Trash2, X, KeyRound } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
 import { useT } from "../lib/i18n";
@@ -10,6 +10,17 @@ export function OperatorsPage() {
   const [items, setItems] = useState<AdminOperator[]>([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<AdminOperator | null>(null);
+
+  const removeOperator = async (id: number, name: string) => {
+    if (!confirm(`${name} ni o'chirasizmi?`)) return;
+    try {
+      await operatorsApi.remove(id);
+      setItems((prev) => prev.filter((o) => o.id !== id));
+    } catch (e) {
+      alert((e as { message?: string }).message || "Xato");
+    }
+  };
 
   const reload = async () => {
     setLoading(true);
@@ -49,11 +60,11 @@ export function OperatorsPage() {
           {!loading && items.length === 0 && (
             <div className="col-span-3 py-12 text-center text-text-muted">
               <Headset className="mx-auto mb-2 h-8 w-8 opacity-40" />
-              Operatorlar yo'q
+              Xodimlar yo'q
             </div>
           )}
           {items.map((op) => (
-            <div key={op.id} className="card p-5">
+            <div key={op.id} className="card p-5 group">
               <div className="flex items-center gap-3">
                 <Avatar name={op.first_name || op.phone} size={44} />
                 <div className="min-w-0 flex-1">
@@ -75,8 +86,28 @@ export function OperatorsPage() {
                   {op.is_active ? "Faol" : "Nofaol"}
                 </span>
               </div>
-              <div className="mt-3 text-[11px] text-text-muted">
-                Qo'shilgan: {new Date(op.date_joined).toLocaleDateString("uz-UZ")}
+              <div className="mt-3 flex items-center justify-between">
+                <div className="text-[11px] text-text-muted">
+                  Qo'shilgan: {new Date(op.date_joined).toLocaleDateString("uz-UZ")}
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => setEditing(op)}
+                    className="icon-btn h-7 w-7"
+                    title="Tahrirlash"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      removeOperator(op.id, op.first_name || op.phone)
+                    }
+                    className="icon-btn h-7 w-7 hover:bg-status-blocked/15 hover:text-status-blocked"
+                    title="O'chirish"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -92,6 +123,121 @@ export function OperatorsPage() {
           }}
         />
       )}
+      {editing && (
+        <EditOperatorModal
+          op={editing}
+          onClose={() => setEditing(null)}
+          onSaved={async () => {
+            setEditing(null);
+            await reload();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function EditOperatorModal({
+  op,
+  onClose,
+  onSaved,
+}: {
+  op: AdminOperator;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [fullName, setFullName] = useState(op.first_name);
+  const [phone, setPhone] = useState(op.phone);
+  const [isActive, setIsActive] = useState(op.is_active);
+  const [newPassword, setNewPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      await operatorsApi.update(op.id, {
+        full_name: fullName.trim(),
+        phone: phone.trim(),
+        is_active: isActive,
+        new_password: newPassword || undefined,
+      });
+      onSaved();
+    } catch (e) {
+      setError((e as { message?: string }).message || "Xato");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-bg w-full max-w-md rounded-2xl p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[16px] font-semibold text-text-primary">
+            Xodimni tahrirlash
+          </h3>
+          <button onClick={onClose} className="icon-btn h-7 w-7">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="space-y-3">
+          <input
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="To'liq ism"
+            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+          />
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+998..."
+            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] font-mono outline-none focus:border-primary"
+          />
+          <div className="relative">
+            <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Yangi parol (bo'sh qoldirsangiz o'zgarmaydi)"
+              className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
+          <label className="flex items-center gap-2 text-[12.5px] text-text-secondary cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+            />
+            Faol (bloklanmagan)
+          </label>
+          {error && (
+            <div className="rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
+              {error}
+            </div>
+          )}
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button onClick={onClose} className="btn-secondary text-[12.5px]">
+            Bekor
+          </button>
+          <button
+            onClick={submit}
+            disabled={busy}
+            className="btn-primary text-[12.5px] disabled:opacity-50"
+          >
+            {busy ? "Saqlanmoqda..." : "Saqlash"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

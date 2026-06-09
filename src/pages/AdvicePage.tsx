@@ -64,6 +64,7 @@ export function AdvicePage() {
     excerpt: "",
     body: "",
     image: null,
+    videoUrl: "",
     categoryId: categories[0] ? String(categories[0].id) : null,
     type: "",
     readMinutes: 5,
@@ -160,6 +161,11 @@ export function AdvicePage() {
                   </p>
                   <div className="mt-2 flex items-center gap-2 text-[11px] text-text-muted">
                     <span>{p.readMinutes} daqiqa</span>
+                    {p.videoUrl && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-red-500">
+                        ▶ YouTube
+                      </span>
+                    )}
                     {p.isFeatured && (
                       <span className="rounded-full bg-yellow-500/15 px-2 py-0.5 text-yellow-600">
                         Tavsiya
@@ -263,8 +269,45 @@ function AdviceEditor({
                 value={draft.image}
                 onChange={(url) => setDraft({ ...draft, image: url })}
                 folder="blog/thumbnails"
-                label="Maqola rasmi"
+                label="Maqola rasmi (ixtiyoriy)"
               />
+            </div>
+            <div className="col-span-2">
+              <div className="text-[12px] font-medium text-text-secondary mb-1.5">
+                YouTube video URL (ixtiyoriy)
+              </div>
+              <input
+                value={draft.videoUrl}
+                onChange={(e) =>
+                  setDraft({ ...draft, videoUrl: e.target.value })
+                }
+                placeholder="https://youtube.com/watch?v=..."
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] font-mono text-text-primary outline-none focus:border-primary"
+              />
+              {(() => {
+                const id = parseYouTubeId(draft.videoUrl);
+                if (id) {
+                  return (
+                    <div className="mt-2 rounded-xl overflow-hidden border border-line bg-black">
+                      <iframe
+                        width="100%"
+                        height="220"
+                        src={`https://www.youtube.com/embed/${id}`}
+                        title="Video preview"
+                        allowFullScreen
+                      />
+                    </div>
+                  );
+                }
+                if (draft.videoUrl) {
+                  return (
+                    <div className="mt-1 text-[11px] text-amber-600">
+                      YouTube havolasi noto'g'ri
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
           <div className="flex gap-4 pt-2">
@@ -304,4 +347,19 @@ function AdviceEditor({
       </div>
     </div>
   );
+}
+
+function parseYouTubeId(url: string): string | null {
+  if (!url) return null;
+  const patterns = [
+    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+  ];
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) return m[1];
+  }
+  return null;
 }
