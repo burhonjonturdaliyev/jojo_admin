@@ -270,10 +270,15 @@ export const sosApi = {
 export interface AdminBroadcastHistoryRow {
   title: string;
   body: string;
+  title_ru?: string;
+  title_en?: string;
+  body_ru?: string;
+  body_en?: string;
   category: string;
   count: number;
   first_sent: string;
   last_sent: string;
+  audience?: "all" | "selected";
 }
 
 export const broadcastApi = {
@@ -286,11 +291,14 @@ export const broadcastApi = {
     body_en?: string;
     category?: string;
     send_sms?: boolean;
+    parent_ids?: number[];
   }) =>
-    api<{ status: boolean; sent_to: number; sms_sent?: number }>(
-      "/admin/broadcast/",
-      { method: "POST", body: data },
-    ),
+    api<{
+      status: boolean;
+      sent_to: number;
+      sms_sent?: number;
+      audience?: "all" | "selected";
+    }>("/admin/broadcast/", { method: "POST", body: data }),
   history: (params?: { category?: string }) =>
     api<{ results: AdminBroadcastHistoryRow[] }>(
       "/admin/broadcast/history/",
