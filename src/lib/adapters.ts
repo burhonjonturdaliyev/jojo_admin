@@ -72,16 +72,25 @@ export function bannerToApi(b: PromoBanner): Partial<AdminBanner> {
 // Store products
 // ============================================================================
 
+export interface UiProductTag {
+  id?: number;
+  slug?: string;
+  name: string;       // uz nomi (admin yozadi)
+  name_ru?: string;
+  name_en?: string;
+}
+
 export interface UiProduct {
   id: string;
-  name: string;
-  description: string;
-  shortDescription: string;
+  name: Localized<string>;
+  description: Localized<string>;
+  shortDescription: Localized<string>;
+  categoryLabel: Localized<string>;
+  tags: UiProductTag[];
   priceUzs: number;
   oldPriceUzs: number | null;
   categoryId: string | null;
   image: string | null;
-  type: string;
   brand: string;
   videoUrl: string;  // YouTube URL
   ageLabel: string;
@@ -90,36 +99,91 @@ export interface UiProduct {
   stock: number;
 }
 
+type StoreProductRaw = AdminStoreProduct & {
+  name_ru?: string;
+  name_en?: string;
+  short_description?: string;
+  short_description_ru?: string;
+  short_description_en?: string;
+  description?: string;
+  description_ru?: string;
+  description_en?: string;
+  category_label?: string;
+  category_label_ru?: string;
+  category_label_en?: string;
+  video_url?: string;
+  age_label?: string;
+  tags?: UiProductTag[];
+};
+
 export function productToUi(p: AdminStoreProduct): UiProduct {
+  const raw = p as StoreProductRaw;
   return {
     id: String(p.id),
-    name: p.name || "",
-    description: p.description || "",
-    shortDescription: (p as { short_description?: string }).short_description || "",
+    name: {
+      uz: p.name || "",
+      ru: raw.name_ru || "",
+      en: raw.name_en || "",
+    },
+    description: {
+      uz: raw.description || "",
+      ru: raw.description_ru || "",
+      en: raw.description_en || "",
+    },
+    shortDescription: {
+      uz: raw.short_description || "",
+      ru: raw.short_description_ru || "",
+      en: raw.short_description_en || "",
+    },
+    categoryLabel: {
+      uz: raw.category_label || p.product_type || "",
+      ru: raw.category_label_ru || "",
+      en: raw.category_label_en || "",
+    },
+    tags: Array.isArray(raw.tags) ? raw.tags : [],
     priceUzs: p.price ?? 0,
     oldPriceUzs: p.old_price ?? null,
     categoryId: p.category != null ? String(p.category) : null,
     image: p.cover_image ?? null,
-    type: p.product_type || "",
     brand: p.brand || "",
-    videoUrl: (p as { video_url?: string }).video_url || "",
-    ageLabel: (p as { age_label?: string }).age_label || "",
+    videoUrl: raw.video_url || "",
+    ageLabel: raw.age_label || "",
     isActive: p.is_active ?? true,
     isFeatured: p.is_featured ?? false,
     stock: p.stock_count ?? 0,
   };
 }
 
-export function productToApi(u: UiProduct): Partial<AdminStoreProduct> & Record<string, unknown> {
+export interface ProductToApiOptions {
+  autoTranslate?: boolean;
+  translateSource?: "uz" | "ru" | "en";
+}
+
+export function productToApi(
+  u: UiProduct,
+  opts: ProductToApiOptions = {},
+): Partial<AdminStoreProduct> & Record<string, unknown> {
   return {
-    name: u.name,
-    description: u.description,
-    short_description: u.shortDescription,
+    name: u.name.uz,
+    name_ru: u.name.ru,
+    name_en: u.name.en,
+    short_description: u.shortDescription.uz,
+    short_description_ru: u.shortDescription.ru,
+    short_description_en: u.shortDescription.en,
+    description: u.description.uz,
+    description_ru: u.description.ru,
+    description_en: u.description.en,
+    category_label: u.categoryLabel.uz,
+    category_label_ru: u.categoryLabel.ru,
+    category_label_en: u.categoryLabel.en,
+    tags_input: u.tags.map((t) => (t.id ? t.id : t.name)).filter(Boolean),
+    auto_translate: !!opts.autoTranslate,
+    translate_source: opts.translateSource || "uz",
     price: u.priceUzs,
     old_price: u.oldPriceUzs,
     category: u.categoryId != null ? Number(u.categoryId) : null,
     cover_image: u.image,
-    product_type: u.type,
+    product_type: u.categoryLabel.uz,
     brand: u.brand,
     video_url: u.videoUrl,
     age_label: u.ageLabel,
@@ -127,6 +191,10 @@ export function productToApi(u: UiProduct): Partial<AdminStoreProduct> & Record<
     is_featured: u.isFeatured,
     stock_count: u.stock,
   };
+}
+
+export function emptyLocalizedString(): Localized<string> {
+  return emptyLocalized();
 }
 
 // ============================================================================
@@ -182,9 +250,9 @@ export interface UiAdvice {
 }
 
 /**
- * Backend `uz` qiymatini bazaviy maydon orqali yuboradi, qolgan tillarni esa
- * `_ru` / `_en` suffix bilan. Eski (single-language) postlar uchun ru/en
- * bo'sh qoladi — admin tahrirlash paytida to'ldiradi.
+ * Backend may also include the language-suffixed fields. When loading legacy
+ * posts that only have the bare `title`/`excerpt`/`body`, those are treated as
+ * the Uzbek value and other locales start empty (admin will fill them in).
  */
 function localizedFromBackend(
   base: string | undefined | null,
@@ -229,8 +297,7 @@ export function adviceToApi(u: UiAdvice): Partial<AdminBlogPost> & Record<string
     title: u.title.uz,
     title_ru: u.title.ru,
     title_en: u.title.en,
-    // Backend canonical maydon nomlari — alias `excerpt`/`body` faqat uz uchun
-    // ishlaydi, ru/en uchun `short_description_*` va `content_*` shart.
+    // Backend uchun canonical field nomlari — `excerpt_ru`/`body_ru` mavjud emas.
     short_description: u.excerpt.uz,
     short_description_ru: u.excerpt.ru,
     short_description_en: u.excerpt.en,
