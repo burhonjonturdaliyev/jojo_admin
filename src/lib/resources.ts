@@ -797,6 +797,14 @@ export interface AdminLeadParent {
   language?: string;
 }
 
+export type SupportLanguage = "uz_latn" | "uz_cyrl" | "ru" | "en";
+export type SupportSource = "app" | "telegram" | "manual";
+export type SupportBotState =
+  | "awaiting_language"
+  | "chatting"
+  | "awaiting_rating"
+  | "done";
+
 export interface AdminLead {
   id: number;
   title: string;
@@ -807,9 +815,27 @@ export interface AdminLead {
   operator: { id: number; name: string } | null;
   last_contact_at: string | null;
   closed_at: string | null;
+  resolved_at?: string | null;
   created_at: string;
   updated_at: string;
   comments_count: number;
+  source?: SupportSource;
+  language?: SupportLanguage | "";
+  bot_state?: SupportBotState | "";
+  rating?: number | null;
+  rating_comment?: string;
+  rated_at?: string | null;
+  last_message?: {
+    text: string;
+    direction: "in" | "out";
+    at: string;
+  } | null;
+  last_user_message_at?: string | null;
+  telegram?: {
+    chat_id: string | null;
+    username: string;
+    name: string;
+  } | null;
 }
 
 export interface AdminLeadFull {
@@ -849,10 +875,68 @@ export interface LeadComment {
   id: number;
   ticket_id: number;
   text: string;
+  direction?: "in" | "out";
+  is_operator?: boolean;
   old_status: string;
   new_status: string;
   operator: { id: number; name: string } | null;
   created_at: string;
+}
+
+// ============================================================================
+// Support quick replies (operator shortcuts / canned responses)
+// ============================================================================
+
+export interface SupportQuickReply {
+  id: number;
+  code: string;
+  title: string;
+  scope: "global" | "personal";
+  owner_id: number | null;
+  text_uz_latn: string;
+  text_uz_cyrl: string;
+  text_ru: string;
+  text_en: string;
+  order: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export const quickRepliesApi = {
+  list: () =>
+    api<{ results: SupportQuickReply[] }>("/admin/support/quick-replies/"),
+  create: (data: Partial<SupportQuickReply>) =>
+    api<SupportQuickReply>("/admin/support/quick-replies/", {
+      method: "POST",
+      body: data,
+    }),
+  update: (id: number, data: Partial<SupportQuickReply>) =>
+    api<SupportQuickReply>(`/admin/support/quick-replies/${id}/`, {
+      method: "PATCH",
+      body: data,
+    }),
+  remove: (id: number) =>
+    api<void>(`/admin/support/quick-replies/${id}/`, { method: "DELETE" }),
+};
+
+export function quickReplyTextFor(
+  qr: SupportQuickReply,
+  language: SupportLanguage | "" | undefined,
+): string {
+  const mapping: Record<string, string> = {
+    uz_latn: qr.text_uz_latn,
+    uz_cyrl: qr.text_uz_cyrl,
+    ru: qr.text_ru,
+    en: qr.text_en,
+  };
+  return (
+    (language && mapping[language]) ||
+    qr.text_uz_latn ||
+    qr.text_ru ||
+    qr.text_en ||
+    qr.text_uz_cyrl ||
+    ""
+  );
 }
 
 export const leadsApi = {
@@ -881,9 +965,12 @@ export const leadsApi = {
     api<void>(`/admin/leads/${id}/`, { method: "DELETE" }),
   comments: (id: number) =>
     api<{ results: LeadComment[] }>(`/admin/leads/${id}/comments/`),
-  addComment: (id: number, text: string) =>
+  addComment: (
+    id: number,
+    body: { text?: string; quick_reply_id?: number },
+  ) =>
     api<LeadComment>(`/admin/leads/${id}/comments/`, {
       method: "POST",
-      body: { text },
+      body,
     }),
 };

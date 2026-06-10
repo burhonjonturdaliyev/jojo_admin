@@ -804,7 +804,7 @@ function LeadDetailPanel({
     if (!trimmed) return;
     setSending(true);
     try {
-      const c = await leadsApi.addComment(leadId, trimmed);
+      const c = await leadsApi.addComment(leadId, { text: trimmed });
       setComments((prev) =>
         prev.find((x) => x.id === c.id) ? prev : [c, ...prev],
       );
