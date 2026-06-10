@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Baby, CircleUser } from "lucide-react";
+import { Baby, CircleUser, User as UserIcon } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { useT } from "../lib/i18n";
 import { childrenApi, type AdminChild } from "../lib/resources";
@@ -30,6 +30,7 @@ export function ChildrenPage() {
             <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
                 <th className="px-4 py-3">Bola</th>
+                <th className="px-4 py-3">Ota-ona</th>
                 <th className="px-4 py-3">Yosh</th>
                 <th className="px-4 py-3">Jins</th>
                 <th className="px-4 py-3">Til</th>
@@ -40,14 +41,14 @@ export function ChildrenPage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-text-muted">
+                  <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
                     Yuklanmoqda...
                   </td>
                 </tr>
               )}
               {!loading && items.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-text-muted">
+                  <td colSpan={7} className="px-4 py-12 text-center text-text-muted">
                     <Baby className="mx-auto mb-2 h-8 w-8 opacity-40" />
                     Bolalar topilmadi
                   </td>
@@ -67,6 +68,27 @@ export function ChildrenPage() {
                         <div className="text-[11px] text-text-muted">#{c.id}</div>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {c.parent ? (
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-500/15 text-blue-500">
+                          <UserIcon className="h-3.5 w-3.5" />
+                        </div>
+                        <div className="leading-tight">
+                          <div className="text-[12.5px] font-medium text-text-primary">
+                            {c.parent.full_name || c.parent.first_name || "—"}
+                          </div>
+                          <div className="text-[11px] text-text-muted font-mono">
+                            {c.parent.phone}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-[11.5px] text-text-muted italic">
+                        — bog'lanmagan —
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-text-secondary">{c.age ?? "—"}</td>
                   <td className="px-4 py-3 text-text-secondary">{c.gender || "—"}</td>

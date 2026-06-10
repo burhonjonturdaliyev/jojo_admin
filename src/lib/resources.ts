@@ -701,6 +701,14 @@ export const kidsContentApi = {
 // Children (read-only)
 // ============================================================================
 
+export interface AdminChildParent {
+  id: number;
+  phone: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+}
+
 export interface AdminChild {
   id: number;
   phone?: string;
@@ -712,6 +720,7 @@ export interface AdminChild {
   language?: string;
   is_active: boolean;
   date_joined: string;
+  parent?: AdminChildParent | null;
 }
 
 export const childrenApi = {
