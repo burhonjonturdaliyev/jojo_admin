@@ -363,6 +363,20 @@ export const plansApi = {
     api<void>(`/admin/subscription/plans/${id}/`, { method: "DELETE" }),
 };
 
+/**
+ * Foydalanuvchiga superadmin tomonidan premium berish.
+ * Backend `/api/admin/subscription/give/` — `is_superuser` talab qiladi.
+ */
+export const subscriptionGiveApi = {
+  give: (data: { user_id?: number; phone?: string; days: number }) =>
+    api<{
+      status: boolean;
+      detail: string;
+      subscription?: { id: number; expires_at: string };
+      user?: { id: number; is_premium: boolean; premium_expires_at: string };
+    }>("/admin/subscription/give/", { method: "POST", body: data }),
+};
+
 export interface AdminPayment {
   id: number;
   user?: { id: number; phone?: string };
