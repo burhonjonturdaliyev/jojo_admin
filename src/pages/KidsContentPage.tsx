@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Gamepad2,
   Plus,
@@ -7,26 +7,42 @@ import {
   X,
   FolderTree,
   Search,
+  Youtube,
+  PlayCircle,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
+import { MultilangInput, buildLangValue } from "../components/MultilangInput";
 import {
   kidsContentApi,
+  kidsVideosApi,
+  extractYouTubeId,
   type AdminGame,
   type AdminGameCategory,
+  type AdminKidsVideo,
+  type AdminKidsVideoCategory,
 } from "../lib/resources";
 
-type Tab = "games" | "categories";
+type Tab = "games" | "categories" | "videos" | "video_categories";
 
 export function KidsContentPage() {
   const [tab, setTab] = useState<Tab>("games");
   const [categories, setCategories] = useState<AdminGameCategory[]>([]);
   const [games, setGames] = useState<AdminGame[]>([]);
+  const [videos, setVideos] = useState<AdminKidsVideo[]>([]);
+  const [videoCategories, setVideoCategories] = useState<AdminKidsVideoCategory[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<number | null>(null);
+  const [filterVideoCat, setFilterVideoCat] = useState<number | null>(null);
+  const [videoSearch, setVideoSearch] = useState("");
   const [editingGame, setEditingGame] = useState<AdminGame | null>(null);
   const [editingCat, setEditingCat] = useState<AdminGameCategory | null>(null);
+  const [editingVideo, setEditingVideo] = useState<AdminKidsVideo | null>(null);
+  const [editingVideoCat, setEditingVideoCat] =
+    useState<AdminKidsVideoCategory | null>(null);
 
   const reloadCats = useCallback(async () => {
     const r = await kidsContentApi.categories.list();
@@ -41,10 +57,24 @@ export function KidsContentPage() {
     setGames(r.results || []);
   }, [filterCat, search]);
 
+  const reloadVideoCats = useCallback(async () => {
+    const r = await kidsVideosApi.categories.list();
+    setVideoCategories(r.results || []);
+  }, []);
+
+  const reloadVideos = useCallback(async () => {
+    const r = await kidsVideosApi.videos.list({
+      category_id: filterVideoCat ?? undefined,
+      q: videoSearch || undefined,
+    });
+    setVideos(r.results || []);
+  }, [filterVideoCat, videoSearch]);
+
   useEffect(() => {
     setLoading(true);
-    Promise.all([reloadCats(), reloadGames()]).finally(() => setLoading(false));
-  }, [reloadCats, reloadGames]);
+    Promise.all([reloadCats(), reloadGames(), reloadVideoCats(), reloadVideos()])
+      .finally(() => setLoading(false));
+  }, [reloadCats, reloadGames, reloadVideoCats, reloadVideos]);
 
   const removeGame = async (id: number) => {
     if (!confirm("O'yinni o'chirasizmi?")) return;
@@ -58,12 +88,28 @@ export function KidsContentPage() {
     void reloadCats();
     void reloadGames();
   };
+  const removeVideo = async (id: number) => {
+    if (!confirm("Videoni o'chirasizmi?")) return;
+    await kidsVideosApi.videos.remove(id);
+    void reloadVideos();
+  };
+  const removeVideoCat = async (id: number) => {
+    if (!confirm("Kategoriya va undagi barcha videolar o'chiriladi. Davom etaylikmi?"))
+      return;
+    await kidsVideosApi.categories.remove(id);
+    void reloadVideoCats();
+    void reloadVideos();
+  };
+
+  const headerSubtitle = useMemo(() => {
+    return `${games.length} ta o'yin · ${videos.length} ta video · ${categories.length + videoCategories.length} ta kategoriya`;
+  }, [games.length, videos.length, categories.length, videoCategories.length]);
 
   return (
     <div className="flex h-full flex-col">
       <PageHeader
         title="Kids kontent"
-        subtitle={`${games.length} ta o'yin, ${categories.length} ta kategoriya`}
+        subtitle={headerSubtitle}
         actions={
           tab === "games" ? (
             <button
@@ -89,7 +135,7 @@ export function KidsContentPage() {
             >
               <Plus className="h-4 w-4" /> Yangi o'yin
             </button>
-          ) : (
+          ) : tab === "categories" ? (
             <button
               onClick={() =>
                 setEditingCat({
@@ -105,230 +151,129 @@ export function KidsContentPage() {
             >
               <Plus className="h-4 w-4" /> Yangi kategoriya
             </button>
+          ) : tab === "videos" ? (
+            <button
+              onClick={() =>
+                setEditingVideo({
+                  id: 0,
+                  category: videoCategories[0]?.id ?? 0,
+                  title: "",
+                  title_ru: "",
+                  title_en: "",
+                  description: "",
+                  description_ru: "",
+                  description_en: "",
+                  youtube_url: "",
+                  thumbnail: null,
+                  duration_label: "",
+                  age_min: 3,
+                  age_max: 12,
+                  is_active: true,
+                  is_featured: false,
+                  order: 0,
+                })
+              }
+              className="btn-primary text-[12.5px]"
+            >
+              <Plus className="h-4 w-4" /> Yangi video
+            </button>
+          ) : (
+            <button
+              onClick={() =>
+                setEditingVideoCat({
+                  id: 0,
+                  name: "",
+                  name_ru: "",
+                  name_en: "",
+                  icon: null,
+                  is_active: true,
+                  order: videoCategories.length,
+                  videos_count: 0,
+                })
+              }
+              className="btn-primary text-[12.5px]"
+            >
+              <Plus className="h-4 w-4" /> Yangi video kategoriya
+            </button>
           )
         }
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
         {/* Tabs */}
-        <div className="card p-2 inline-flex gap-1 mb-4">
-          <button
+        <div className="card p-2 inline-flex gap-1 mb-4 flex-wrap">
+          <TabButton
+            active={tab === "games"}
             onClick={() => setTab("games")}
-            className={
-              "flex items-center gap-2 rounded-lg px-4 py-2 text-[12.5px] font-medium " +
-              (tab === "games"
-                ? "bg-primary text-white"
-                : "text-text-secondary hover:bg-bg-hover")
-            }
-          >
-            <Gamepad2 className="h-4 w-4" /> O'yinlar
-          </button>
-          <button
+            icon={<Gamepad2 className="h-4 w-4" />}
+            label="O'yinlar"
+          />
+          <TabButton
+            active={tab === "categories"}
             onClick={() => setTab("categories")}
-            className={
-              "flex items-center gap-2 rounded-lg px-4 py-2 text-[12.5px] font-medium " +
-              (tab === "categories"
-                ? "bg-primary text-white"
-                : "text-text-secondary hover:bg-bg-hover")
-            }
-          >
-            <FolderTree className="h-4 w-4" /> Kategoriyalar
-          </button>
+            icon={<FolderTree className="h-4 w-4" />}
+            label="O'yin kategoriyalari"
+          />
+          <TabButton
+            active={tab === "videos"}
+            onClick={() => setTab("videos")}
+            icon={<Youtube className="h-4 w-4" />}
+            label="Videolar"
+          />
+          <TabButton
+            active={tab === "video_categories"}
+            onClick={() => setTab("video_categories")}
+            icon={<FolderTree className="h-4 w-4" />}
+            label="Video kategoriyalari"
+          />
         </div>
 
-        {tab === "games" ? (
-          <>
-            {/* Filter */}
-            <div className="card p-4 mb-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="relative flex-1 min-w-[240px]">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && reloadGames()}
-                    placeholder="O'yin nomi..."
-                    className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] outline-none focus:border-primary"
-                  />
-                </div>
-                <select
-                  value={filterCat ?? ""}
-                  onChange={(e) =>
-                    setFilterCat(e.target.value ? Number(e.target.value) : null)
-                  }
-                  className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none"
-                >
-                  <option value="">Barcha kategoriyalar</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+        {tab === "games" && (
+          <GamesPanel
+            loading={loading}
+            games={games}
+            categories={categories}
+            search={search}
+            setSearch={setSearch}
+            filterCat={filterCat}
+            setFilterCat={setFilterCat}
+            onReload={reloadGames}
+            onEdit={setEditingGame}
+            onRemove={removeGame}
+          />
+        )}
 
-            {/* Games grid */}
-            <div className="grid grid-cols-3 gap-4">
-              {loading && (
-                <div className="col-span-3 py-12 text-center text-text-muted">
-                  Yuklanmoqda...
-                </div>
-              )}
-              {!loading && games.length === 0 && (
-                <div className="col-span-3 py-12 text-center text-text-muted">
-                  <Gamepad2 className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                  O'yinlar yo'q
-                </div>
-              )}
-              {games.map((g) => (
-                <div key={g.id} className="card overflow-hidden">
-                  <div className="h-36 bg-bg-input flex items-center justify-center">
-                    {g.thumbnail ? (
-                      <img
-                        src={g.thumbnail}
-                        alt={g.title}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <Gamepad2 className="h-10 w-10 text-text-muted opacity-40" />
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-[14px] font-semibold text-text-primary line-clamp-2">
-                        {g.title}
-                      </h3>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => setEditingGame(g)}
-                          className="icon-btn h-7 w-7"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          onClick={() => removeGame(g.id)}
-                          className="icon-btn h-7 w-7 hover:bg-status-blocked/15 hover:text-status-blocked"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mt-1 text-[11.5px] text-text-secondary">
-                      {g.category_name ?? "—"}
-                    </div>
-                    <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                      <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10.5px] font-medium text-blue-500">
-                        {g.age_min}–{g.age_max} yosh
-                      </span>
-                      {g.reward_points > 0 && (
-                        <span className="rounded-full bg-yellow-500/15 px-2 py-0.5 text-[10.5px] font-medium text-yellow-600">
-                          +{g.reward_points} ball
-                        </span>
-                      )}
-                      {g.is_featured && (
-                        <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10.5px] font-medium text-purple-500">
-                          Tavsiya
-                        </span>
-                      )}
-                      <span
-                        className={
-                          "rounded-full px-2 py-0.5 text-[10.5px] font-medium " +
-                          (g.is_active
-                            ? "bg-status-resolved/15 text-status-resolved"
-                            : "bg-text-muted/15 text-text-muted")
-                        }
-                      >
-                        {g.is_active ? "Faol" : "Nofaol"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        ) : (
-          /* Categories table */
-          <div className="card overflow-hidden">
-            <table className="min-w-full text-[13px]">
-              <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-                <tr>
-                  <th className="px-4 py-3 w-16">№</th>
-                  <th className="px-4 py-3">Nom</th>
-                  <th className="px-4 py-3 w-28">O'yinlar</th>
-                  <th className="px-4 py-3 w-24">Tartib</th>
-                  <th className="px-4 py-3 w-28">Holat</th>
-                  <th className="px-4 py-3 w-28 text-right">Amal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-text-muted">
-                      Yuklanmoqda...
-                    </td>
-                  </tr>
-                )}
-                {!loading && categories.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-text-muted">
-                      <FolderTree className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                      Kategoriyalar yo'q
-                    </td>
-                  </tr>
-                )}
-                {categories.map((c) => (
-                  <tr key={c.id} className="border-b border-line/50 hover:bg-bg-hover">
-                    <td className="px-4 py-3 font-mono text-[11.5px] text-text-muted">
-                      #{c.id}
-                    </td>
-                    <td className="px-4 py-3 font-medium text-text-primary flex items-center gap-2">
-                      {c.icon ? (
-                        <img
-                          src={c.icon}
-                          className="h-8 w-8 rounded-lg object-cover"
-                          alt=""
-                        />
-                      ) : (
-                        <div className="h-8 w-8 rounded-lg bg-bg-input flex items-center justify-center">
-                          <FolderTree className="h-4 w-4 text-text-muted" />
-                        </div>
-                      )}
-                      {c.name}
-                    </td>
-                    <td className="px-4 py-3 text-text-secondary">{c.games_count}</td>
-                    <td className="px-4 py-3 text-text-secondary">{c.order}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={
-                          "rounded-full px-2.5 py-1 text-[10.5px] font-medium " +
-                          (c.is_active
-                            ? "bg-status-resolved/15 text-status-resolved"
-                            : "bg-text-muted/15 text-text-muted")
-                        }
-                      >
-                        {c.is_active ? "Faol" : "Nofaol"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => setEditingCat(c)}
-                        className="icon-btn h-7 w-7"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => removeCat(c.id)}
-                        className="icon-btn h-7 w-7 hover:bg-status-blocked/15 hover:text-status-blocked ml-1"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {tab === "categories" && (
+          <CategoriesPanel
+            loading={loading}
+            categories={categories}
+            onEdit={setEditingCat}
+            onRemove={removeCat}
+          />
+        )}
+
+        {tab === "videos" && (
+          <VideosPanel
+            loading={loading}
+            videos={videos}
+            categories={videoCategories}
+            search={videoSearch}
+            setSearch={setVideoSearch}
+            filterCat={filterVideoCat}
+            setFilterCat={setFilterVideoCat}
+            onReload={reloadVideos}
+            onEdit={setEditingVideo}
+            onRemove={removeVideo}
+          />
+        )}
+
+        {tab === "video_categories" && (
+          <VideoCategoriesPanel
+            loading={loading}
+            categories={videoCategories}
+            onEdit={setEditingVideoCat}
+            onRemove={removeVideoCat}
+          />
         )}
       </div>
 
@@ -353,9 +298,555 @@ export function KidsContentPage() {
           }}
         />
       )}
+      {editingVideo && (
+        <VideoEditor
+          video={editingVideo}
+          categories={videoCategories}
+          onClose={() => setEditingVideo(null)}
+          onSaved={() => {
+            setEditingVideo(null);
+            void reloadVideos();
+          }}
+        />
+      )}
+      {editingVideoCat && (
+        <VideoCategoryEditor
+          cat={editingVideoCat}
+          onClose={() => setEditingVideoCat(null)}
+          onSaved={() => {
+            setEditingVideoCat(null);
+            void reloadVideoCats();
+          }}
+        />
+      )}
     </div>
   );
 }
+
+// ============================================================================
+// Shared UI bits
+// ============================================================================
+
+function TabButton({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={
+        "flex items-center gap-2 rounded-lg px-4 py-2 text-[12.5px] font-medium " +
+        (active
+          ? "bg-primary text-white"
+          : "text-text-secondary hover:bg-bg-hover")
+      }
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
+// ============================================================================
+// Games panel (existing pattern, untouched UX)
+// ============================================================================
+
+function GamesPanel({
+  loading,
+  games,
+  categories,
+  search,
+  setSearch,
+  filterCat,
+  setFilterCat,
+  onReload,
+  onEdit,
+  onRemove,
+}: {
+  loading: boolean;
+  games: AdminGame[];
+  categories: AdminGameCategory[];
+  search: string;
+  setSearch: (s: string) => void;
+  filterCat: number | null;
+  setFilterCat: (n: number | null) => void;
+  onReload: () => void;
+  onEdit: (g: AdminGame) => void;
+  onRemove: (id: number) => void;
+}) {
+  return (
+    <>
+      <div className="card p-4 mb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && onReload()}
+              placeholder="O'yin nomi..."
+              className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
+          <select
+            value={filterCat ?? ""}
+            onChange={(e) =>
+              setFilterCat(e.target.value ? Number(e.target.value) : null)
+            }
+            className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none"
+          >
+            <option value="">Barcha kategoriyalar</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        {loading && (
+          <div className="col-span-3 py-12 text-center text-text-muted">
+            Yuklanmoqda...
+          </div>
+        )}
+        {!loading && games.length === 0 && (
+          <div className="col-span-3 py-12 text-center text-text-muted">
+            <Gamepad2 className="mx-auto mb-2 h-8 w-8 opacity-40" />
+            O'yinlar yo'q
+          </div>
+        )}
+        {games.map((g) => (
+          <div key={g.id} className="card overflow-hidden">
+            <div className="h-36 bg-bg-input flex items-center justify-center">
+              {g.thumbnail ? (
+                <img
+                  src={g.thumbnail}
+                  alt={g.title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <Gamepad2 className="h-10 w-10 text-text-muted opacity-40" />
+              )}
+            </div>
+            <div className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-[14px] font-semibold text-text-primary line-clamp-2">
+                  {g.title}
+                </h3>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => onEdit(g)}
+                    className="icon-btn h-7 w-7"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => onRemove(g.id)}
+                    className="icon-btn h-7 w-7 hover:bg-status-blocked/15 hover:text-status-blocked"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div className="mt-1 text-[11.5px] text-text-secondary">
+                {g.category_name ?? "—"}
+              </div>
+              <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10.5px] font-medium text-blue-500">
+                  {g.age_min}–{g.age_max} yosh
+                </span>
+                {g.reward_points > 0 && (
+                  <span className="rounded-full bg-yellow-500/15 px-2 py-0.5 text-[10.5px] font-medium text-yellow-600">
+                    +{g.reward_points} ball
+                  </span>
+                )}
+                {g.is_featured && (
+                  <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10.5px] font-medium text-purple-500">
+                    Tavsiya
+                  </span>
+                )}
+                <span
+                  className={
+                    "rounded-full px-2 py-0.5 text-[10.5px] font-medium " +
+                    (g.is_active
+                      ? "bg-status-resolved/15 text-status-resolved"
+                      : "bg-text-muted/15 text-text-muted")
+                  }
+                >
+                  {g.is_active ? "Faol" : "Nofaol"}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function CategoriesPanel({
+  loading,
+  categories,
+  onEdit,
+  onRemove,
+}: {
+  loading: boolean;
+  categories: AdminGameCategory[];
+  onEdit: (c: AdminGameCategory) => void;
+  onRemove: (id: number) => void;
+}) {
+  return (
+    <div className="card overflow-hidden">
+      <table className="min-w-full text-[13px]">
+        <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+          <tr>
+            <th className="px-4 py-3 w-16">№</th>
+            <th className="px-4 py-3">Nom</th>
+            <th className="px-4 py-3 w-28">O'yinlar</th>
+            <th className="px-4 py-3 w-24">Tartib</th>
+            <th className="px-4 py-3 w-28">Holat</th>
+            <th className="px-4 py-3 w-28 text-right">Amal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading && (
+            <tr>
+              <td colSpan={6} className="px-4 py-8 text-center text-text-muted">
+                Yuklanmoqda...
+              </td>
+            </tr>
+          )}
+          {!loading && categories.length === 0 && (
+            <tr>
+              <td colSpan={6} className="px-4 py-12 text-center text-text-muted">
+                <FolderTree className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                Kategoriyalar yo'q
+              </td>
+            </tr>
+          )}
+          {categories.map((c) => (
+            <tr key={c.id} className="border-b border-line/50 hover:bg-bg-hover">
+              <td className="px-4 py-3 font-mono text-[11.5px] text-text-muted">
+                #{c.id}
+              </td>
+              <td className="px-4 py-3 font-medium text-text-primary flex items-center gap-2">
+                {c.icon ? (
+                  <img
+                    src={c.icon}
+                    className="h-8 w-8 rounded-lg object-cover"
+                    alt=""
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-lg bg-bg-input flex items-center justify-center">
+                    <FolderTree className="h-4 w-4 text-text-muted" />
+                  </div>
+                )}
+                {c.name}
+              </td>
+              <td className="px-4 py-3 text-text-secondary">{c.games_count}</td>
+              <td className="px-4 py-3 text-text-secondary">{c.order}</td>
+              <td className="px-4 py-3">
+                <span
+                  className={
+                    "rounded-full px-2.5 py-1 text-[10.5px] font-medium " +
+                    (c.is_active
+                      ? "bg-status-resolved/15 text-status-resolved"
+                      : "bg-text-muted/15 text-text-muted")
+                  }
+                >
+                  {c.is_active ? "Faol" : "Nofaol"}
+                </span>
+              </td>
+              <td className="px-4 py-3 text-right">
+                <button
+                  onClick={() => onEdit(c)}
+                  className="icon-btn h-7 w-7"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => onRemove(c.id)}
+                  className="icon-btn h-7 w-7 hover:bg-status-blocked/15 hover:text-status-blocked ml-1"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ============================================================================
+// Videos panel — YouTube kontenti
+// ============================================================================
+
+function VideosPanel({
+  loading,
+  videos,
+  categories,
+  search,
+  setSearch,
+  filterCat,
+  setFilterCat,
+  onReload,
+  onEdit,
+  onRemove,
+}: {
+  loading: boolean;
+  videos: AdminKidsVideo[];
+  categories: AdminKidsVideoCategory[];
+  search: string;
+  setSearch: (s: string) => void;
+  filterCat: number | null;
+  setFilterCat: (n: number | null) => void;
+  onReload: () => void;
+  onEdit: (v: AdminKidsVideo) => void;
+  onRemove: (id: number) => void;
+}) {
+  return (
+    <>
+      <div className="card p-4 mb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && onReload()}
+              placeholder="Video nomi..."
+              className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
+          <select
+            value={filterCat ?? ""}
+            onChange={(e) =>
+              setFilterCat(e.target.value ? Number(e.target.value) : null)
+            }
+            className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none"
+          >
+            <option value="">Barcha kategoriyalar</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        {loading && (
+          <div className="col-span-3 py-12 text-center text-text-muted">
+            Yuklanmoqda...
+          </div>
+        )}
+        {!loading && videos.length === 0 && (
+          <div className="col-span-3 py-12 text-center text-text-muted">
+            <Youtube className="mx-auto mb-2 h-8 w-8 opacity-40" />
+            Videolar yo'q
+          </div>
+        )}
+        {videos.map((v) => (
+          <div key={v.id} className="card overflow-hidden">
+            <div className="relative h-36 bg-bg-input flex items-center justify-center">
+              {v.thumbnail_url ? (
+                <img
+                  src={v.thumbnail_url}
+                  alt={v.title}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <Youtube className="h-10 w-10 text-text-muted opacity-40" />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+              <div className="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-full bg-black/55 px-2 py-0.5 text-[10.5px] font-semibold text-white">
+                <PlayCircle className="h-3 w-3" />
+                {v.duration_label || "YouTube"}
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-[14px] font-semibold text-text-primary line-clamp-2">
+                  {v.title}
+                </h3>
+                <div className="flex gap-1 shrink-0">
+                  <button
+                    onClick={() => onEdit(v)}
+                    className="icon-btn h-7 w-7"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => onRemove(v.id)}
+                    className="icon-btn h-7 w-7 hover:bg-status-blocked/15 hover:text-status-blocked"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+              <div className="mt-1 text-[11.5px] text-text-secondary">
+                {v.category_name ?? "—"}
+              </div>
+              <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10.5px] font-medium text-blue-500">
+                  {v.age_min}–{v.age_max} yosh
+                </span>
+                {v.title_ru && (
+                  <span className="rounded-full bg-bg-input px-2 py-0.5 text-[10.5px] font-medium text-text-secondary">
+                    Ру
+                  </span>
+                )}
+                {v.title_en && (
+                  <span className="rounded-full bg-bg-input px-2 py-0.5 text-[10.5px] font-medium text-text-secondary">
+                    En
+                  </span>
+                )}
+                {v.is_featured && (
+                  <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10.5px] font-medium text-purple-500">
+                    Tavsiya
+                  </span>
+                )}
+                <span
+                  className={
+                    "rounded-full px-2 py-0.5 text-[10.5px] font-medium " +
+                    (v.is_active
+                      ? "bg-status-resolved/15 text-status-resolved"
+                      : "bg-text-muted/15 text-text-muted")
+                  }
+                >
+                  {v.is_active ? "Faol" : "Nofaol"}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function VideoCategoriesPanel({
+  loading,
+  categories,
+  onEdit,
+  onRemove,
+}: {
+  loading: boolean;
+  categories: AdminKidsVideoCategory[];
+  onEdit: (c: AdminKidsVideoCategory) => void;
+  onRemove: (id: number) => void;
+}) {
+  return (
+    <div className="card overflow-hidden">
+      <table className="min-w-full text-[13px]">
+        <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+          <tr>
+            <th className="px-4 py-3 w-16">№</th>
+            <th className="px-4 py-3">Nom (uz)</th>
+            <th className="px-4 py-3">Tarjima</th>
+            <th className="px-4 py-3 w-28">Videolar</th>
+            <th className="px-4 py-3 w-24">Tartib</th>
+            <th className="px-4 py-3 w-28">Holat</th>
+            <th className="px-4 py-3 w-28 text-right">Amal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading && (
+            <tr>
+              <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
+                Yuklanmoqda...
+              </td>
+            </tr>
+          )}
+          {!loading && categories.length === 0 && (
+            <tr>
+              <td colSpan={7} className="px-4 py-12 text-center text-text-muted">
+                <FolderTree className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                Kategoriyalar yo'q
+              </td>
+            </tr>
+          )}
+          {categories.map((c) => (
+            <tr key={c.id} className="border-b border-line/50 hover:bg-bg-hover">
+              <td className="px-4 py-3 font-mono text-[11.5px] text-text-muted">
+                #{c.id}
+              </td>
+              <td className="px-4 py-3 font-medium text-text-primary flex items-center gap-2">
+                {c.icon ? (
+                  <img
+                    src={c.icon}
+                    className="h-8 w-8 rounded-lg object-cover"
+                    alt=""
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-lg bg-bg-input flex items-center justify-center">
+                    <FolderTree className="h-4 w-4 text-text-muted" />
+                  </div>
+                )}
+                {c.name}
+              </td>
+              <td className="px-4 py-3 text-text-secondary">
+                <div className="flex flex-col gap-0.5 text-[11.5px]">
+                  <span>
+                    <span className="opacity-50 mr-1">Ру:</span>
+                    {c.name_ru || "—"}
+                  </span>
+                  <span>
+                    <span className="opacity-50 mr-1">En:</span>
+                    {c.name_en || "—"}
+                  </span>
+                </div>
+              </td>
+              <td className="px-4 py-3 text-text-secondary">{c.videos_count}</td>
+              <td className="px-4 py-3 text-text-secondary">{c.order}</td>
+              <td className="px-4 py-3">
+                <span
+                  className={
+                    "rounded-full px-2.5 py-1 text-[10.5px] font-medium " +
+                    (c.is_active
+                      ? "bg-status-resolved/15 text-status-resolved"
+                      : "bg-text-muted/15 text-text-muted")
+                  }
+                >
+                  {c.is_active ? "Faol" : "Nofaol"}
+                </span>
+              </td>
+              <td className="px-4 py-3 text-right">
+                <button
+                  onClick={() => onEdit(c)}
+                  className="icon-btn h-7 w-7"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => onRemove(c.id)}
+                  className="icon-btn h-7 w-7 hover:bg-status-blocked/15 hover:text-status-blocked ml-1"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ============================================================================
+// Existing Game editors (unchanged)
+// ============================================================================
 
 function GameEditor({
   game,
@@ -568,6 +1059,315 @@ function CategoryEditor({
             onChange={(e) => setD({ ...d, name: e.target.value })}
             placeholder="Nom"
             className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] font-semibold outline-none focus:border-primary"
+          />
+          <input
+            type="number"
+            value={d.order}
+            onChange={(e) => setD({ ...d, order: Number(e.target.value) })}
+            placeholder="Tartib"
+            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+          />
+          <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
+            <input
+              type="checkbox"
+              checked={d.is_active}
+              onChange={(e) => setD({ ...d, is_active: e.target.checked })}
+            />
+            Faol
+          </label>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button onClick={onClose} className="btn-secondary text-[12.5px]">
+            Bekor
+          </button>
+          <button
+            onClick={save}
+            disabled={busy || !d.name.trim()}
+            className="btn-primary text-[12.5px] disabled:opacity-50"
+          >
+            {busy ? "Saqlanmoqda..." : "Saqlash"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Video editors — multi-language title/description + YouTube URL
+// ============================================================================
+
+function VideoEditor({
+  video,
+  categories,
+  onClose,
+  onSaved,
+}: {
+  video: AdminKidsVideo;
+  categories: AdminKidsVideoCategory[];
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [d, setD] = useState(video);
+  const [busy, setBusy] = useState(false);
+
+  const ytId = useMemo(() => extractYouTubeId(d.youtube_url), [d.youtube_url]);
+  const previewThumb = d.thumbnail
+    || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null);
+
+  const titleValue = buildLangValue(d.title, d.title_ru, d.title_en);
+  const descValue = buildLangValue(d.description, d.description_ru, d.description_en);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      if (d.id === 0) {
+        await kidsVideosApi.videos.create(d);
+      } else {
+        await kidsVideosApi.videos.update(d.id, d);
+      }
+      onSaved();
+    } catch (e) {
+      alert((e as { message?: string }).message || "Xato");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-bg w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[16px] font-semibold text-text-primary">
+            {d.id === 0 ? "Yangi video" : "Videoni tahrirlash"}
+          </h3>
+          <button onClick={onClose} className="icon-btn h-7 w-7">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <ImageUpload
+                value={d.thumbnail}
+                onChange={(url) => setD({ ...d, thumbnail: url })}
+                folder="uploads"
+                label="Custom thumbnail (ixtiyoriy)"
+              />
+            </div>
+            <div className="rounded-xl border border-line bg-bg-input p-2 flex flex-col items-center justify-center min-h-[160px]">
+              {previewThumb ? (
+                <img
+                  src={previewThumb}
+                  alt="preview"
+                  className="max-h-[140px] w-full object-cover rounded-lg"
+                />
+              ) : (
+                <div className="text-text-muted text-[12px] flex flex-col items-center">
+                  <Youtube className="h-7 w-7 mb-2 opacity-50" />
+                  YouTube havola kiriting
+                </div>
+              )}
+              {ytId && (
+                <div className="mt-2 text-[10.5px] font-mono text-text-muted">
+                  id: {ytId}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[12px] font-medium text-text-secondary flex items-center gap-1.5 mb-1.5">
+              <Youtube className="h-3.5 w-3.5" />
+              YouTube havola
+              <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={d.youtube_url}
+              onChange={(e) => setD({ ...d, youtube_url: e.target.value })}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className={
+                "w-full rounded-lg border bg-bg-input px-3 py-2 text-[12px] font-mono outline-none focus:border-primary " +
+                (d.youtube_url && !ytId
+                  ? "border-status-blocked"
+                  : "border-line")
+              }
+            />
+            {d.youtube_url && !ytId && (
+              <div className="text-[11px] text-status-blocked mt-1">
+                YouTube ID topilmadi — havolani tekshiring.
+              </div>
+            )}
+          </div>
+
+          <MultilangInput
+            label="Sarlavha"
+            required
+            value={titleValue}
+            onChange={(v) => setD({ ...d, title: v.uz, title_ru: v.ru, title_en: v.en })}
+            placeholder="Video nomi"
+          />
+
+          <MultilangInput
+            label="Tavsif"
+            multiline
+            rows={3}
+            value={descValue}
+            onChange={(v) => setD({ ...d, description: v.uz, description_ru: v.ru, description_en: v.en })}
+            placeholder="Video haqida qisqacha"
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <select
+              value={d.category}
+              onChange={(e) => setD({ ...d, category: Number(e.target.value) })}
+              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            >
+              <option value={0}>— kategoriya —</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <input
+              value={d.duration_label}
+              onChange={(e) => setD({ ...d, duration_label: e.target.value })}
+              placeholder="Davomiyligi (masalan, 5:42)"
+              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+            <input
+              type="number"
+              value={d.age_min}
+              onChange={(e) => setD({ ...d, age_min: Number(e.target.value) })}
+              placeholder="Yosh: min"
+              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+            <input
+              type="number"
+              value={d.age_max}
+              onChange={(e) => setD({ ...d, age_max: Number(e.target.value) })}
+              placeholder="Yosh: max"
+              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+            <input
+              type="number"
+              value={d.order}
+              onChange={(e) => setD({ ...d, order: Number(e.target.value) })}
+              placeholder="Tartib"
+              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+            <div className="flex flex-col gap-1 justify-center">
+              <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={d.is_active}
+                  onChange={(e) => setD({ ...d, is_active: e.target.checked })}
+                />
+                Faol
+              </label>
+              <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
+                <input
+                  type="checkbox"
+                  checked={d.is_featured}
+                  onChange={(e) => setD({ ...d, is_featured: e.target.checked })}
+                />
+                Tavsiya etiladi
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button onClick={onClose} className="btn-secondary text-[12.5px]">
+            Bekor
+          </button>
+          <button
+            onClick={save}
+            disabled={
+              busy
+              || !d.title.trim()
+              || !d.category
+              || !d.youtube_url.trim()
+              || !ytId
+            }
+            className="btn-primary text-[12.5px] disabled:opacity-50"
+          >
+            {busy ? "Saqlanmoqda..." : "Saqlash"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VideoCategoryEditor({
+  cat,
+  onClose,
+  onSaved,
+}: {
+  cat: AdminKidsVideoCategory;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [d, setD] = useState(cat);
+  const [busy, setBusy] = useState(false);
+
+  const nameValue = buildLangValue(d.name, d.name_ru, d.name_en);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      if (d.id === 0) {
+        await kidsVideosApi.categories.create(d);
+      } else {
+        await kidsVideosApi.categories.update(d.id, d);
+      }
+      onSaved();
+    } catch (e) {
+      alert((e as { message?: string }).message || "Xato");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-bg w-full max-w-md rounded-2xl p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[16px] font-semibold text-text-primary">
+            {d.id === 0 ? "Yangi video kategoriya" : "Kategoriyani tahrirlash"}
+          </h3>
+          <button onClick={onClose} className="icon-btn h-7 w-7">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="space-y-3">
+          <ImageUpload
+            value={d.icon}
+            onChange={(url) => setD({ ...d, icon: url })}
+            folder="uploads"
+            label="Belgi (ixtiyoriy)"
+          />
+          <MultilangInput
+            label="Nom"
+            required
+            value={nameValue}
+            onChange={(v) => setD({ ...d, name: v.uz, name_ru: v.ru, name_en: v.en })}
+            placeholder="Kategoriya nomi"
           />
           <input
             type="number"

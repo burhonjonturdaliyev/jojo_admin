@@ -76,10 +76,29 @@ export const storeCategoriesApi = {
     api<void>(`/admin/store/categories/${id}/`, { method: "DELETE" }),
 };
 
+export interface AdminProductTag {
+  id: number;
+  slug: string;
+  name: string;
+  name_ru?: string;
+  name_en?: string;
+}
+
 export interface AdminStoreProduct {
   id: number;
   name: string;
+  name_ru?: string;
+  name_en?: string;
   description?: string;
+  description_ru?: string;
+  description_en?: string;
+  short_description?: string;
+  short_description_ru?: string;
+  short_description_en?: string;
+  category_label?: string;
+  category_label_ru?: string;
+  category_label_en?: string;
+  tags?: AdminProductTag[];
   price?: number;
   old_price?: number | null;
   category?: number | null;
@@ -91,29 +110,52 @@ export interface AdminStoreProduct {
   has_active_deal?: boolean;
   deal_ends_at?: string | null;
   stock_count?: number;
+  video_url?: string;
+  age_label?: string;
 }
 
 export const storeProductsApi = {
   list: (query?: {
     category_id?: number | string;
     q?: string;
+    tag?: string;
   }) =>
     api<AdminStoreProduct[] | { results: AdminStoreProduct[] }>(
       "/admin/store/products/",
       { query: query as Record<string, string | number> },
     ),
-  create: (data: Partial<AdminStoreProduct>) =>
+  create: (data: Partial<AdminStoreProduct> & Record<string, unknown>) =>
     api<AdminStoreProduct>("/admin/store/products/", {
       method: "POST",
       body: data,
     }),
-  update: (id: number, data: Partial<AdminStoreProduct>) =>
+  update: (id: number, data: Partial<AdminStoreProduct> & Record<string, unknown>) =>
     api<AdminStoreProduct>(`/admin/store/products/${id}/`, {
       method: "PATCH",
       body: data,
     }),
   remove: (id: number) =>
     api<void>(`/admin/store/products/${id}/`, { method: "DELETE" }),
+};
+
+export const productTagsApi = {
+  list: (query?: { q?: string }) =>
+    api<AdminProductTag[] | { results: AdminProductTag[] }>(
+      "/admin/store/tags/",
+      { query: query as Record<string, string> },
+    ),
+  create: (name: string) =>
+    api<AdminProductTag>("/admin/store/tags/", {
+      method: "POST",
+      body: { name },
+    }),
+  update: (id: number, data: Partial<AdminProductTag>) =>
+    api<AdminProductTag>(`/admin/store/tags/${id}/`, {
+      method: "PATCH",
+      body: data,
+    }),
+  remove: (id: number) =>
+    api<void>(`/admin/store/tags/${id}/`, { method: "DELETE" }),
 };
 
 // ============================================================================
@@ -715,6 +757,87 @@ export const kidsContentApi = {
       api<void>(`/admin/kids/games/${id}/`, { method: "DELETE" }),
   },
 };
+
+// ============================================================================
+// Kids video kontent — Play tab (YouTube videolari)
+// ============================================================================
+
+export interface AdminKidsVideoCategory {
+  id: number;
+  name: string;
+  name_ru: string;
+  name_en: string;
+  icon: string | null;
+  is_active: boolean;
+  order: number;
+  videos_count: number;
+}
+
+export interface AdminKidsVideo {
+  id: number;
+  category: number;
+  category_name?: string | null;
+  title: string;
+  title_ru: string;
+  title_en: string;
+  description: string;
+  description_ru: string;
+  description_en: string;
+  youtube_url: string;
+  youtube_id?: string;
+  thumbnail: string | null;
+  thumbnail_url?: string | null;
+  duration_label: string;
+  age_min: number;
+  age_max: number;
+  views_count?: number;
+  is_active: boolean;
+  is_featured: boolean;
+  order: number;
+}
+
+export const kidsVideosApi = {
+  categories: {
+    list: () =>
+      api<{ results: AdminKidsVideoCategory[] }>(
+        "/admin/kids/video-categories/",
+      ),
+    create: (data: Partial<AdminKidsVideoCategory>) =>
+      api<AdminKidsVideoCategory>("/admin/kids/video-categories/", {
+        method: "POST",
+        body: data,
+      }),
+    update: (id: number, data: Partial<AdminKidsVideoCategory>) =>
+      api<AdminKidsVideoCategory>(`/admin/kids/video-categories/${id}/`, {
+        method: "PATCH",
+        body: data,
+      }),
+    remove: (id: number) =>
+      api<void>(`/admin/kids/video-categories/${id}/`, { method: "DELETE" }),
+  },
+  videos: {
+    list: (q?: { category_id?: number; q?: string }) =>
+      api<{ results: AdminKidsVideo[] }>("/admin/kids/videos/", { query: q }),
+    create: (data: Partial<AdminKidsVideo>) =>
+      api<AdminKidsVideo>("/admin/kids/videos/", {
+        method: "POST",
+        body: data,
+      }),
+    update: (id: number, data: Partial<AdminKidsVideo>) =>
+      api<AdminKidsVideo>(`/admin/kids/videos/${id}/`, {
+        method: "PATCH",
+        body: data,
+      }),
+    remove: (id: number) =>
+      api<void>(`/admin/kids/videos/${id}/`, { method: "DELETE" }),
+  },
+};
+
+export function extractYouTubeId(url: string): string | null {
+  if (!url) return null;
+  const m = url.match(/(?:v=|\/embed\/|\/shorts\/|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
 
 // ============================================================================
 // Children (read-only)
