@@ -15,7 +15,7 @@ import type {
 } from "./resources";
 
 import type { PromoBanner } from "../data/banners";
-import { type Localized, toLocalized } from "../types/locale";
+import { type Localized, emptyLocalized, toLocalized } from "../types/locale";
 
 // ============================================================================
 // Banners
@@ -169,9 +169,9 @@ export function categoryToApi(u: UiCategory): Partial<AdminStoreCategory> {
 
 export interface UiAdvice {
   id: string;
-  title: string;
-  excerpt: string;
-  body: string;
+  title: Localized<string>;
+  excerpt: Localized<string>;
+  body: Localized<string>;
   image: string | null;
   videoUrl: string;
   categoryId: string | null;
@@ -181,12 +181,39 @@ export interface UiAdvice {
   isFeatured: boolean;
 }
 
+/**
+ * Backend `uz` qiymatini bazaviy maydon orqali yuboradi, qolgan tillarni esa
+ * `_ru` / `_en` suffix bilan. Eski (single-language) postlar uchun ru/en
+ * bo'sh qoladi — admin tahrirlash paytida to'ldiradi.
+ */
+function localizedFromBackend(
+  base: string | undefined | null,
+  ru: string | undefined | null,
+  en: string | undefined | null,
+): Localized<string> {
+  return {
+    uz: base ?? "",
+    ru: ru ?? "",
+    en: en ?? "",
+  };
+}
+
 export function adviceToUi(p: AdminBlogPost): UiAdvice {
+  // Backend uz qiymatini `short_description`/`content` orqali yuboradi
+  // (yoki `excerpt`/`body` alias orqali — bir xil qiymat).
   return {
     id: String(p.id),
-    title: p.title || "",
-    excerpt: p.excerpt || "",
-    body: p.body || "",
+    title: localizedFromBackend(p.title, p.title_ru, p.title_en),
+    excerpt: localizedFromBackend(
+      p.short_description ?? p.excerpt,
+      p.short_description_ru,
+      p.short_description_en,
+    ),
+    body: localizedFromBackend(
+      p.content ?? p.body,
+      p.content_ru,
+      p.content_en,
+    ),
     image: p.cover_image ?? null,
     videoUrl: (p as { video_url?: string }).video_url || "",
     categoryId: p.category != null ? String(p.category) : null,
@@ -199,9 +226,17 @@ export function adviceToUi(p: AdminBlogPost): UiAdvice {
 
 export function adviceToApi(u: UiAdvice): Partial<AdminBlogPost> & Record<string, unknown> {
   return {
-    title: u.title,
-    excerpt: u.excerpt,
-    body: u.body,
+    title: u.title.uz,
+    title_ru: u.title.ru,
+    title_en: u.title.en,
+    // Backend canonical maydon nomlari — alias `excerpt`/`body` faqat uz uchun
+    // ishlaydi, ru/en uchun `short_description_*` va `content_*` shart.
+    short_description: u.excerpt.uz,
+    short_description_ru: u.excerpt.ru,
+    short_description_en: u.excerpt.en,
+    content: u.body.uz,
+    content_ru: u.body.ru,
+    content_en: u.body.en,
     cover_image: u.image,
     video_url: u.videoUrl,
     category: u.categoryId != null ? Number(u.categoryId) : null,
@@ -210,6 +245,14 @@ export function adviceToApi(u: UiAdvice): Partial<AdminBlogPost> & Record<string
     read_minutes: u.readMinutes,
     is_active: u.isActive,
     is_featured: u.isFeatured,
+  };
+}
+
+export function emptyUiAdvice(): Pick<UiAdvice, "title" | "excerpt" | "body"> {
+  return {
+    title: emptyLocalized(),
+    excerpt: emptyLocalized(),
+    body: emptyLocalized(),
   };
 }
 

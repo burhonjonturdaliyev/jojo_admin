@@ -150,9 +150,20 @@ export const blogCategoriesApi = {
 
 export interface AdminBlogPost {
   id: number;
+  // Backend `BlogPost` modeli real maydonlari: `title` (uz), `title_ru`,
+  // `title_en`, `short_description`/`_ru`/`_en`, `content`/`_ru`/`_en`.
+  // `excerpt` va `body` — admin serializer'da uz uchun alias (DRF source=).
   title: string;
-  excerpt?: string;
-  body?: string;
+  title_ru?: string;
+  title_en?: string;
+  excerpt?: string; // alias of short_description (uz only)
+  short_description?: string;
+  short_description_ru?: string;
+  short_description_en?: string;
+  body?: string; // alias of content (uz only)
+  content?: string;
+  content_ru?: string;
+  content_en?: string;
   cover_image?: string | null;
   category?: number | null;
   post_type?: string;

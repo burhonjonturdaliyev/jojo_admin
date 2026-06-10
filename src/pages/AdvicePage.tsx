@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus, BookOpen, Pencil, Trash2, Search } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
+import { MultilangInput } from "../components/MultilangInput";
 import { useT } from "../lib/i18n";
 import {
   blogPostsApi,
@@ -9,10 +10,16 @@ import {
   unwrapList,
   type AdminBlogCategory,
 } from "../lib/resources";
-import { adviceToApi, adviceToUi, type UiAdvice } from "../lib/adapters";
+import {
+  adviceToApi,
+  adviceToUi,
+  emptyUiAdvice,
+  type UiAdvice,
+} from "../lib/adapters";
+import { pickLocalized } from "../types/locale";
 
 export function AdvicePage() {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [posts, setPosts] = useState<UiAdvice[]>([]);
   const [categories, setCategories] = useState<AdminBlogCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,9 +67,7 @@ export function AdvicePage() {
 
   const emptyAdvice = (): UiAdvice => ({
     id: "0",
-    title: "",
-    excerpt: "",
-    body: "",
+    ...emptyUiAdvice(),
     image: null,
     videoUrl: "",
     categoryId: categories[0] ? String(categories[0].id) : null,
@@ -126,7 +131,11 @@ export function AdvicePage() {
               Maqolalar yo'q
             </div>
           )}
-          {posts.map((p) => (
+          {posts.map((p) => {
+            const previewTitle = pickLocalized(p.title, lang);
+            const previewExcerpt = pickLocalized(p.excerpt, lang);
+            const previewBody = pickLocalized(p.body, lang);
+            return (
             <div key={p.id} className="card p-4">
               <div className="flex items-start gap-3">
                 <div className="h-20 w-32 shrink-0 overflow-hidden rounded-lg bg-bg-input flex items-center justify-center">
@@ -139,7 +148,7 @@ export function AdvicePage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="text-[14.5px] font-semibold text-text-primary">
-                      {p.title || "—"}
+                      {previewTitle || "—"}
                     </h3>
                     <div className="flex gap-1">
                       <button
@@ -157,7 +166,7 @@ export function AdvicePage() {
                     </div>
                   </div>
                   <p className="mt-1 text-[12px] text-text-secondary line-clamp-2">
-                    {p.excerpt || p.body || "—"}
+                    {previewExcerpt || previewBody || "—"}
                   </p>
                   <div className="mt-2 flex items-center gap-2 text-[11px] text-text-muted">
                     <span>{p.readMinutes} daqiqa</span>
@@ -185,7 +194,8 @@ export function AdvicePage() {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -220,25 +230,28 @@ function AdviceEditor({
           {post.id !== "0" ? "Maqola tahrirlash" : "Yangi maqola"}
         </h3>
         <div className="space-y-3">
-          <input
-            value={draft.title}
-            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+          <MultilangInput
+            label="Sarlavha"
             placeholder="Sarlavha"
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+            value={draft.title}
+            onChange={(v) => setDraft({ ...draft, title: v })}
+            required
           />
-          <textarea
+          <MultilangInput
+            label="Qisqacha (excerpt)"
+            placeholder="Qisqacha matn"
             value={draft.excerpt}
-            onChange={(e) => setDraft({ ...draft, excerpt: e.target.value })}
-            placeholder="Qisqacha (excerpt)"
+            onChange={(v) => setDraft({ ...draft, excerpt: v })}
+            multiline
             rows={2}
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
           />
-          <textarea
+          <MultilangInput
+            label="To'liq matn"
+            placeholder="Maqola matni"
             value={draft.body}
-            onChange={(e) => setDraft({ ...draft, body: e.target.value })}
-            placeholder="To'liq matn"
+            onChange={(v) => setDraft({ ...draft, body: v })}
+            multiline
             rows={8}
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
           />
           <select
             value={draft.categoryId ?? ""}
