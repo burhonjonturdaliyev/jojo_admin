@@ -46,7 +46,15 @@ export function bannerToUi(b: AdminBanner): PromoBanner {
 
 function pickFirstFromLocalized(value: Localized<string> | string): string {
   if (typeof value === "string") return value;
-  return value.uz || value.ru || value.en || "";
+  return value.uz || value.uz_cyrl || value.ru || value.en || "";
+}
+
+function pickLocale(
+  value: Localized<string> | string,
+  key: "uz_cyrl" | "ru" | "en",
+): string | undefined {
+  if (typeof value === "string") return undefined;
+  return value[key] || undefined;
 }
 
 export function bannerToApi(b: PromoBanner): Partial<AdminBanner> {
@@ -58,8 +66,17 @@ export function bannerToApi(b: PromoBanner): Partial<AdminBanner> {
         : { link_product: null, link_category_type: null };
   return {
     title: pickFirstFromLocalized(b.title),
+    title_uz_cyrl: pickLocale(b.title, "uz_cyrl"),
+    title_ru: pickLocale(b.title, "ru"),
+    title_en: pickLocale(b.title, "en"),
     subtitle: pickFirstFromLocalized(b.subtitle),
+    subtitle_uz_cyrl: pickLocale(b.subtitle, "uz_cyrl"),
+    subtitle_ru: pickLocale(b.subtitle, "ru"),
+    subtitle_en: pickLocale(b.subtitle, "en"),
     kicker: pickFirstFromLocalized(b.kicker),
+    kicker_uz_cyrl: pickLocale(b.kicker, "uz_cyrl"),
+    kicker_ru: pickLocale(b.kicker, "ru"),
+    kicker_en: pickLocale(b.kicker, "en"),
     theme: b.theme,
     image: b.imageUrl,
     order: b.sortOrder,

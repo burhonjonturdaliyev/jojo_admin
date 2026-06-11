@@ -70,8 +70,10 @@ export function AdsPage() {
       const r = await broadcastApi.send({
         title: titleL.uz.trim(),
         body: bodyL.uz.trim(),
+        title_uz_cyrl: titleL.uz_cyrl.trim() || undefined,
         title_ru: titleL.ru.trim() || undefined,
         title_en: titleL.en.trim() || undefined,
+        body_uz_cyrl: bodyL.uz_cyrl.trim() || undefined,
         body_ru: bodyL.ru.trim() || undefined,
         body_en: bodyL.en.trim() || undefined,
         category,

@@ -20,8 +20,17 @@ import { api } from "./api";
 export interface AdminBanner {
   id: number;
   title: string;
+  title_uz_cyrl?: string;
+  title_ru?: string;
+  title_en?: string;
   subtitle: string;
+  subtitle_uz_cyrl?: string;
+  subtitle_ru?: string;
+  subtitle_en?: string;
   kicker: string;
+  kicker_uz_cyrl?: string;
+  kicker_ru?: string;
+  kicker_en?: string;
   theme: "cream" | "sky" | "green" | string;
   image: string | null;
   order: number;
@@ -83,6 +92,7 @@ export interface AdminProductTag {
   id: number;
   slug: string;
   name: string;
+  name_uz_cyrl?: string;
   name_ru?: string;
   name_en?: string;
 }
@@ -90,15 +100,19 @@ export interface AdminProductTag {
 export interface AdminStoreProduct {
   id: number;
   name: string;
+  name_uz_cyrl?: string;
   name_ru?: string;
   name_en?: string;
   description?: string;
+  description_uz_cyrl?: string;
   description_ru?: string;
   description_en?: string;
   short_description?: string;
+  short_description_uz_cyrl?: string;
   short_description_ru?: string;
   short_description_en?: string;
   category_label?: string;
+  category_label_uz_cyrl?: string;
   category_label_ru?: string;
   category_label_en?: string;
   tags?: AdminProductTag[];
@@ -326,8 +340,10 @@ export type BroadcastAudience =
 export interface AdminBroadcastHistoryRow {
   title: string;
   body: string;
+  title_uz_cyrl?: string;
   title_ru?: string;
   title_en?: string;
+  body_uz_cyrl?: string;
   body_ru?: string;
   body_en?: string;
   category: string;
@@ -341,8 +357,10 @@ export const broadcastApi = {
   send: (data: {
     title: string;
     body: string;
+    title_uz_cyrl?: string;
     title_ru?: string;
     title_en?: string;
+    body_uz_cyrl?: string;
     body_ru?: string;
     body_en?: string;
     category?: string;
@@ -919,6 +937,9 @@ export const notifRulesApi = {
 export interface AdminGameCategory {
   id: number;
   name: string;
+  name_uz_cyrl?: string;
+  name_ru?: string;
+  name_en?: string;
   icon: string | null;
   is_active: boolean;
   order: number;
@@ -930,7 +951,13 @@ export interface AdminGame {
   category: number;
   category_name?: string | null;
   title: string;
+  title_uz_cyrl?: string;
+  title_ru?: string;
+  title_en?: string;
   description: string;
+  description_uz_cyrl?: string;
+  description_ru?: string;
+  description_en?: string;
   thumbnail: string | null;
   banner: string | null;
   game_url: string;
@@ -982,6 +1009,7 @@ export const kidsContentApi = {
 export interface AdminKidsVideoCategory {
   id: number;
   name: string;
+  name_uz_cyrl?: string;
   name_ru: string;
   name_en: string;
   icon: string | null;
@@ -995,9 +1023,11 @@ export interface AdminKidsVideo {
   category: number;
   category_name?: string | null;
   title: string;
+  title_uz_cyrl?: string;
   title_ru: string;
   title_en: string;
   description: string;
+  description_uz_cyrl?: string;
   description_ru: string;
   description_en: string;
   youtube_url: string;

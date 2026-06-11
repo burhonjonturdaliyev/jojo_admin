@@ -135,6 +135,7 @@ export function SmsPage() {
       const r = await broadcastApi.send({
         title: TITLE_PRESET,
         body: body.uz.trim(),
+        body_uz_cyrl: body.uz_cyrl.trim() || undefined,
         body_ru: body.ru.trim() || undefined,
         body_en: body.en.trim() || undefined,
         category: "system",
@@ -157,7 +158,7 @@ export function SmsPage() {
   };
 
   const resend = (row: AdminBroadcastHistoryRow) => {
-    setBody(buildLangValue(row.body, row.body_ru, row.body_en));
+    setBody(buildLangValue(row.body, row.body_ru, row.body_en, row.body_uz_cyrl));
     setAudience(row.audience || "active");
     setSelected(new Map());
     window.scrollTo({ top: 0, behavior: "smooth" });

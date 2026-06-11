@@ -1115,8 +1115,18 @@ function VideoEditor({
   const previewThumb = d.thumbnail
     || (ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null);
 
-  const titleValue = buildLangValue(d.title, d.title_ru, d.title_en);
-  const descValue = buildLangValue(d.description, d.description_ru, d.description_en);
+  const titleValue = buildLangValue(
+    d.title,
+    d.title_ru,
+    d.title_en,
+    d.title_uz_cyrl,
+  );
+  const descValue = buildLangValue(
+    d.description,
+    d.description_ru,
+    d.description_en,
+    d.description_uz_cyrl,
+  );
 
   const save = async () => {
     setBusy(true);
@@ -1211,7 +1221,15 @@ function VideoEditor({
             label="Sarlavha"
             required
             value={titleValue}
-            onChange={(v) => setD({ ...d, title: v.uz, title_ru: v.ru, title_en: v.en })}
+            onChange={(v) =>
+              setD({
+                ...d,
+                title: v.uz,
+                title_uz_cyrl: v.uz_cyrl,
+                title_ru: v.ru,
+                title_en: v.en,
+              })
+            }
             placeholder="Video nomi"
           />
 
@@ -1220,7 +1238,15 @@ function VideoEditor({
             multiline
             rows={3}
             value={descValue}
-            onChange={(v) => setD({ ...d, description: v.uz, description_ru: v.ru, description_en: v.en })}
+            onChange={(v) =>
+              setD({
+                ...d,
+                description: v.uz,
+                description_uz_cyrl: v.uz_cyrl,
+                description_ru: v.ru,
+                description_en: v.en,
+              })
+            }
             placeholder="Video haqida qisqacha"
           />
 
@@ -1320,7 +1346,12 @@ function VideoCategoryEditor({
   const [d, setD] = useState(cat);
   const [busy, setBusy] = useState(false);
 
-  const nameValue = buildLangValue(d.name, d.name_ru, d.name_en);
+  const nameValue = buildLangValue(
+    d.name,
+    d.name_ru,
+    d.name_en,
+    d.name_uz_cyrl,
+  );
 
   const save = async () => {
     setBusy(true);
@@ -1366,7 +1397,15 @@ function VideoCategoryEditor({
             label="Nom"
             required
             value={nameValue}
-            onChange={(v) => setD({ ...d, name: v.uz, name_ru: v.ru, name_en: v.en })}
+            onChange={(v) =>
+              setD({
+                ...d,
+                name: v.uz,
+                name_uz_cyrl: v.uz_cyrl,
+                name_ru: v.ru,
+                name_en: v.en,
+              })
+            }
             placeholder="Kategoriya nomi"
           />
           <input
