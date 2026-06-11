@@ -772,7 +772,7 @@ function ChatPanel({
         <div ref={messagesEnd} />
       </div>
 
-      <div className="relative border-t border-line bg-bg-panel">
+      <div className="relative shrink-0 border-t border-line bg-bg-panel">
         {showQr && filteredQr.length > 0 && (
           <QuickReplyMenu
             items={filteredQr}
