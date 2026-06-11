@@ -354,6 +354,8 @@ export const broadcastApi = {
       status: boolean;
       sent_to: number;
       sms_sent?: number;
+      sms_failed_count?: number;
+      sms_failed?: Array<{ phone: string; normalized?: string; reason: string }>;
       audience?: BroadcastAudience;
     }>("/admin/broadcast/", { method: "POST", body: data }),
   history: (params?: { category?: string }) =>
@@ -364,14 +366,59 @@ export const broadcastApi = {
 };
 
 // SMSFLY provider status + bitta telefonga test xabar
+export type SmsKind = "otp" | "broadcast" | "rule" | "test" | "other";
+
+export interface SmsSendLogRow {
+  id: number;
+  phone: string;
+  phone_normalized: string;
+  kind: SmsKind;
+  message: string;
+  success: boolean;
+  result_code: number;
+  reason: string;
+  retry_count: number;
+  related_user_id: number | null;
+  created_at: string;
+}
+
+export interface SmsLogStats {
+  total: number;
+  sent: number;
+  failed: number;
+  top_failure_reasons: Array<{ reason: string; c: number }>;
+}
+
 export const smsApi = {
   status: () =>
     api<{ enabled: boolean; key_valid: boolean }>("/admin/sms/test/"),
   test: (data: { phone: string; message?: string }) =>
-    api<{ success: boolean; phone: string }>("/admin/sms/test/", {
+    api<{
+      success: boolean;
+      phone: string;
+      normalized?: string;
+      valid?: boolean;
+      reason?: string;
+      result_code?: number;
+      retry_count?: number;
+    }>("/admin/sms/test/", {
       method: "POST",
       body: data,
     }),
+  log: (params?: {
+    kind?: SmsKind;
+    success?: boolean;
+    phone?: string;
+    page_size?: number;
+    offset?: number;
+  }) =>
+    api<{
+      count: number;
+      offset: number;
+      page_size: number;
+      results: SmsSendLogRow[];
+      stats: SmsLogStats;
+    }>("/admin/sms/log/", { query: params as Record<string, string | number | boolean> }),
 };
 
 // ============================================================================

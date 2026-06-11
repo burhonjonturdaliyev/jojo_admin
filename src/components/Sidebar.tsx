@@ -77,6 +77,7 @@ export function Sidebar() {
         { to: "/notifications", label: t("nav.notifications"), icon: Bell },
         { to: "/notification-rules", label: t("nav.notifRules"), icon: AlarmClock },
         { to: "/sms", label: t("nav.sms"), icon: MessageCircle },
+        { to: "/sms-log", label: "SMS jurnali", icon: MessageCircle },
         { to: "/ads", label: t("nav.ads"), icon: Megaphone },
         { to: "/settings", label: t("nav.settings"), icon: Settings },
         { to: "/operators", label: t("nav.operators"), icon: Headphones },

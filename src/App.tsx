@@ -10,6 +10,7 @@ import { PaymentsPage } from "./pages/PaymentsPage";
 import { RequestsPage } from "./pages/RequestsPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { SmsPage } from "./pages/SmsPage";
+import { SmsLogPage } from "./pages/SmsLogPage";
 import { AdsPage } from "./pages/AdsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { OperatorsPage } from "./pages/OperatorsPage";
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/requests" element={<RequestsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/sms" element={<SmsPage />} />
+          <Route path="/sms-log" element={<SmsLogPage />} />
           <Route path="/ads" element={<AdsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/operators" element={<OperatorsPage />} />
