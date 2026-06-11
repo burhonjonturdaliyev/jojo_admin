@@ -50,6 +50,9 @@ export const bannersApi = {
 export interface AdminStoreCategory {
   id: number;
   name: string;
+  name_ru?: string;
+  name_en?: string;
+  name_uz_cyrl?: string;
   slug?: string;
   category_type?: string;
   icon?: string | null;
@@ -165,6 +168,9 @@ export const productTagsApi = {
 export interface AdminBlogCategory {
   id: number;
   name: string;
+  name_ru?: string;
+  name_en?: string;
+  name_uz_cyrl?: string;
   slug?: string;
   icon?: string | null;
   order?: number;
@@ -618,7 +624,7 @@ export const adminRolesApi = {
 // Auto-translate (admin "Auto" tugmasi)
 // ============================================================================
 
-export type TranslateLang = "uz" | "ru" | "en";
+export type TranslateLang = "uz" | "uz_cyrl" | "ru" | "en";
 
 export const translateApi = {
   one: (text: string, source: TranslateLang, target: TranslateLang) =>

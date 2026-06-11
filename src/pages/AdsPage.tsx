@@ -52,8 +52,8 @@ export function AdsPage() {
   }, [loadHistory]);
 
   const resend = (row: AdminBroadcastHistoryRow) => {
-    setTitleL({ uz: row.title, ru: "", en: "" });
-    setBodyL({ uz: row.body, ru: "", en: "" });
+    setTitleL({ uz: row.title, uz_cyrl: "", ru: "", en: "" });
+    setBodyL({ uz: row.body, uz_cyrl: "", ru: "", en: "" });
     setCategory(row.category as "system" | "tip" | "premium");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

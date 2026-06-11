@@ -520,6 +520,7 @@ function RuleEditor({
             label="Sarlavha"
             value={{
               uz: draft.title,
+              uz_cyrl: (draft as { title_uz_cyrl?: string }).title_uz_cyrl || "",
               ru: draft.title_ru || "",
               en: draft.title_en || "",
             }}
@@ -541,6 +542,7 @@ function RuleEditor({
             label="Matn"
             value={{
               uz: draft.body,
+              uz_cyrl: (draft as { body_uz_cyrl?: string }).body_uz_cyrl || "",
               ru: draft.body_ru || "",
               en: draft.body_en || "",
             }}

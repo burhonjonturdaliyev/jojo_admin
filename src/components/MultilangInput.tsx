@@ -34,6 +34,7 @@ interface Props {
 
 const TABS: { code: TranslateLang; label: string; flag: string }[] = [
   { code: "uz", label: "O'z", flag: "🇺🇿" },
+  { code: "uz_cyrl", label: "Ўз", flag: "🇺🇿" },
   { code: "ru", label: "Ру", flag: "🇷🇺" },
   { code: "en", label: "En", flag: "🇬🇧" },
 ];
@@ -99,11 +100,17 @@ export function MultilangInput({
   );
 }
 
-/** Adapter — uchchala tildagi qiymatni Record sifatida ushlash uchun. */
+/** Adapter — 4 tilning qiymatlarini Record sifatida ushlash uchun. */
 export function buildLangValue(
   uz?: string | null,
   ru?: string | null,
   en?: string | null,
+  uz_cyrl?: string | null,
 ): LangValue {
-  return { uz: uz || "", ru: ru || "", en: en || "" };
+  return {
+    uz: uz || "",
+    uz_cyrl: uz_cyrl || "",
+    ru: ru || "",
+    en: en || "",
+  };
 }

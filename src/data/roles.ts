@@ -68,9 +68,10 @@ const financePermissions: Permissions = {
 export const initialRoles: Role[] = [
   {
     id: "role-super-admin",
-    name: { uz: "Super admin", ru: "Супер-админ", en: "Super admin" },
+    name: { uz: "Super admin", uz_cyrl: "Супер-админ", ru: "Супер-админ", en: "Super admin" },
     description: {
       uz: "To'liq tizim huquqi: barcha menyularni o'qish va tahrirlash.",
+      uz_cyrl: "Тўлиқ тизим ҳуқуқи: барча менюларни ўқиш ва таҳрирлаш.",
       ru: "Полный доступ: чтение и редактирование во всех меню.",
       en: "Full system access: read and edit on every menu.",
     },
@@ -86,11 +87,13 @@ export const initialRoles: Role[] = [
     id: "role-operator",
     name: {
       uz: "Call-center operatori",
+      uz_cyrl: "Колл-центр оператори",
       ru: "Оператор колл-центра",
       en: "Call-center operator",
     },
     description: {
       uz: "Mijozlar bilan ishlash: foydalanuvchilar, so'rovlar, SMS. Moliyaviy bo'limlarni ko'rish.",
+      uz_cyrl: "Мижозлар билан ишлаш: фойдаланувчилар, сўровлар, SMS. Молиявий бўлимларни кўриш.",
       ru: "Работа с клиентами: пользователи, запросы, SMS. Финансовые блоки — только просмотр.",
       en: "Customer-facing work: users, requests, SMS. Financial sections are read-only.",
     },
@@ -104,11 +107,13 @@ export const initialRoles: Role[] = [
     id: "role-content",
     name: {
       uz: "Kontent menejer",
+      uz_cyrl: "Контент менежер",
       ru: "Контент-менеджер",
       en: "Content manager",
     },
     description: {
       uz: "Mahsulotlar, bannerlar, maslahatlar va reklamani boshqarish.",
+      uz_cyrl: "Маҳсулотлар, баннерлар, маслаҳатлар ва рекламани бошқариш.",
       ru: "Управление товарами, баннерами, советами и рекламой.",
       en: "Manages products, banners, advice and ads.",
     },
@@ -120,9 +125,10 @@ export const initialRoles: Role[] = [
   },
   {
     id: "role-finance",
-    name: { uz: "Moliya bo'limi", ru: "Финансовый отдел", en: "Finance" },
+    name: { uz: "Moliya bo'limi", uz_cyrl: "Молия бўлими", ru: "Финансовый отдел", en: "Finance" },
     description: {
       uz: "Premium, to'lovlar va buyurtmalarni boshqaradi, qolgan modullarni nazorat qiladi.",
+      uz_cyrl: "Premium, тўловлар ва буюртмаларни бошқаради, қолган модулларни назорат қилади.",
       ru: "Управляет Premium, платежами и заказами, мониторит остальные модули.",
       en: "Handles Premium, payments and orders; monitors the rest read-only.",
     },
@@ -134,9 +140,10 @@ export const initialRoles: Role[] = [
   },
   {
     id: "role-auditor",
-    name: { uz: "Auditor", ru: "Аудитор", en: "Auditor" },
+    name: { uz: "Auditor", uz_cyrl: "Аудитор", ru: "Аудитор", en: "Auditor" },
     description: {
       uz: "Faqat o'qish huquqi: barcha sahifalar ko'rinadi, lekin hech narsani o'zgartira olmaydi.",
+      uz_cyrl: "Фақат ўқиш ҳуқуқи: барча саҳифалар кўринади, лекин ҳеч нарсани ўзгартира олмайди.",
       ru: "Только чтение: видит всё, но не может ничего менять.",
       en: "Read-only access across every section; cannot edit anything.",
     },
