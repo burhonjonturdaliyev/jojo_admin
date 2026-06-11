@@ -422,6 +422,150 @@ export const smsApi = {
 };
 
 // ============================================================================
+// Bulk SMS — contact groups + campaigns
+// ============================================================================
+
+export interface ParsedNumber {
+  raw: string;
+  normalized: string;
+  valid: boolean;
+}
+
+export interface SmsContact {
+  id: number;
+  group_id: number;
+  phone: string;
+  phone_normalized: string;
+  name: string;
+  notes: string;
+  created_at: string;
+}
+
+export interface SmsContactGroup {
+  id: number;
+  name: string;
+  description: string;
+  owner_id: number | null;
+  contacts_count?: number;
+  created_at: string;
+  updated_at: string;
+  contacts?: SmsContact[];
+}
+
+export type BulkCampaignStatus = "queued" | "sending" | "done";
+export type BulkCampaignSource = "manual" | "group" | "csv" | "mixed";
+
+export interface BulkCampaignLog {
+  id: number;
+  phone: string;
+  phone_normalized: string;
+  success: boolean;
+  result_code: number;
+  reason: string;
+  retry_count: number;
+  created_at: string;
+}
+
+export interface BulkSmsCampaign {
+  id: number;
+  title: string;
+  message: string;
+  message_ru: string;
+  message_en: string;
+  message_uz_cyrl: string;
+  status: BulkCampaignStatus;
+  source: BulkCampaignSource;
+  group_id: number | null;
+  group_name: string | null;
+  total: number;
+  sent_count: number;
+  failed_count: number;
+  created_by_id: number | null;
+  created_by_name: string | null;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  logs?: BulkCampaignLog[];
+}
+
+export const bulkSmsApi = {
+  parseNumbers: (text: string) =>
+    api<{ numbers: ParsedNumber[]; total: number; valid_count: number }>(
+      "/admin/sms/parse-numbers/",
+      { method: "POST", body: { text } },
+    ),
+  parseNumbersFile: async (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api<{ numbers: ParsedNumber[]; total: number; valid_count: number }>(
+      "/admin/sms/parse-numbers/",
+      { method: "POST", body: form, multipart: true },
+    );
+  },
+
+  // Contact groups
+  groupList: () =>
+    api<{ results: SmsContactGroup[] }>("/admin/sms/groups/"),
+  groupCreate: (data: { name: string; description?: string }) =>
+    api<SmsContactGroup>("/admin/sms/groups/", { method: "POST", body: data }),
+  groupDetail: (id: number) =>
+    api<SmsContactGroup>(`/admin/sms/groups/${id}/`),
+  groupUpdate: (id: number, data: { name?: string; description?: string }) =>
+    api<SmsContactGroup>(`/admin/sms/groups/${id}/`, { method: "PATCH", body: data }),
+  groupRemove: (id: number) =>
+    api<void>(`/admin/sms/groups/${id}/`, { method: "DELETE" }),
+
+  // Contacts
+  contactList: (groupId: number) =>
+    api<{ results: SmsContact[] }>(`/admin/sms/groups/${groupId}/contacts/`),
+  contactAdd: (
+    groupId: number,
+    data: { phone?: string; name?: string; notes?: string; contacts?: Array<{ phone: string; name?: string }> },
+  ) =>
+    api<{ added: number; skipped: number; group_id: number }>(
+      `/admin/sms/groups/${groupId}/contacts/`,
+      { method: "POST", body: data },
+    ),
+  contactRemove: (groupId: number, contactId: number) =>
+    api<void>(`/admin/sms/groups/${groupId}/contacts/${contactId}/`, {
+      method: "DELETE",
+    }),
+  groupImportCsv: async (groupId: number, file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    return api<{ added: number; skipped: number; total_parsed: number }>(
+      `/admin/sms/groups/${groupId}/import/`,
+      { method: "POST", body: form, multipart: true },
+    );
+  },
+
+  // Campaigns
+  campaignList: (params?: { page_size?: number; offset?: number }) =>
+    api<{
+      count: number;
+      offset: number;
+      page_size: number;
+      results: BulkSmsCampaign[];
+    }>("/admin/sms/campaigns/", { query: params as Record<string, number> }),
+  campaignCreate: (data: {
+    title?: string;
+    message: string;
+    message_ru?: string;
+    message_en?: string;
+    message_uz_cyrl?: string;
+    phones?: string[];
+    group_id?: number;
+    numbers_text?: string;
+  }) =>
+    api<{
+      campaign: BulkSmsCampaign;
+      failed_sample: Array<{ phone: string; reason: string }>;
+    }>("/admin/sms/campaigns/", { method: "POST", body: data }),
+  campaignDetail: (id: number) =>
+    api<BulkSmsCampaign>(`/admin/sms/campaigns/${id}/`),
+};
+
+// ============================================================================
 // Dashboard
 // ============================================================================
 
