@@ -46,12 +46,16 @@ export function Sidebar() {
   useEffect(() => {
     let cancelled = false;
     const refresh = () => {
+      // Sorovlar (Telegram support): "javob kutilayotgan"lar —
+      // operator kimga javob berishi kerakligini ko'rsatadi.
       leadsApi
-        .unreadCount("telegram")
+        .unreadCount({ source: "telegram", mode: "needs_reply" })
         .then((r) => !cancelled && setUnreadRequests(r.count ?? 0))
         .catch(() => {});
+      // Leadlar (CRM): sof "Yangi" status sanog'i — kanban
+      // "Yangi" kolonkasidagi kartochkalar bilan to'liq mos keladi.
       leadsApi
-        .unreadCount("app,manual")
+        .unreadCount({ source: "app,manual", mode: "new" })
         .then((r) => !cancelled && setUnreadLeads(r.count ?? 0))
         .catch(() => {});
     };

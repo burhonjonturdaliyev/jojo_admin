@@ -1304,11 +1304,17 @@ export const leadsApi = {
     source?: string;
   }) =>
     api<LeadBoardResponse>("/admin/leads/board/", { query: params }),
-  // Sidebar uchun "javob kutilayotgan murojaatlar" sanog'i.
-  // Sorovlar → source=telegram, Leadlar CRM → source=app,manual.
-  unreadCount: (source?: string) =>
+  // Sidebar badge sanog'i.
+  //   mode="new" (default) — sof "Yangi" status sanog'i (CRM uchun
+  //     kanban "Yangi" kolonkasi bilan to'liq mos keladi).
+  //   mode="needs_reply" — operator javob bermagan / foydalanuvchi qayta
+  //     yozgan tikketlar (telegram support chat uchun).
+  unreadCount: (params?: {
+    source?: string;
+    mode?: "new" | "needs_reply";
+  }) =>
     api<{ count: number }>("/admin/leads/unread-count/", {
-      query: source ? { source } : undefined,
+      query: params as Record<string, string>,
     }),
   create: (data: {
     parent_id: number;
