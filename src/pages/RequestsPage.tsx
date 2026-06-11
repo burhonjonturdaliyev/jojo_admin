@@ -174,8 +174,16 @@ export function RequestsPage() {
   const loadQuickReplies = async () => {
     try {
       const r = await quickRepliesApi.list();
-      setQuickReplies(r.results || []);
-    } catch {
+      // Backend ListCreateAPIView pagination-siz flat array qaytaradi —
+      // ikkala formani ham qabul qilamiz.
+      const arr = Array.isArray(r)
+        ? r
+        : Array.isArray((r as { results?: SupportQuickReply[] }).results)
+          ? (r as { results: SupportQuickReply[] }).results
+          : [];
+      setQuickReplies(arr);
+    } catch (e) {
+      console.error("[Requests] loadQuickReplies failed:", e);
       setQuickReplies([]);
     }
   };
@@ -1083,16 +1091,32 @@ function QuickReplyEditor({
 
   const save = async () => {
     if (!editing) return;
-    if (!editing.code?.trim() || !editing.title?.trim()) return;
+    if (!editing.code?.trim() || !editing.title?.trim()) {
+      alert("Code va Title majburiy");
+      return;
+    }
     setSaving(true);
     try {
+      // Backend code'ni lower+underscore'ga o'tkazadi, lekin biz ham
+      // tozalab beramiz — operator tasodifan oraliqlar yozsa ham ishlasin.
+      const payload: Partial<SupportQuickReply> = {
+        ...editing,
+        code: editing.code.trim().toLowerCase().replace(/\s+/g, "_"),
+        title: editing.title.trim(),
+      };
       if (editing.id) {
-        await quickRepliesApi.update(editing.id, editing);
+        await quickRepliesApi.update(editing.id, payload);
       } else {
-        await quickRepliesApi.create(editing);
+        await quickRepliesApi.create(payload);
       }
       onChange();
       setEditing(null);
+    } catch (e) {
+      console.error("[Requests] saveQuickReply failed:", e);
+      const msg =
+        (e as { message?: string })?.message ||
+        "Saqlab bo'lmadi — kod yoki sarlavhada xato bormi?";
+      alert(msg);
     } finally {
       setSaving(false);
     }
@@ -1100,8 +1124,15 @@ function QuickReplyEditor({
 
   const remove = async (id: number) => {
     if (!confirm("Shortcut o'chirilsinmi?")) return;
-    await quickRepliesApi.remove(id);
-    onChange();
+    try {
+      await quickRepliesApi.remove(id);
+      onChange();
+    } catch (e) {
+      console.error("[Requests] removeQuickReply failed:", e);
+      alert(
+        (e as { message?: string })?.message || "O'chirib bo'lmadi",
+      );
+    }
   };
 
   return (

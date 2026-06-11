@@ -1059,9 +1059,15 @@ export interface SupportQuickReply {
   created_at: string;
 }
 
+// Backend DRF default pagination o'chirilgan — ListCreateAPIView flat array
+// qaytaradi. Frontend ikkala shaklni ham qabul qila olsin:
+//   [...]                 → list
+//   { results: [...] }    → pagination
 export const quickRepliesApi = {
   list: () =>
-    api<{ results: SupportQuickReply[] }>("/admin/support/quick-replies/"),
+    api<SupportQuickReply[] | { results: SupportQuickReply[] }>(
+      "/admin/support/quick-replies/",
+    ),
   create: (data: Partial<SupportQuickReply>) =>
     api<SupportQuickReply>("/admin/support/quick-replies/", {
       method: "POST",
