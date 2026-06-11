@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus, FolderTree, Pencil, Trash2, Package, BookOpen } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
+import { MultilangInput, type LangValue } from "../components/MultilangInput";
 import {
   storeCategoriesApi,
   blogCategoriesApi,
@@ -15,6 +16,9 @@ type Tab = "store" | "blog";
 interface CategoryDraft {
   id?: number;
   name: string;
+  name_ru?: string;
+  name_en?: string;
+  name_uz_cyrl?: string;
   slug?: string;
   icon?: string | null;
   order?: number;
@@ -50,6 +54,9 @@ export function CategoriesPage() {
   const save = async (d: CategoryDraft) => {
     const payload: Record<string, unknown> = {
       name: d.name,
+      name_ru: d.name_ru || "",
+      name_en: d.name_en || "",
+      name_uz_cyrl: d.name_uz_cyrl || "",
       slug: d.slug || undefined,
       order: d.order ?? 0,
       is_active: d.is_active ?? true,
@@ -82,6 +89,9 @@ export function CategoriesPage() {
       ? storeCats.map((c) => ({
           id: c.id,
           name: c.name,
+          name_ru: c.name_ru,
+          name_en: c.name_en,
+          name_uz_cyrl: c.name_uz_cyrl,
           slug: c.slug,
           icon: c.icon,
           order: c.order,
@@ -90,6 +100,9 @@ export function CategoriesPage() {
       : blogCats.map((c) => ({
           id: c.id,
           name: c.name,
+          name_ru: c.name_ru,
+          name_en: c.name_en,
+          name_uz_cyrl: c.name_uz_cyrl,
           slug: c.slug,
           order: c.order,
           is_active: c.is_active,
@@ -106,6 +119,9 @@ export function CategoriesPage() {
             onClick={() =>
               setEditing({
                 name: "",
+                name_ru: "",
+                name_en: "",
+                name_uz_cyrl: "",
                 slug: "",
                 icon: "",
                 order: items.length,
@@ -253,11 +269,25 @@ function CategoryEditor({
           {draft.id ? "Kategoriya tahrirlash" : "Yangi kategoriya"}
         </h3>
         <div className="space-y-3">
-          <input
-            value={d.name}
-            onChange={(e) => setD({ ...d, name: e.target.value })}
+          <MultilangInput
+            label="Nomi"
+            value={{
+              uz: d.name || "",
+              uz_cyrl: d.name_uz_cyrl || "",
+              ru: d.name_ru || "",
+              en: d.name_en || "",
+            } as LangValue}
+            onChange={(v) =>
+              setD({
+                ...d,
+                name: v.uz,
+                name_uz_cyrl: v.uz_cyrl,
+                name_ru: v.ru,
+                name_en: v.en,
+              })
+            }
             placeholder="Nom"
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+            required
           />
           <input
             value={d.slug ?? ""}

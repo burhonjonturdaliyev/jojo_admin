@@ -26,7 +26,8 @@ interface Props {
 }
 
 const LANG_NAME: Record<Lang, string> = {
-  uz: "O'zbekcha",
+  uz: "O'zbekcha (lotin)",
+  uz_cyrl: "Ўзбекча (кирилл)",
   ru: "Русский",
   en: "English",
 };

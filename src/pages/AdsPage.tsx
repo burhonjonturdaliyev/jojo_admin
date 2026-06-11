@@ -23,8 +23,8 @@ import {
  */
 export function AdsPage() {
   const { t } = useT();
-  const [titleL, setTitleL] = useState<LangValue>({ uz: "", ru: "", en: "" });
-  const [bodyL, setBodyL] = useState<LangValue>({ uz: "", ru: "", en: "" });
+  const [titleL, setTitleL] = useState<LangValue>({ uz: "", uz_cyrl: "", ru: "", en: "" });
+  const [bodyL, setBodyL] = useState<LangValue>({ uz: "", uz_cyrl: "", ru: "", en: "" });
   const [category, setCategory] = useState<"system" | "tip" | "premium">(
     "system",
   );
@@ -79,8 +79,8 @@ export function AdsPage() {
       });
       const smsLine = r.sms_sent ? ` + ${r.sms_sent} ta SMS` : "";
       setResult(`${r.sent_to} ta ota-onaga yetkazildi${smsLine}`);
-      setTitleL({ uz: "", ru: "", en: "" });
-      setBodyL({ uz: "", ru: "", en: "" });
+      setTitleL({ uz: "", uz_cyrl: "", ru: "", en: "" });
+      setBodyL({ uz: "", uz_cyrl: "", ru: "", en: "" });
       loadHistory();
     } catch (e) {
       const msg = (e as { message?: string }).message || "Xato yuz berdi";

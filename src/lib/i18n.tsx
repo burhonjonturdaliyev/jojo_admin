@@ -9,10 +9,12 @@ import {
 } from "react";
 import { translations } from "../locales";
 
-export type Lang = "uz" | "ru" | "en";
+export type Lang = "uz" | "uz_cyrl" | "ru" | "en";
 
 const STORAGE_KEY = "jojo_admin_lang";
 const DEFAULT_LANG: Lang = "uz";
+
+const SUPPORTED_LANGS: Lang[] = ["uz", "uz_cyrl", "ru", "en"];
 
 type Vars = Record<string, string | number>;
 
@@ -27,8 +29,8 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 function readStored(): Lang {
   if (typeof window === "undefined") return DEFAULT_LANG;
   const stored = window.localStorage.getItem(STORAGE_KEY);
-  return stored === "uz" || stored === "ru" || stored === "en"
-    ? stored
+  return SUPPORTED_LANGS.includes(stored as Lang)
+    ? (stored as Lang)
     : DEFAULT_LANG;
 }
 

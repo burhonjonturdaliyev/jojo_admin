@@ -1,10 +1,14 @@
 import { useState } from "react";
-import { Languages, Sparkles, Loader2 } from "lucide-react";
-import { translateApi, type TranslateLang } from "../lib/resources";
+import { Languages } from "lucide-react";
+import { type TranslateLang } from "../lib/resources";
 
 /**
- * Ko'p tilli matn maydon — uz/ru/en tab'lar bilan.
- * "Auto" tugmasi tanlangan tildagi matnni qolgan ikkitasiga tarjima qiladi.
+ * Ko'p tilli matn maydon — tab'lar bilan.
+ *
+ * Eski "Auto" tarjima tugmasi olib tashlandi: Google Translate sifati past
+ * edi va admin doim natijani qo'lda to'g'rilashga to'g'ri kelardi. Endi har
+ * bir tilni qo'lda yozish kerak — tabni almashtirib har bir til uchun
+ * alohida matn kiritiladi.
  *
  * Foydalanish:
  *   <MultilangInput
@@ -45,57 +49,18 @@ export function MultilangInput({
   className,
 }: Props) {
   const [active, setActive] = useState<TranslateLang>("uz");
-  const [busy, setBusy] = useState(false);
 
   const filled = (v: string) => v && v.trim().length > 0;
-
-  const fillAll = async () => {
-    const source = value[active]?.trim();
-    if (!source) return;
-    setBusy(true);
-    try {
-      const result = await translateApi.all(source, active);
-      // Foydalanuvchi qo'lda yozgan qiymatlarni ustiga yozmaslik uchun
-      // — faqat bo'sh maydonlarni to'ldiramiz.
-      const next: LangValue = { ...value };
-      (Object.keys(result.translations) as TranslateLang[]).forEach((k) => {
-        if (k === active) return;
-        if (!filled(next[k])) {
-          next[k] = result.translations[k] || "";
-        }
-      });
-      onChange(next);
-    } catch (e) {
-      console.error("translate", e);
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const InputElement = multiline ? "textarea" : "input";
 
   return (
     <div className={className}>
       {label && (
-        <div className="flex items-center justify-between mb-1.5">
-          <div className="text-[12px] font-medium text-text-secondary">
-            <Languages className="inline h-3.5 w-3.5 mr-1 -mt-0.5 opacity-60" />
-            {label}
-            {required && <span className="text-red-500 ml-0.5">*</span>}
-          </div>
-          <button
-            type="button"
-            onClick={fillAll}
-            disabled={busy || !filled(value[active])}
-            className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline disabled:opacity-40 disabled:no-underline"
-          >
-            {busy ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Sparkles className="h-3 w-3" />
-            )}
-            Auto
-          </button>
+        <div className="mb-1.5 text-[12px] font-medium text-text-secondary">
+          <Languages className="inline h-3.5 w-3.5 mr-1 -mt-0.5 opacity-60" />
+          {label}
+          {required && <span className="text-red-500 ml-0.5">*</span>}
         </div>
       )}
       <div className="flex gap-0.5 mb-1">

@@ -36,7 +36,8 @@ interface TextareaProps extends BaseProps {
 type Props = InputProps | TextareaProps;
 
 const LANG_NAME: Record<Lang, string> = {
-  uz: "O'zbekcha",
+  uz: "O'zbekcha (lotin)",
+  uz_cyrl: "Ўзбекча (кирилл)",
   ru: "Русский",
   en: "English",
 };

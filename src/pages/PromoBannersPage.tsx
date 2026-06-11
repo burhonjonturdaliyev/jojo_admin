@@ -363,7 +363,7 @@ export function PromoBannersPage() {
 }
 
 function LocaleAvailabilityDots({ banner }: { banner: PromoBanner }) {
-  const langs: Lang[] = ["uz", "ru", "en"];
+  const langs: Lang[] = ["uz", "uz_cyrl", "ru", "en"];
   return (
     <span className="ml-1 inline-flex items-center gap-0.5 rounded-md border border-line bg-bg-card px-1 py-0.5">
       {langs.map((l) => {
@@ -683,7 +683,7 @@ function PreviewLangPicker({
   active: Lang;
   onChange: (l: Lang) => void;
 }) {
-  const langs: Lang[] = ["uz", "ru", "en"];
+  const langs: Lang[] = ["uz", "uz_cyrl", "ru", "en"];
   return (
     <div className="flex items-center gap-0.5 rounded-md border border-line bg-bg-input p-0.5">
       {langs.map((l) => (

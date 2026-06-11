@@ -531,7 +531,12 @@ function ChatPanel({
   const [showQr, setShowQr] = useState(false);
   const [qrFilter, setQrFilter] = useState("");
   const messagesEnd = useRef<HTMLDivElement | null>(null);
+  // Chat skrolini bevosita boshqaramiz — `scrollIntoView` global window
+  // scroll'ni qo'zg'atishi mumkin, bu murojaatga bosganda butun sahifa
+  // tepaga sakrab ketishiga sabab bo'lardi.
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  const lastTicketIdRef = useRef<number | null>(null);
 
   const ticketId = ticket?.id ?? null;
 
@@ -594,9 +599,32 @@ function ChatPanel({
     };
   }, [ticketId]);
 
+  // Chat scrollni bevosita container ichida boshqaramiz. `scrollIntoView`
+  // brauzer bo'yicha eng yaqin scrollable parent'ni topadi va ba'zi
+  // hollarda window'gacha "ko'tarilib" ketadi — admin panelida shu
+  // bilan "yangi murojaatga bossam sahifa tepaga sakraydi" muammosini
+  // keltirib chiqarardi.
   useEffect(() => {
-    messagesEnd.current?.scrollIntoView({ behavior: "smooth" });
-  }, [comments.length]);
+    const el = scrollRef.current;
+    if (!el) return;
+    const switched = lastTicketIdRef.current !== ticketId;
+    lastTicketIdRef.current = ticketId;
+    // Murojaat o'zgarsa darrov pastga; xuddi shu murojaat ichida yangi
+    // xabar kelsa — smooth animatsiya bilan.
+    el.scrollTo({
+      top: el.scrollHeight,
+      behavior: switched ? "auto" : "smooth",
+    });
+  }, [ticketId, comments.length]);
+
+  // Textarea draft o'sganda balandligini avto-moslash — `rows=1` bilan
+  // qulflanmasin.
+  useEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+  }, [draft]);
 
   if (!ticket) {
     return (
@@ -695,10 +723,13 @@ function ChatPanel({
   };
 
   return (
-    <section className="flex h-full flex-col bg-bg">
+    <section className="flex h-full min-h-0 flex-col overflow-hidden bg-bg">
       <ChatHeader ticket={ticket} onStatusChange={changeStatus} />
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin px-6 py-5">
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto scrollbar-thin px-6 py-5"
+      >
         {loading && (
           <div className="py-12 text-center text-[12.5px] text-text-muted">
             Yuklanmoqda...
@@ -769,7 +800,7 @@ function ChatPanel({
             onKeyDown={onKeyDown}
             placeholder="Xabarni yozing... ( / — shortcutlar, Enter — yuborish )"
             rows={1}
-            className="max-h-32 flex-1 resize-none rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-brand"
+            className="max-h-32 min-h-[40px] flex-1 resize-none overflow-y-auto rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] leading-5 text-text-primary outline-none focus:border-brand scrollbar-thin"
           />
           <button
             type="submit"

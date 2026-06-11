@@ -278,9 +278,9 @@ function ProductEditor({
   /** Mavjud uz/ru/en qiymatlardan tanlangan source tili eng to'liq bo'lganini tanlaydi. */
   const detectSource = (): TranslateLang => {
     const fields = [draft.name, draft.shortDescription, draft.description, draft.categoryLabel];
-    const score: Record<TranslateLang, number> = { uz: 0, ru: 0, en: 0 };
+    const score: Record<TranslateLang, number> = { uz: 0, uz_cyrl: 0, ru: 0, en: 0 };
     fields.forEach((f) => {
-      (["uz", "ru", "en"] as TranslateLang[]).forEach((l) => {
+      (["uz", "uz_cyrl", "ru", "en"] as TranslateLang[]).forEach((l) => {
         if (filled(f[l])) score[l] += f[l].length;
       });
     });
@@ -307,7 +307,7 @@ function ProductEditor({
           const result = await translateApi.all(base, source);
           next[key] = {
             ...next[key],
-            ...((["uz", "ru", "en"] as TranslateLang[]).reduce(
+            ...((["uz", "uz_cyrl", "ru", "en"] as TranslateLang[]).reduce(
               (acc, l) => {
                 if (l === source) return acc;
                 if (!filled(next[key][l])) acc[l] = result.translations[l] || "";

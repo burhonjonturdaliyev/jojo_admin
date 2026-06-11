@@ -16,10 +16,18 @@ const GOOGLE_ENDPOINT =
   "https://translate.googleapis.com/translate_a/single";
 const MYMEMORY_ENDPOINT = "https://api.mymemory.translated.net/get";
 
-/** MyMemory needs full IETF tags for Uzbek; Google accepts the bare code. */
-const GOOGLE_CODE: Record<Lang, string> = { uz: "uz", ru: "ru", en: "en" };
+/** MyMemory needs full IETF tags for Uzbek; Google accepts the bare code.
+ * uz_cyrl uchun haqiqiy tarjima emas — backend transliteratsiya qiladi.
+ * Bu jadvallarda yo'q tilga so'rov ketsa, fallback `uz` ishlatadi. */
+const GOOGLE_CODE: Record<Lang, string> = {
+  uz: "uz",
+  uz_cyrl: "uz",
+  ru: "ru",
+  en: "en",
+};
 const MM_LOCALE: Record<Lang, string> = {
   uz: "uz-UZ",
+  uz_cyrl: "uz-UZ",
   ru: "ru-RU",
   en: "en-GB",
 };

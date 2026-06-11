@@ -1788,4 +1788,12 @@ const en: Dict = {
   "loc.copyFrom": "Copy from {lang}",
 };
 
-export const translations: Record<"uz" | "ru" | "en", Dict> = { uz, ru, en };
+// Admin UI tarjimalari — uz_cyrl tab kontent (mahsulot/kategoriya nomi va h.k.)
+// uchun, admin panel matnlarini Cyrillic'da ko'rsatish maqsad emas.
+// Shu sababli uz_cyrl admin UI uz (Lotin) jadvalini ishlatadi.
+export const translations: Record<"uz" | "uz_cyrl" | "ru" | "en", Dict> = {
+  uz,
+  uz_cyrl: uz,
+  ru,
+  en,
+};
