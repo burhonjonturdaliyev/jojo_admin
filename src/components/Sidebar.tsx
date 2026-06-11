@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -27,12 +28,44 @@ import {
 import { cn } from "../lib/utils";
 import { useAuth } from "../lib/auth";
 import { useT } from "../lib/i18n";
+import { leadsApi } from "../lib/resources";
+import { subscribe } from "../lib/leadsSocket";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function Sidebar() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { t } = useT();
+
+  // "Javob kutilayotgan murojaatlar" badge sanog'i — Sorovlar
+  // sahifasi yonida ko'rinadi. Realtime: yangi tikket yoki yangi izoh
+  // kelganda darrov yangilanadi. Fallback: 60 sekundlik polling.
+  const [unreadRequests, setUnreadRequests] = useState(0);
+  const [unreadLeads, setUnreadLeads] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    const refresh = () => {
+      leadsApi
+        .unreadCount("telegram")
+        .then((r) => !cancelled && setUnreadRequests(r.count ?? 0))
+        .catch(() => {});
+      leadsApi
+        .unreadCount("app,manual")
+        .then((r) => !cancelled && setUnreadLeads(r.count ?? 0))
+        .catch(() => {});
+    };
+    refresh();
+    const interval = window.setInterval(refresh, 60_000);
+    const offChanged = subscribe("lead_changed", refresh);
+    const offComment = subscribe("lead_comment", refresh);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      offChanged();
+      offComment();
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -47,12 +80,12 @@ export function Sidebar() {
     {
       label: t("nav.section.users"),
       items: [
-        { to: "/leads", label: t("nav.leads"), icon: Kanban },
+        { to: "/leads", label: t("nav.leads"), icon: Kanban, badge: unreadLeads },
         { to: "/users", label: t("nav.users"), icon: Users },
         { to: "/children", label: t("nav.children"), icon: Baby },
         { to: "/premium", label: t("nav.premium"), icon: Crown },
         { to: "/payments", label: t("nav.payments"), icon: Wallet },
-        { to: "/requests", label: t("nav.requests"), icon: MessageSquare },
+        { to: "/requests", label: t("nav.requests"), icon: MessageSquare, badge: unreadRequests },
       ],
     },
     {
@@ -124,7 +157,12 @@ export function Sidebar() {
                     }
                   >
                     <item.icon className="h-[18px] w-[18px]" strokeWidth={2} />
-                    <span>{item.label}</span>
+                    <span className="flex-1">{item.label}</span>
+                    {"badge" in item && (item.badge ?? 0) > 0 && (
+                      <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-status-blocked px-1.5 text-[10.5px] font-bold leading-none text-white">
+                        {item.badge! > 99 ? "99+" : item.badge}
+                      </span>
+                    )}
                   </NavLink>
                 </li>
               ))}

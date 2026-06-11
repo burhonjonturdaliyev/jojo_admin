@@ -1160,6 +1160,12 @@ export const leadsApi = {
     source?: string;
   }) =>
     api<LeadBoardResponse>("/admin/leads/board/", { query: params }),
+  // Sidebar uchun "javob kutilayotgan murojaatlar" sanog'i.
+  // Sorovlar → source=telegram, Leadlar CRM → source=app,manual.
+  unreadCount: (source?: string) =>
+    api<{ count: number }>("/admin/leads/unread-count/", {
+      query: source ? { source } : undefined,
+    }),
   create: (data: {
     parent_id: number;
     title?: string;
