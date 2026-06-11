@@ -16,6 +16,7 @@
 import {
   type FormEvent,
   type KeyboardEvent,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -524,6 +525,7 @@ function ChatPanel({
 }) {
   const [comments, setComments] = useState<LeadComment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [showQr, setShowQr] = useState(false);
@@ -533,26 +535,47 @@ function ChatPanel({
 
   const ticketId = ticket?.id ?? null;
 
+  const fetchComments = useCallback(
+    (id: number) => {
+      let cancelled = false;
+      setLoading(true);
+      setLoadError(null);
+      leadsApi
+        .comments(id)
+        .then((r) => {
+          if (cancelled) return;
+          setComments((r.results || []).slice().reverse());
+        })
+        .catch((e: unknown) => {
+          if (cancelled) return;
+          const msg =
+            (e as { message?: string })?.message ||
+            "Xabarlarni yuklab bo'lmadi";
+          setLoadError(msg);
+          setComments([]);
+          console.error("[Requests] failed to load comments:", e);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+      return () => {
+        cancelled = true;
+      };
+    },
+    [],
+  );
+
   useEffect(() => {
     if (ticketId == null) {
       setComments([]);
+      setLoadError(null);
       return;
     }
-    let cancelled = false;
-    setLoading(true);
-    leadsApi
-      .comments(ticketId)
-      .then((r) => {
-        if (cancelled) return;
-        setComments((r.results || []).slice().reverse());
-      })
-      .finally(() => !cancelled && setLoading(false));
+    const cancel = fetchComments(ticketId);
     setDraft("");
     setShowQr(false);
-    return () => {
-      cancelled = true;
-    };
-  }, [ticketId]);
+    return cancel;
+  }, [ticketId, fetchComments]);
 
   // Realtime — yangi izoh kelsa
   useEffect(() => {
@@ -681,10 +704,30 @@ function ChatPanel({
             Yuklanmoqda...
           </div>
         )}
-        {!loading && comments.length === 0 && (
+        {!loading && loadError && (
+          <div className="mx-auto max-w-md rounded-xl border border-status-blocked/30 bg-status-blocked/5 p-4 text-center">
+            <div className="text-[12.5px] font-semibold text-status-blocked">
+              Xabarlarni yuklab bo'lmadi
+            </div>
+            <div className="mt-1 text-[11.5px] text-text-muted">
+              {loadError}
+            </div>
+            <button
+              onClick={() => ticketId != null && fetchComments(ticketId)}
+              className="btn-secondary mt-3 text-[12px]"
+            >
+              Qayta urinish
+            </button>
+          </div>
+        )}
+        {!loading && !loadError && comments.length === 0 && (
           <div className="py-12 text-center text-text-muted">
             <MessageSquare className="mx-auto mb-2 h-6 w-6 opacity-40" />
-            <div className="text-[12.5px]">Hali xabar yo'q</div>
+            <div className="text-[12.5px]">
+              {ticket.bot_state === "awaiting_language"
+                ? "Foydalanuvchi suhbatni boshladi, til tanlashi kutilmoqda"
+                : "Hali xabar yo'q — javob yozib suhbatni boshlang"}
+            </div>
           </div>
         )}
         <div className="space-y-3">
