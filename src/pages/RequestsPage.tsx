@@ -287,6 +287,7 @@ export function RequestsPage() {
           <ChatPanel
             ticket={selected}
             quickReplies={quickReplies}
+            onOpenShortcuts={() => setQrEditorOpen(true)}
             onTicketChange={(t) =>
               setLeads((prev) => prev.map((x) => (x.id === t.id ? t : x)))
             }
@@ -517,10 +518,12 @@ function TicketCard({
 function ChatPanel({
   ticket,
   quickReplies,
+  onOpenShortcuts,
   onTicketChange,
 }: {
   ticket: AdminLead | null;
   quickReplies: SupportQuickReply[];
+  onOpenShortcuts: () => void;
   onTicketChange: (t: AdminLead) => void;
 }) {
   const [comments, setComments] = useState<LeadComment[]>([]);
@@ -780,6 +783,33 @@ function ChatPanel({
             onPick={insertQuickReply}
             onSend={sendQuickReply}
           />
+        )}
+        {showQr && filteredQr.length === 0 && (
+          <div className="absolute bottom-full left-4 right-4 mb-2 rounded-xl border border-line bg-bg-card p-4 text-center shadow-panel">
+            <Sparkles className="mx-auto mb-2 h-5 w-5 text-text-muted opacity-50" />
+            <div className="text-[12.5px] font-semibold text-text-primary">
+              {quickReplies.length === 0
+                ? "Hozircha shortcutlar yo'q"
+                : qrFilter
+                  ? `"${qrFilter}" bo'yicha topilmadi`
+                  : "Tezkor javoblar yo'q"}
+            </div>
+            <div className="mt-1 text-[11.5px] text-text-secondary">
+              {quickReplies.length === 0
+                ? "Birinchi shortcutni yarating — keyin chatda /code yozib darrov javob jo'natasiz."
+                : "Boshqacha kalit so'z bilan qidiring yoki yangisini yarating."}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setShowQr(false);
+                onOpenShortcuts();
+              }}
+              className="btn-primary mt-3 text-[12px]"
+            >
+              <Plus className="h-3.5 w-3.5" /> Yangi shortcut yaratish
+            </button>
+          </div>
         )}
         <form onSubmit={send} className="flex items-end gap-2 px-4 py-3">
           <button
