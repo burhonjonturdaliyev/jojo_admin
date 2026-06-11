@@ -723,12 +723,12 @@ function ChatPanel({
   };
 
   return (
-    <section className="flex h-full min-h-0 flex-col overflow-hidden bg-bg">
+    <section className="flex h-full flex-col bg-bg">
       <ChatHeader ticket={ticket} onStatusChange={changeStatus} />
 
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto scrollbar-thin px-6 py-5"
+        className="flex-1 overflow-y-auto scrollbar-thin px-6 py-5"
       >
         {loading && (
           <div className="py-12 text-center text-[12.5px] text-text-muted">
