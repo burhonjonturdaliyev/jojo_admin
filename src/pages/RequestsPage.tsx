@@ -272,7 +272,7 @@ export function RequestsPage() {
       />
 
       <div className="flex-1 overflow-hidden">
-        <div className="grid h-full grid-cols-[360px_1fr] gap-0 bg-bg">
+        <div className="grid h-full min-h-0 grid-cols-[360px_1fr] grid-rows-1 gap-0 bg-bg">
           <TicketList
             items={filtered}
             counts={counts}
@@ -723,12 +723,12 @@ function ChatPanel({
   };
 
   return (
-    <section className="flex h-full flex-col bg-bg">
+    <section className="flex h-full min-h-0 flex-col bg-bg">
       <ChatHeader ticket={ticket} onStatusChange={changeStatus} />
 
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto scrollbar-thin px-6 py-5"
+        className="min-h-0 flex-1 overflow-y-auto scrollbar-thin px-6 py-5"
       >
         {loading && (
           <div className="py-12 text-center text-[12.5px] text-text-muted">
