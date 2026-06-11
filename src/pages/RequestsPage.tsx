@@ -155,7 +155,7 @@ export function RequestsPage() {
   const reload = async () => {
     setLoading(true);
     try {
-      const board = await leadsApi.board({ per_column: 100 });
+      const board = await leadsApi.board({ per_column: 100, source: "telegram" });
       // Hammasi kolonkasi yo'q — barcha statuslarni birlashtiramiz
       const merged: AdminLead[] = [];
       board.statuses.forEach((s) => {
@@ -916,6 +916,27 @@ function ChatHeader({
           <span className={"h-1.5 w-1.5 rounded-full " + status.dot} />
           {status.label}
         </div>
+        {ticket.source === "telegram"
+          && ticket.status !== "resolved"
+          && ticket.status !== "closed" && (
+          <button
+            type="button"
+            onClick={() => {
+              if (
+                confirm(
+                  "Suhbatni yakunlash va foydalanuvchidan 1-10 ball baho so'rashni xohlaysizmi?",
+                )
+              ) {
+                onStatusChange("resolved" as LeadStatus);
+              }
+            }}
+            title="Suhbatni yakunlash va baho so'rash"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-status-resolved/40 bg-status-resolved/15 px-3 py-1.5 text-[11.5px] font-semibold text-status-resolved hover:bg-status-resolved/25"
+          >
+            <Check className="h-3.5 w-3.5" />
+            Yakunlash
+          </button>
+        )}
         <select
           value={ticket.status}
           onChange={(e) => onStatusChange(e.target.value as LeadStatus)}

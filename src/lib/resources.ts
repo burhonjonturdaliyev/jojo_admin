@@ -1103,7 +1103,12 @@ export function quickReplyTextFor(
 }
 
 export const leadsApi = {
-  board: (params?: { q?: string; operator_id?: number; per_column?: number }) =>
+  board: (params?: {
+    q?: string;
+    operator_id?: number;
+    per_column?: number;
+    source?: string;
+  }) =>
     api<LeadBoardResponse>("/admin/leads/board/", { query: params }),
   create: (data: {
     parent_id: number;

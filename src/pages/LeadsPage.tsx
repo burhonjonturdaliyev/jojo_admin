@@ -137,7 +137,7 @@ export function LeadsPage() {
   const reload = useCallback(async () => {
     try {
       const [b, s] = await Promise.all([
-        leadsApi.board({ per_column: 50 }),
+        leadsApi.board({ per_column: 50, source: "app,manual" }),
         dashboardApi.stats(),
       ]);
       setBoard(b);
