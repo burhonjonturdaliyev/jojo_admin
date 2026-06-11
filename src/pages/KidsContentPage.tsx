@@ -7,7 +7,7 @@ import {
   X,
   FolderTree,
   Search,
-  Youtube,
+  Video as Youtube,
   PlayCircle,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
