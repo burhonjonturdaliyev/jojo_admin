@@ -50,9 +50,6 @@ export const bannersApi = {
 export interface AdminStoreCategory {
   id: number;
   name: string;
-  name_ru?: string;
-  name_en?: string;
-  name_uz_cyrl?: string;
   slug?: string;
   category_type?: string;
   icon?: string | null;
@@ -85,7 +82,6 @@ export interface AdminProductTag {
   name: string;
   name_ru?: string;
   name_en?: string;
-  name_uz_cyrl?: string;
 }
 
 export interface AdminStoreProduct {
@@ -93,19 +89,15 @@ export interface AdminStoreProduct {
   name: string;
   name_ru?: string;
   name_en?: string;
-  name_uz_cyrl?: string;
   description?: string;
   description_ru?: string;
   description_en?: string;
-  description_uz_cyrl?: string;
   short_description?: string;
   short_description_ru?: string;
   short_description_en?: string;
-  short_description_uz_cyrl?: string;
   category_label?: string;
   category_label_ru?: string;
   category_label_en?: string;
-  category_label_uz_cyrl?: string;
   tags?: AdminProductTag[];
   price?: number;
   old_price?: number | null;
@@ -173,9 +165,6 @@ export const productTagsApi = {
 export interface AdminBlogCategory {
   id: number;
   name: string;
-  name_ru?: string;
-  name_en?: string;
-  name_uz_cyrl?: string;
   slug?: string;
   icon?: string | null;
   order?: number;
@@ -209,17 +198,14 @@ export interface AdminBlogPost {
   title: string;
   title_ru?: string;
   title_en?: string;
-  title_uz_cyrl?: string;
   excerpt?: string; // alias of short_description (uz only)
   short_description?: string;
   short_description_ru?: string;
   short_description_en?: string;
-  short_description_uz_cyrl?: string;
   body?: string; // alias of content (uz only)
   content?: string;
   content_ru?: string;
   content_en?: string;
-  content_uz_cyrl?: string;
   cover_image?: string | null;
   category?: number | null;
   post_type?: string;
@@ -323,6 +309,14 @@ export const sosApi = {
 // Broadcast (Elon / Announcement) — barcha parentlarga umumiy notif.
 // ============================================================================
 
+export type BroadcastAudience =
+  | "all"           // hamma parentlar (faol + nofaol)
+  | "active"        // faqat is_active=true
+  | "inactive"      // faqat is_active=false
+  | "premium"       // muddati o'tmagan premium
+  | "non_premium"   // premium bo'lmagan faol parentlar
+  | "selected";     // parent_ids ro'yxati
+
 export interface AdminBroadcastHistoryRow {
   title: string;
   body: string;
@@ -334,7 +328,7 @@ export interface AdminBroadcastHistoryRow {
   count: number;
   first_sent: string;
   last_sent: string;
-  audience?: "all" | "selected";
+  audience?: BroadcastAudience;
 }
 
 export const broadcastApi = {
@@ -347,13 +341,14 @@ export const broadcastApi = {
     body_en?: string;
     category?: string;
     send_sms?: boolean;
+    audience?: BroadcastAudience;
     parent_ids?: number[];
   }) =>
     api<{
       status: boolean;
       sent_to: number;
       sms_sent?: number;
-      audience?: "all" | "selected";
+      audience?: BroadcastAudience;
     }>("/admin/broadcast/", { method: "POST", body: data }),
   history: (params?: { category?: string }) =>
     api<{ results: AdminBroadcastHistoryRow[] }>(
@@ -623,7 +618,7 @@ export const adminRolesApi = {
 // Auto-translate (admin "Auto" tugmasi)
 // ============================================================================
 
-export type TranslateLang = "uz" | "uz_cyrl" | "ru" | "en";
+export type TranslateLang = "uz" | "ru" | "en";
 
 export const translateApi = {
   one: (text: string, source: TranslateLang, target: TranslateLang) =>

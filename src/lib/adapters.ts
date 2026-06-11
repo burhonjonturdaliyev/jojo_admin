@@ -102,15 +102,19 @@ export interface UiProduct {
 type StoreProductRaw = AdminStoreProduct & {
   name_ru?: string;
   name_en?: string;
+  name_uz_cyrl?: string;
   short_description?: string;
   short_description_ru?: string;
   short_description_en?: string;
+  short_description_uz_cyrl?: string;
   description?: string;
   description_ru?: string;
   description_en?: string;
+  description_uz_cyrl?: string;
   category_label?: string;
   category_label_ru?: string;
   category_label_en?: string;
+  category_label_uz_cyrl?: string;
   video_url?: string;
   age_label?: string;
   tags?: UiProductTag[];
@@ -122,21 +126,25 @@ export function productToUi(p: AdminStoreProduct): UiProduct {
     id: String(p.id),
     name: {
       uz: p.name || "",
+      uz_cyrl: raw.name_uz_cyrl || "",
       ru: raw.name_ru || "",
       en: raw.name_en || "",
     },
     description: {
       uz: raw.description || "",
+      uz_cyrl: raw.description_uz_cyrl || "",
       ru: raw.description_ru || "",
       en: raw.description_en || "",
     },
     shortDescription: {
       uz: raw.short_description || "",
+      uz_cyrl: raw.short_description_uz_cyrl || "",
       ru: raw.short_description_ru || "",
       en: raw.short_description_en || "",
     },
     categoryLabel: {
       uz: raw.category_label || p.product_type || "",
+      uz_cyrl: raw.category_label_uz_cyrl || "",
       ru: raw.category_label_ru || "",
       en: raw.category_label_en || "",
     },
@@ -156,7 +164,7 @@ export function productToUi(p: AdminStoreProduct): UiProduct {
 
 export interface ProductToApiOptions {
   autoTranslate?: boolean;
-  translateSource?: "uz" | "ru" | "en";
+  translateSource?: "uz" | "uz_cyrl" | "ru" | "en";
 }
 
 export function productToApi(
@@ -167,15 +175,19 @@ export function productToApi(
     name: u.name.uz,
     name_ru: u.name.ru,
     name_en: u.name.en,
+    name_uz_cyrl: u.name.uz_cyrl,
     short_description: u.shortDescription.uz,
     short_description_ru: u.shortDescription.ru,
     short_description_en: u.shortDescription.en,
+    short_description_uz_cyrl: u.shortDescription.uz_cyrl,
     description: u.description.uz,
     description_ru: u.description.ru,
     description_en: u.description.en,
+    description_uz_cyrl: u.description.uz_cyrl,
     category_label: u.categoryLabel.uz,
     category_label_ru: u.categoryLabel.ru,
     category_label_en: u.categoryLabel.en,
+    category_label_uz_cyrl: u.categoryLabel.uz_cyrl,
     tags_input: u.tags.map((t) => (t.id ? t.id : t.name)).filter(Boolean),
     auto_translate: !!opts.autoTranslate,
     translate_source: opts.translateSource || "uz",

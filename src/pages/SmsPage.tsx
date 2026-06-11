@@ -24,9 +24,9 @@ import {
   usersApi,
   type AdminBroadcastHistoryRow,
   type AdminUserRow,
+  type BroadcastAudience,
 } from "../lib/resources";
 
-type Audience = "all" | "selected";
 type Lang = "uz" | "ru" | "en";
 
 const LANG_FLAGS: Record<Lang, string> = { uz: "🇺🇿", ru: "🇷🇺", en: "🇬🇧" };
@@ -34,12 +34,31 @@ const LANG_LABEL: Record<Lang, string> = { uz: "O'zbek", ru: "Русский", e
 
 const TITLE_PRESET = "Jojo";
 
+type AudienceOption = {
+  value: BroadcastAudience;
+  label: string;
+  hint: string;
+};
+
+const AUDIENCE_OPTIONS: AudienceOption[] = [
+  { value: "all", label: "Hammaga", hint: "Faol va nofaol parentlar" },
+  { value: "active", label: "Faollarga", hint: "Faqat is_active=true" },
+  { value: "inactive", label: "Nofaollarga", hint: "Bloklangan/o'chirilgan" },
+  { value: "premium", label: "Premiumlarga", hint: "Muddati o'tmagan premium" },
+  { value: "non_premium", label: "Premiumsizlarga", hint: "Premium sotib olmaganlar" },
+  { value: "selected", label: "Tanlanganlarga", hint: "Aniq odamlar ro'yxati" },
+];
+
+const AUDIENCE_LABEL: Record<BroadcastAudience, string> = Object.fromEntries(
+  AUDIENCE_OPTIONS.map((o) => [o.value, o.label]),
+) as Record<BroadcastAudience, string>;
+
 export function SmsPage() {
   const { t } = useT();
 
   // Form state
   const [body, setBody] = useState<LangValue>(buildLangValue());
-  const [audience, setAudience] = useState<Audience>("all");
+  const [audience, setAudience] = useState<BroadcastAudience>("active");
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -59,7 +78,8 @@ export function SmsPage() {
   // History
   const [history, setHistory] = useState<AdminBroadcastHistoryRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
-  const [historyFilter, setHistoryFilter] = useState<"all" | "all_audience" | "selected">("all");
+  const [historyFilter, setHistoryFilter] =
+    useState<"all" | BroadcastAudience>("all");
 
   const loadHistory = useCallback(() => {
     setHistoryLoading(true);
@@ -87,16 +107,16 @@ export function SmsPage() {
 
   const filteredHistory = useMemo(() => {
     if (historyFilter === "all") return history;
-    if (historyFilter === "selected")
-      return history.filter((h) => h.audience === "selected");
-    return history.filter((h) => !h.audience || h.audience === "all");
+    // Eski yozuvlarda audience yo'q bo'lishi mumkin — ularni "active" ga
+    // moslab ko'rsatamiz (eski default).
+    return history.filter((h) => (h.audience || "active") === historyFilter);
   }, [history, historyFilter]);
 
   const charCount = body[previewLang]?.length || 0;
   const hasAnyBody = body.uz.trim() || body.ru.trim() || body.en.trim();
   const canSend =
     !!body.uz.trim() &&
-    (audience === "all" || selected.size > 0) &&
+    (audience !== "selected" || selected.size > 0) &&
     !sending;
 
   const send = async () => {
@@ -119,13 +139,14 @@ export function SmsPage() {
         body_en: body.en.trim() || undefined,
         category: "system",
         send_sms: true,
+        audience,
         parent_ids: audience === "selected" ? Array.from(selected.keys()) : undefined,
       });
       const smsLine = r.sms_sent ? ` · ${r.sms_sent} ta SMS` : "";
       setResult(`Yuborildi! ${r.sent_to} ta foydalanuvchi${smsLine}.`);
       setBody(buildLangValue());
       setSelected(new Map());
-      setAudience("all");
+      setAudience("active");
       loadHistory();
     } catch (e) {
       const msg = (e as { message?: string }).message || "Xato yuz berdi";
@@ -137,7 +158,7 @@ export function SmsPage() {
 
   const resend = (row: AdminBroadcastHistoryRow) => {
     setBody(buildLangValue(row.body, row.body_ru, row.body_en));
-    setAudience("all");
+    setAudience(row.audience || "active");
     setSelected(new Map());
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -187,43 +208,47 @@ export function SmsPage() {
               </div>
             </div>
 
-            {/* AUDIENCE TABS */}
+            {/* AUDIENCE PICKER — 6 options as 2x3 grid */}
             <div className="mb-4">
               <div className="text-[11.5px] font-medium text-text-secondary mb-1.5">
                 Kimga yuboriladi?
               </div>
-              <div className="flex rounded-xl bg-bg-input p-1">
-                <button
-                  type="button"
-                  onClick={() => setAudience("all")}
-                  className={
-                    "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[12.5px] font-medium transition-all " +
-                    (audience === "all"
-                      ? "bg-bg shadow-sm text-text-primary"
-                      : "text-text-secondary hover:text-text-primary")
-                  }
-                >
-                  <UsersIcon className="h-3.5 w-3.5" />
-                  Hamma parentlarga
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAudience("selected")}
-                  className={
-                    "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[12.5px] font-medium transition-all " +
-                    (audience === "selected"
-                      ? "bg-bg shadow-sm text-text-primary"
-                      : "text-text-secondary hover:text-text-primary")
-                  }
-                >
-                  <UserCheck className="h-3.5 w-3.5" />
-                  Tanlangan odamlarga
-                  {selected.size > 0 && (
-                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10.5px] font-semibold text-white">
-                      {selected.size}
-                    </span>
-                  )}
-                </button>
+              <div className="grid grid-cols-3 gap-1.5">
+                {AUDIENCE_OPTIONS.map((opt) => {
+                  const isSelected = audience === opt.value;
+                  const isManualPicker = opt.value === "selected";
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setAudience(opt.value)}
+                      title={opt.hint}
+                      className={
+                        "flex flex-col items-start gap-0.5 rounded-xl border px-3 py-2 text-left transition-all " +
+                        (isSelected
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-line bg-bg-input text-text-secondary hover:border-line/80 hover:bg-bg-input/80")
+                      }
+                    >
+                      <span className="flex items-center gap-1.5 text-[12.5px] font-semibold">
+                        {isManualPicker ? (
+                          <UserCheck className="h-3.5 w-3.5" />
+                        ) : (
+                          <UsersIcon className="h-3.5 w-3.5" />
+                        )}
+                        {opt.label}
+                        {isManualPicker && selected.size > 0 && (
+                          <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-white">
+                            {selected.size}
+                          </span>
+                        )}
+                      </span>
+                      <span className="text-[10.5px] text-text-muted leading-tight">
+                        {opt.hint}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
               {audience === "selected" && (
@@ -323,9 +348,9 @@ export function SmsPage() {
               <Send className="h-4 w-4" />
               {sending
                 ? "Yuborilmoqda..."
-                : audience === "all"
-                ? "Hammaga yuborish"
-                : `${selected.size} odamga yuborish`}
+                : audience === "selected"
+                ? `${selected.size} odamga yuborish`
+                : `${AUDIENCE_LABEL[audience]} yuborish`}
             </button>
           </div>
 
@@ -397,13 +422,12 @@ export function SmsPage() {
                 ({filteredHistory.length} ta)
               </span>
             </div>
-            <div className="flex gap-1">
+            <div className="flex flex-wrap gap-1">
               {(
                 [
-                  { v: "all", l: "Barchasi" },
-                  { v: "all_audience", l: "Hammaga" },
-                  { v: "selected", l: "Tanlanganlarga" },
-                ] as const
+                  { v: "all" as const, l: "Barchasi" },
+                  ...AUDIENCE_OPTIONS.map((o) => ({ v: o.value, l: o.label })),
+                ]
               ).map((f) => (
                 <button
                   key={f.v}
@@ -633,8 +657,8 @@ function HistoryCard({
     en: row.body_en || "",
   };
   const hasLang = (l: Lang) => bodyByLang[l].trim().length > 0;
-  const audienceLabel =
-    row.audience === "selected" ? "Tanlanganlarga" : "Hammaga";
+  const audienceKey: BroadcastAudience = row.audience || "active";
+  const audienceLabel = AUDIENCE_LABEL[audienceKey] || "Faollarga";
 
   return (
     <div className="card p-3.5 group">
@@ -647,12 +671,16 @@ function HistoryCard({
             <span
               className={
                 "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10.5px] font-semibold " +
-                (row.audience === "selected"
+                (audienceKey === "selected"
                   ? "bg-primary/15 text-primary"
+                  : audienceKey === "premium"
+                  ? "bg-amber-500/15 text-amber-600"
+                  : audienceKey === "inactive"
+                  ? "bg-text-muted/15 text-text-muted"
                   : "bg-blue-500/15 text-blue-500")
               }
             >
-              {row.audience === "selected" ? (
+              {audienceKey === "selected" ? (
                 <UserCheck className="h-3 w-3" />
               ) : (
                 <UsersIcon className="h-3 w-3" />
