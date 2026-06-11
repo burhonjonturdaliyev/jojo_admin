@@ -1036,6 +1036,9 @@ export interface LeadComment {
   is_operator?: boolean;
   old_status: string;
   new_status: string;
+  attachment_url?: string | null;
+  attachment_kind?: "" | "photo" | "document";
+  attachment_name?: string;
   operator: { id: number; name: string } | null;
   created_at: string;
 }
@@ -1141,4 +1144,16 @@ export const leadsApi = {
       method: "POST",
       body,
     }),
+  // Fayl (rasm/hujjat) + ixtiyoriy matn yuboradi. Backend multipart-ni
+  // qabul qiladi va Telegram orqali foydalanuvchiga ham yetkazadi.
+  addCommentWithFile: (id: number, file: File, text?: string) => {
+    const form = new FormData();
+    form.append("attachment", file);
+    if (text && text.trim()) form.append("text", text.trim());
+    return api<LeadComment>(`/admin/leads/${id}/comments/`, {
+      method: "POST",
+      body: form,
+      multipart: true,
+    });
+  },
 };

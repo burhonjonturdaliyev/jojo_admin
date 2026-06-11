@@ -24,9 +24,11 @@ import {
 } from "react";
 import {
   Check,
+  FileText,
   Hash,
   MessageCircle,
   MessageSquare,
+  Paperclip,
   Phone,
   Plus,
   Search,
@@ -662,6 +664,34 @@ function ChatPanel({
       );
       setDraft("");
       setShowQr(false);
+    } catch (e) {
+      alert((e as { message?: string })?.message || "Yuborib bo'lmadi");
+    } finally {
+      setSending(false);
+      composerRef.current?.focus();
+    }
+  };
+
+  const sendFile = async (file: File) => {
+    if (!ticket || sending) return;
+    if (file.size > 20 * 1024 * 1024) {
+      alert("Fayl 20 MB dan oshmasligi kerak");
+      return;
+    }
+    setSending(true);
+    try {
+      const c = await leadsApi.addCommentWithFile(
+        ticket.id,
+        file,
+        draft.trim() || undefined,
+      );
+      setComments((prev) =>
+        prev.find((x) => x.id === c.id) ? prev : [...prev, c],
+      );
+      setDraft("");
+      setShowQr(false);
+    } catch (e) {
+      alert((e as { message?: string })?.message || "Faylni yuborib bo'lmadi");
     } finally {
       setSending(false);
       composerRef.current?.focus();
@@ -831,6 +861,23 @@ function ChatPanel({
           >
             <Sparkles className="h-4 w-4" />
           </button>
+          <label
+            title="Rasm yoki hujjat yuborish"
+            className="cursor-pointer rounded-lg border border-line bg-bg-input p-2 text-text-secondary hover:text-text-primary"
+          >
+            <Paperclip className="h-4 w-4" />
+            <input
+              type="file"
+              className="hidden"
+              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.zip,.txt"
+              disabled={sending}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.currentTarget.value = "";
+                if (f) void sendFile(f);
+              }}
+            />
+          </label>
           <textarea
             ref={composerRef}
             value={draft}
@@ -955,29 +1002,71 @@ function ChatHeader({
 
 function MessageBubble({ comment }: { comment: LeadComment }) {
   const isOut = comment.direction === "out" || comment.is_operator;
+  const isPhoto =
+    comment.attachment_kind === "photo" && !!comment.attachment_url;
+  const isDoc =
+    comment.attachment_kind === "document" && !!comment.attachment_url;
   return (
     <div className={"flex " + (isOut ? "justify-end" : "justify-start")}>
       <div
         className={
-          "max-w-[70%] rounded-2xl px-3.5 py-2 text-[13px] leading-relaxed " +
+          "max-w-[70%] overflow-hidden rounded-2xl text-[13px] leading-relaxed " +
           (isOut
             ? "bg-brand text-white"
             : "bg-bg-card text-text-primary border border-line")
         }
       >
-        {isOut && comment.operator && (
-          <div className="mb-0.5 text-[10.5px] font-medium text-white/70">
-            {comment.operator.name}
-          </div>
+        {isPhoto && (
+          <a
+            href={comment.attachment_url!}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block"
+          >
+            <img
+              src={comment.attachment_url!}
+              alt={comment.attachment_name || "rasm"}
+              className="block max-h-80 w-full object-cover"
+            />
+          </a>
         )}
-        <div className="whitespace-pre-wrap break-words">{comment.text}</div>
-        <div
-          className={
-            "mt-1 text-right text-[10px] " +
-            (isOut ? "text-white/60" : "text-text-muted")
-          }
-        >
-          {formatTime(comment.created_at)}
+        <div className="px-3.5 py-2">
+          {isOut && comment.operator && (
+            <div className="mb-0.5 text-[10.5px] font-medium text-white/70">
+              {comment.operator.name}
+            </div>
+          )}
+          {isDoc && (
+            <a
+              href={comment.attachment_url!}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={
+                "mb-1 flex items-center gap-2 rounded-lg border px-2 py-1.5 text-[12px] " +
+                (isOut
+                  ? "border-white/30 bg-white/10 text-white"
+                  : "border-line bg-bg-input text-text-primary")
+              }
+            >
+              <FileText className="h-4 w-4 shrink-0" />
+              <span className="truncate">
+                {comment.attachment_name || "Hujjat"}
+              </span>
+            </a>
+          )}
+          {comment.text && (
+            <div className="whitespace-pre-wrap break-words">
+              {comment.text}
+            </div>
+          )}
+          <div
+            className={
+              "mt-1 text-right text-[10px] " +
+              (isOut ? "text-white/60" : "text-text-muted")
+            }
+          >
+            {formatTime(comment.created_at)}
+          </div>
         </div>
       </div>
     </div>
