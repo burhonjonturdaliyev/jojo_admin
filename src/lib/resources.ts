@@ -348,6 +348,17 @@ export const broadcastApi = {
     ),
 };
 
+// SMSFLY provider status + bitta telefonga test xabar
+export const smsApi = {
+  status: () =>
+    api<{ enabled: boolean; key_valid: boolean }>("/admin/sms/test/"),
+  test: (data: { phone: string; message?: string }) =>
+    api<{ success: boolean; phone: string }>("/admin/sms/test/", {
+      method: "POST",
+      body: data,
+    }),
+};
+
 // ============================================================================
 // Dashboard
 // ============================================================================

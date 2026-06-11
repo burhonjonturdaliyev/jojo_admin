@@ -12,12 +12,15 @@ import {
   X,
   Phone,
   Languages,
+  Zap,
+  Loader2,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { MultilangInput, buildLangValue, type LangValue } from "../components/MultilangInput";
 import { useT } from "../lib/i18n";
 import {
   broadcastApi,
+  smsApi,
   usersApi,
   type AdminBroadcastHistoryRow,
   type AdminUserRow,
@@ -46,6 +49,13 @@ export function SmsPage() {
   const [selected, setSelected] = useState<Map<number, AdminUserRow>>(new Map());
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  // SMSFLY provider status
+  const [smsStatus, setSmsStatus] = useState<{
+    enabled: boolean;
+    key_valid: boolean;
+  } | null>(null);
+  const [smsStatusLoading, setSmsStatusLoading] = useState(true);
+
   // History
   const [history, setHistory] = useState<AdminBroadcastHistoryRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -65,6 +75,15 @@ export function SmsPage() {
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
+
+  useEffect(() => {
+    setSmsStatusLoading(true);
+    smsApi
+      .status()
+      .then(setSmsStatus)
+      .catch(() => setSmsStatus({ enabled: false, key_valid: false }))
+      .finally(() => setSmsStatusLoading(false));
+  }, []);
 
   const filteredHistory = useMemo(() => {
     if (historyFilter === "all") return history;
@@ -147,6 +166,10 @@ export function SmsPage() {
         subtitle="Push + SMS orqali parentlarga ko'p tilli xabarnoma"
       />
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
+        <SmsProviderBanner
+          status={smsStatus}
+          loading={smsStatusLoading}
+        />
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           {/* COMPOSER */}
           <div className="card p-6">
@@ -428,6 +451,164 @@ export function SmsPage() {
           onToggle={toggleSelected}
           onClearAll={() => setSelected(new Map())}
         />
+      )}
+    </div>
+  );
+}
+
+// ===========================================================================
+// SMSFLY provider status + test
+// ===========================================================================
+
+function SmsProviderBanner({
+  status,
+  loading,
+}: {
+  status: { enabled: boolean; key_valid: boolean } | null;
+  loading: boolean;
+}) {
+  const [phone, setPhone] = useState("");
+  const [testMsg, setTestMsg] = useState("JoJo: test SMS");
+  const [busy, setBusy] = useState(false);
+  const [resp, setResp] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const healthy = !!status?.enabled && !!status?.key_valid;
+
+  const sendTest = async () => {
+    setResp(null);
+    if (!phone.trim()) {
+      setResp({ ok: false, text: "Telefon raqamini kiriting" });
+      return;
+    }
+    setBusy(true);
+    try {
+      const r = await smsApi.test({ phone: phone.trim(), message: testMsg });
+      setResp({
+        ok: !!r.success,
+        text: r.success
+          ? `Jo'natildi: ${r.phone}`
+          : "Provider muvaffaqiyatsiz qaytardi",
+      });
+    } catch (e) {
+      setResp({
+        ok: false,
+        text: (e as { message?: string }).message || "Xato yuz berdi",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className={
+        "card p-4 mb-5 border-l-4 " +
+        (loading
+          ? "border-l-text-muted"
+          : healthy
+          ? "border-l-green-500"
+          : "border-l-amber-500")
+      }
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <div
+            className={
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl " +
+              (healthy
+                ? "bg-green-500/15 text-green-500"
+                : "bg-amber-500/15 text-amber-500")
+            }
+          >
+            <Zap className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4 className="text-[13.5px] font-semibold text-text-primary">
+                SMSFLY provider
+              </h4>
+              {loading ? (
+                <span className="text-[11px] text-text-muted">tekshirilmoqda...</span>
+              ) : healthy ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-green-500/15 px-2 py-0.5 text-[10.5px] font-semibold text-green-500">
+                  <CheckCircle2 className="h-3 w-3" />
+                  ulangan · kalit haqiqiy
+                </span>
+              ) : status?.enabled ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10.5px] font-semibold text-amber-500">
+                  <AlertCircle className="h-3 w-3" />
+                  kalit noto'g'ri yoki muddati o'tgan
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10.5px] font-semibold text-amber-500">
+                  <AlertCircle className="h-3 w-3" />
+                  ulanmagan (DEV rejim — SMS jo'natilmaydi)
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-[11.5px] text-text-secondary leading-relaxed">
+              Hammaga / tanlanganlarga jo'natish faqat <b>parent</b> rolidagi
+              foydalanuvchilarga ketadi. Admin sifatida o'zingiz qabul qilmaysiz —
+              shu yerdan o'z telefoningizga test SMS jo'natib SMSFLY haqiqatan
+              ham yetkazyaptimi tekshiring.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-end gap-2">
+        <div className="flex-1 min-w-[180px]">
+          <div className="text-[11px] font-medium text-text-secondary mb-1">
+            Test telefon raqami
+          </div>
+          <div className="relative">
+            <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" />
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+998901234567"
+              className="w-full rounded-lg border border-line bg-bg-input pl-8 pr-3 py-2 text-[12.5px] outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+        <div className="flex-1 min-w-[180px]">
+          <div className="text-[11px] font-medium text-text-secondary mb-1">
+            Matn
+          </div>
+          <input
+            value={testMsg}
+            onChange={(e) => setTestMsg(e.target.value)}
+            placeholder="JoJo: test SMS"
+            maxLength={160}
+            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] outline-none focus:border-primary"
+          />
+        </div>
+        <button
+          onClick={sendTest}
+          disabled={busy || loading}
+          className="btn-primary py-2 text-[12.5px] disabled:opacity-50"
+        >
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+          Test jo'natish
+        </button>
+      </div>
+
+      {resp && (
+        <div
+          className={
+            "mt-2 flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] font-medium " +
+            (resp.ok
+              ? "bg-green-500/10 text-green-500"
+              : "bg-red-500/10 text-red-500")
+          }
+        >
+          {resp.ok ? (
+            <CheckCircle2 className="h-3.5 w-3.5" />
+          ) : (
+            <AlertCircle className="h-3.5 w-3.5" />
+          )}
+          {resp.text}
+        </div>
       )}
     </div>
   );
