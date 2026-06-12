@@ -93,7 +93,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (key: string | string[]): boolean => {
       if (!user) return false;
       if (user.is_superuser) return true;
-      const perms = new Set(user.permissions || []);
+      // Backend hali yangi shaklni qaytarmasa (`permissions` umuman yo'q
+      // bo'lsa) — eski xulqqa qaytamiz: barchasi ruxsat. Faqat backend
+      // aniq `permissions: []` deb yuborganidagina cheklash boshlanadi.
+      if (!user.permissions) return true;
+      const perms = new Set(user.permissions);
       if (Array.isArray(key)) return key.some((k) => perms.has(k));
       return perms.has(key);
     },
