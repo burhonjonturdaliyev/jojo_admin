@@ -56,7 +56,7 @@ export function OperatorsPage() {
             className="btn-primary text-[12.5px]"
             onClick={() => setAdding(true)}
           >
-            <Plus className="h-4 w-4" /> Yangi operator
+            <Plus className="h-4 w-4" /> Yangi xodim qo'shish
           </button>
         }
       />
@@ -327,7 +327,7 @@ function CreateOperatorModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-md rounded-2xl bg-bg p-5">
         <h3 className="text-[16px] font-semibold text-text-primary mb-4">
-          Yangi operator yaratish
+          Yangi xodim qo'shish
         </h3>
         <div className="space-y-3">
           <input
