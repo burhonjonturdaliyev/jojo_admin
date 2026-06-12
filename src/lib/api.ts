@@ -145,18 +145,26 @@ export async function api<T = unknown>(
   return (payload as T) ?? (undefined as T);
 }
 
+export interface AdminProfile {
+  id: number;
+  phone: string | null;
+  username: string;
+  full_name: string;
+  is_superuser: boolean;
+  admin_role: {
+    id: number;
+    name: string;
+    is_system: boolean;
+  } | null;
+  permissions: string[];
+}
+
 /** Login — phone + password. JWT'larni store qiladi va profilini qaytaradi. */
 export async function adminLogin(phone: string, password: string) {
   const data = await api<{
     access: string;
     refresh: string;
-    user: {
-      id: number;
-      phone: string | null;
-      username: string;
-      full_name: string;
-      is_superuser: boolean;
-    };
+    user: AdminProfile;
   }>("/admin/login/", {
     method: "POST",
     body: { phone, password },
@@ -167,13 +175,7 @@ export async function adminLogin(phone: string, password: string) {
 
 /** Joriy admin profilini qaytaradi (token yaroqliligini tekshirish uchun). */
 export async function adminMe() {
-  return api<{
-    id: number;
-    phone: string | null;
-    username: string;
-    full_name: string;
-    is_superuser: boolean;
-  }>("/admin/me/");
+  return api<AdminProfile>("/admin/me/");
 }
 
 export function adminLogout() {

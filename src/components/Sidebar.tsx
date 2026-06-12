@@ -33,7 +33,7 @@ import { subscribe } from "../lib/leadsSocket";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function Sidebar() {
-  const { logout } = useAuth();
+  const { logout, hasPermission } = useAuth();
   const navigate = useNavigate();
   const { t } = useT();
 
@@ -76,54 +76,63 @@ export function Sidebar() {
     navigate("/login", { replace: true });
   };
 
-  const sections = [
+  const allSections = [
     {
       label: t("nav.section.home"),
-      items: [{ to: "/dashboard", label: t("nav.dashboard"), icon: LayoutDashboard }],
+      items: [{ to: "/dashboard", perm: "dashboard", label: t("nav.dashboard"), icon: LayoutDashboard }],
     },
     {
       label: t("nav.section.users"),
       items: [
-        { to: "/leads", label: t("nav.leads"), icon: Kanban, badge: unreadLeads },
-        { to: "/users", label: t("nav.users"), icon: Users },
-        { to: "/children", label: t("nav.children"), icon: Baby },
-        { to: "/premium", label: t("nav.premium"), icon: Crown },
-        { to: "/payments", label: t("nav.payments"), icon: Wallet },
-        { to: "/requests", label: t("nav.requests"), icon: MessageSquare, badge: unreadRequests },
+        { to: "/leads", perm: "leads", label: t("nav.leads"), icon: Kanban, badge: unreadLeads },
+        { to: "/users", perm: "users", label: t("nav.users"), icon: Users },
+        { to: "/children", perm: "children", label: t("nav.children"), icon: Baby },
+        { to: "/premium", perm: "premium", label: t("nav.premium"), icon: Crown },
+        { to: "/payments", perm: "payments", label: t("nav.payments"), icon: Wallet },
+        { to: "/requests", perm: "requests", label: t("nav.requests"), icon: MessageSquare, badge: unreadRequests },
       ],
     },
     {
       label: t("nav.section.shop"),
       items: [
-        { to: "/products", label: t("nav.products"), icon: Package },
-        { to: "/categories", label: t("nav.categories"), icon: FolderTree },
-        { to: "/banners", label: t("nav.banners"), icon: ImageIcon },
-        { to: "/orders", label: t("nav.orders"), icon: ShoppingBag },
+        { to: "/products", perm: "products", label: t("nav.products"), icon: Package },
+        { to: "/categories", perm: "categories", label: t("nav.categories"), icon: FolderTree },
+        { to: "/banners", perm: "banners", label: t("nav.banners"), icon: ImageIcon },
+        { to: "/orders", perm: "orders", label: t("nav.orders"), icon: ShoppingBag },
       ],
     },
     {
       label: t("nav.section.content"),
       items: [
-        { to: "/advice", label: t("nav.advice"), icon: Lightbulb },
-        { to: "/kids-content", label: t("nav.kidsContent"), icon: Gamepad2 },
+        { to: "/advice", perm: "advice", label: t("nav.advice"), icon: Lightbulb },
+        { to: "/kids-content", perm: "kids_content", label: t("nav.kidsContent"), icon: Gamepad2 },
       ],
     },
     {
       label: t("nav.section.management"),
       items: [
-        { to: "/notifications", label: t("nav.notifications"), icon: Bell },
-        { to: "/notification-rules", label: t("nav.notifRules"), icon: AlarmClock },
-        { to: "/sms", label: t("nav.sms"), icon: MessageCircle },
-        { to: "/bulk-sms", label: "Bulk SMS", icon: MessageCircle },
-        { to: "/sms-log", label: "SMS jurnali", icon: MessageCircle },
-        { to: "/ads", label: t("nav.ads"), icon: Megaphone },
-        { to: "/settings", label: t("nav.settings"), icon: Settings },
-        { to: "/operators", label: t("nav.operators"), icon: Headphones },
-        { to: "/roles", label: t("nav.roles"), icon: Shield },
-        { to: "/blocked", label: t("nav.blocked"), icon: Ban },
+        { to: "/notifications", perm: "notifications", label: t("nav.notifications"), icon: Bell },
+        { to: "/notification-rules", perm: "notification_rules", label: t("nav.notifRules"), icon: AlarmClock },
+        { to: "/sms", perm: "sms", label: t("nav.sms"), icon: MessageCircle },
+        { to: "/bulk-sms", perm: "sms", label: "Bulk SMS", icon: MessageCircle },
+        { to: "/sms-log", perm: "sms", label: "SMS jurnali", icon: MessageCircle },
+        { to: "/ads", perm: "ads", label: t("nav.ads"), icon: Megaphone },
+        { to: "/settings", perm: "settings", label: t("nav.settings"), icon: Settings },
+        { to: "/operators", perm: "operators", label: t("nav.operators"), icon: Headphones },
+        { to: "/roles", perm: "roles", label: t("nav.roles"), icon: Shield },
+        { to: "/blocked", perm: "blocked", label: t("nav.blocked"), icon: Ban },
       ],
     },
   ];
+
+  // Operatorga uning roli ruxsat bergan menyularnigina ko'rsatamiz.
+  // Sahifa bo'sh bo'lib qolsa, butun bo'lim ham yashiriladi.
+  const sections = allSections
+    .map((sec) => ({
+      ...sec,
+      items: sec.items.filter((item) => hasPermission(item.perm)),
+    }))
+    .filter((sec) => sec.items.length > 0);
 
   return (
     <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-line bg-bg-panel">

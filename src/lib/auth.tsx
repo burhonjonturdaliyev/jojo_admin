@@ -14,15 +14,10 @@ import {
   adminMe,
   clearTokens,
   getAccessToken,
+  type AdminProfile,
 } from "./api";
 
-export interface AdminUser {
-  id: number;
-  phone: string | null;
-  username: string;
-  full_name: string;
-  is_superuser: boolean;
-}
+export type AdminUser = AdminProfile;
 
 interface AuthContextValue {
   isAuthenticated: boolean;
@@ -31,6 +26,9 @@ interface AuthContextValue {
   errorMessage: string | null;
   login: (phone: string, password: string) => Promise<boolean>;
   logout: () => void;
+  /** Permission kalitlaridan kamida bittasi mavjudligini tekshiradi.
+   *  Superuser har doim true qaytaradi. */
+  hasPermission: (key: string | string[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -91,6 +89,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const hasPermission = useCallback(
+    (key: string | string[]): boolean => {
+      if (!user) return false;
+      if (user.is_superuser) return true;
+      const perms = new Set(user.permissions || []);
+      if (Array.isArray(key)) return key.some((k) => perms.has(k));
+      return perms.has(key);
+    },
+    [user],
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       isAuthenticated: !!user,
@@ -99,8 +108,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       errorMessage,
       login,
       logout,
+      hasPermission,
     }),
-    [user, isLoading, errorMessage, login, logout],
+    [user, isLoading, errorMessage, login, logout, hasPermission],
   );
 
   return (
