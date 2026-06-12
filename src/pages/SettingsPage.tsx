@@ -104,20 +104,30 @@ export function SettingsPage() {
               </div>
             </div>
             <div className="space-y-3">
-              <input
-                type="password"
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                placeholder="Joriy parol"
-                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-              />
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Yangi parol"
-                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-              />
+              <div>
+                <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
+                  Joriy parol
+                </label>
+                <input
+                  type="password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  placeholder="Hozirgi parolingiz"
+                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
+                  Yangi parol
+                </label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Kamida 6 belgi"
+                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+                />
+              </div>
               {error && (
                 <div className="flex items-center gap-2 rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
                   <AlertCircle className="h-4 w-4" />

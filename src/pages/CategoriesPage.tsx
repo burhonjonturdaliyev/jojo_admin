@@ -289,12 +289,20 @@ function CategoryEditor({
             placeholder="Nom"
             required
           />
-          <input
-            value={d.slug ?? ""}
-            onChange={(e) => setD({ ...d, slug: e.target.value })}
-            placeholder="Slug (ixtiyoriy)"
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] font-mono text-text-primary outline-none focus:border-primary"
-          />
+          <div>
+            <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
+              Slug (URL uchun, ixtiyoriy)
+            </label>
+            <input
+              value={d.slug ?? ""}
+              onChange={(e) => setD({ ...d, slug: e.target.value })}
+              placeholder="stem-oyinchoqlar"
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] font-mono text-text-primary outline-none focus:border-primary"
+            />
+            <p className="mt-1 text-[10.5px] text-text-muted">
+              Bo'sh qoldirsangiz nom asosida avto-yaratiladi
+            </p>
+          </div>
           {showIcon && (
             <ImageUpload
               value={d.icon ?? null}
@@ -303,13 +311,21 @@ function CategoryEditor({
               label="Kategoriya rasmi (ixtiyoriy)"
             />
           )}
-          <input
-            type="number"
-            value={d.order ?? 0}
-            onChange={(e) => setD({ ...d, order: Number(e.target.value) })}
-            placeholder="Tartib"
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-          />
+          <div>
+            <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
+              Tartib raqami
+            </label>
+            <input
+              type="number"
+              value={d.order ?? 0}
+              onChange={(e) => setD({ ...d, order: Number(e.target.value) })}
+              placeholder="0"
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+            />
+            <p className="mt-1 text-[10.5px] text-text-muted">
+              Kichik raqamlar oldinroq ko'rinadi
+            </p>
+          </div>
           <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
             <input
               type="checkbox"

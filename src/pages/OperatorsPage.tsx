@@ -215,27 +215,45 @@ function EditOperatorModal({
           </button>
         </div>
         <div className="space-y-3">
-          <input
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="To'liq ism"
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-          />
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+998..."
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] font-mono outline-none focus:border-primary"
-          />
-          <div className="relative">
-            <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+          <div>
+            <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
+              To'liq ism
+            </label>
             <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Yangi parol (bo'sh qoldirsangiz o'zgarmaydi)"
-              className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] outline-none focus:border-primary"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Masalan: Ali Valiyev"
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
+              Telefon raqami (login)
+            </label>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+998901234567"
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] font-mono outline-none focus:border-primary"
+            />
+            <p className="mt-1 text-[10.5px] text-text-muted">
+              Xodim shu raqam orqali tizimga kiradi
+            </p>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
+              Yangi parol
+            </label>
+            <div className="relative">
+              <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Bo'sh qoldirsangiz o'zgarmaydi"
+                className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] outline-none focus:border-primary"
+              />
+            </div>
           </div>
           <div>
             <div className="text-[11.5px] font-medium text-text-secondary mb-1">
@@ -330,25 +348,43 @@ function CreateOperatorModal({
           Yangi xodim qo'shish
         </h3>
         <div className="space-y-3">
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+998901234567"
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-          />
-          <input
-            value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
-            placeholder="To'liq ism"
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Parol"
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-          />
+          <div>
+            <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
+              Telefon raqami (login) <span className="text-red-500">*</span>
+            </label>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+998901234567"
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] font-mono text-text-primary outline-none focus:border-primary"
+            />
+            <p className="mt-1 text-[10.5px] text-text-muted">
+              Xodim shu raqam orqali tizimga kiradi
+            </p>
+          </div>
+          <div>
+            <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
+              To'liq ism
+            </label>
+            <input
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Masalan: Ali Valiyev"
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
+              Parol <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Kamida 6 belgi"
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+            />
+          </div>
           <div>
             <div className="text-[11.5px] font-medium text-text-secondary mb-1">
               Rol
