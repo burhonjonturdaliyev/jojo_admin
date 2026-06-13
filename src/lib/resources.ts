@@ -722,6 +722,24 @@ export const notificationsApi = {
     ),
   remove: (id: number) =>
     api<void>(`/admin/notifications/${id}/`, { method: "DELETE" }),
+  broadcast: (data: {
+    title: string;
+    body: string;
+    title_uz_cyrl?: string;
+    body_uz_cyrl?: string;
+    title_ru?: string;
+    body_ru?: string;
+    title_en?: string;
+    body_en?: string;
+    category?: string;
+    audience?: "all" | "active" | "inactive" | "premium" | "non_premium" | "selected";
+    parent_ids?: number[];
+    send_sms?: boolean;
+  }) =>
+    api<{ sent: number; failed?: number }>("/admin/broadcast/", {
+      method: "POST",
+      body: data,
+    }),
 };
 
 // ============================================================================

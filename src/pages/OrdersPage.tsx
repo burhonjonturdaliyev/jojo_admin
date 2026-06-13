@@ -14,8 +14,18 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUS_OPTIONS = ["new", "confirmed", "shipping", "delivered", "cancelled"];
 
+const STATUS_I18N_KEY: Record<string, string> = {
+  new: "orderStatus.sent",
+  confirmed: "orderStatus.confirmed",
+  shipping: "orderStatus.shipping",
+  delivered: "orderStatus.delivered",
+  cancelled: "orderStatus.cancelled",
+};
+
 export function OrdersPage() {
   const { t } = useT();
+  const statusLabel = (s: string) =>
+    STATUS_I18N_KEY[s] ? t(STATUS_I18N_KEY[s]) : s;
   const [items, setItems] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string | null>(null);
@@ -43,7 +53,7 @@ export function OrdersPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.orders")}
-        subtitle={`${items.length} ta buyurtma`}
+        subtitle={t("orders.countSubtitle").replace("{count}", String(items.length))}
       />
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
         <div className="card p-4">
@@ -57,7 +67,7 @@ export function OrdersPage() {
                   : "border-line bg-bg-input text-text-secondary")
               }
             >
-              Hammasi
+              {t("common.all")}
             </button>
             {STATUS_OPTIONS.map((s) => (
               <button
@@ -70,7 +80,7 @@ export function OrdersPage() {
                     : "border-line bg-bg-input text-text-secondary")
                 }
               >
-                {s}
+                {statusLabel(s)}
               </button>
             ))}
           </div>
@@ -80,19 +90,19 @@ export function OrdersPage() {
             <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
                 <th className="px-4 py-3">№</th>
-                <th className="px-4 py-3">Mahsulot</th>
-                <th className="px-4 py-3">Foydalanuvchi</th>
-                <th className="px-4 py-3">Soni</th>
-                <th className="px-4 py-3">Summasi</th>
-                <th className="px-4 py-3">Holati</th>
-                <th className="px-4 py-3">Sana</th>
+                <th className="px-4 py-3">{t("orders.tbl.product")}</th>
+                <th className="px-4 py-3">{t("orders.tbl.customer")}</th>
+                <th className="px-4 py-3">{t("orders.tbl.quantity")}</th>
+                <th className="px-4 py-3">{t("orders.tbl.amount")}</th>
+                <th className="px-4 py-3">{t("common.status")}</th>
+                <th className="px-4 py-3">{t("common.date")}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
-                    Yuklanmoqda...
+                    {t("common.loading")}
                   </td>
                 </tr>
               )}
@@ -100,7 +110,7 @@ export function OrdersPage() {
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center text-text-muted">
                     <ShoppingBag className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                    Buyurtmalar yo'q
+                    {t("orders.empty")}
                   </td>
                 </tr>
               )}
@@ -122,7 +132,7 @@ export function OrdersPage() {
                     {o.quantity ?? 1}
                   </td>
                   <td className="px-4 py-3 font-semibold text-text-primary">
-                    {(o.total_price ?? 0).toLocaleString("uz-UZ").replace(/,/g, " ")} so'm
+                    {(o.total_price ?? 0).toLocaleString("uz-UZ").replace(/,/g, " ")} {t("common.sum")}
                   </td>
                   <td className="px-4 py-3">
                     <select
@@ -136,7 +146,7 @@ export function OrdersPage() {
                     >
                       {STATUS_OPTIONS.map((s) => (
                         <option key={s} value={s}>
-                          {s}
+                          {statusLabel(s)}
                         </option>
                       ))}
                     </select>

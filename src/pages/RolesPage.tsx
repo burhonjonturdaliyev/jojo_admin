@@ -235,15 +235,19 @@ export function RolesPage() {
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
-                {!r.is_system && (
-                  <button
-                    onClick={() => remove(r)}
-                    className="icon-btn h-7 w-7 hover:bg-status-blocked/15 hover:text-status-blocked"
-                    title="O'chirish"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                )}
+                <button
+                  onClick={() => remove(r)}
+                  disabled={r.is_system}
+                  className={
+                    "icon-btn h-7 w-7 " +
+                    (r.is_system
+                      ? "opacity-40 cursor-not-allowed"
+                      : "hover:bg-status-blocked/15 hover:text-status-blocked")
+                  }
+                  title={r.is_system ? "Tizim rolini o'chirib bo'lmaydi" : "O'chirish"}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
               </div>
             </div>
           ))}

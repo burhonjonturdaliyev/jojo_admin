@@ -41,6 +41,9 @@ const uz: Dict = {
   "common.audience": "Auditoriya",
   "common.recipients": "Qabul qiluvchilar",
   "common.thisMonth": "bu oyda",
+  "common.loading": "Yuklanmoqda...",
+  "common.saving": "Saqlanmoqda...",
+  "common.sending": "Yuborilmoqda...",
 
   // ───── Navigation / Sidebar
   "nav.brand": "JOJO ADMIN",
@@ -268,6 +271,14 @@ const uz: Dict = {
   "notifications.bodyPlaceholder": "Bildirishnoma matni...",
   "notifications.recent": "So'nggi yuborilgan",
   "notifications.deliveredLabel": "Yetkazildi: ",
+  "notifications.empty": "Bildirishnomalar yo'q",
+  "notifications.recordsCount": "{count} ta yozuv",
+  "notifications.editTitle": "Bildirishnomani tahrirlash",
+  "notifications.category": "Kategoriya",
+  "notifications.confirmDelete": "Bildirishnomani o'chirishni xohlaysizmi?",
+  "notifications.readMark": "o'qildi",
+  "notifications.uzRequired": "O'zbekcha (lotin) sarlavha va matn majburiy",
+  "notifications.alsoSms": "SMS orqali ham yuborilsin",
 
   // ───── SMS
   "sms.subtitle": "Foydalanuvchilarga SMS yuborish va tarix",
@@ -474,6 +485,10 @@ const uz: Dict = {
   "orders.tbl.created": "Yaratilgan",
   "orders.tbl.action": "Amal",
   "orders.notFound": "Buyurtma topilmadi",
+  "orders.empty": "Buyurtmalar yo'q",
+  "orders.countSubtitle": "{count} ta buyurtma",
+  "orders.tbl.quantity": "Soni",
+  "orders.tbl.amount": "Summasi",
   "orders.detail.customer": "Mijoz",
   "orders.detail.changeStatus": "Statusni o'zgartirish",
   "orders.detail.now": "Hozir: {status}",
@@ -655,6 +670,9 @@ const ru: Dict = {
   "common.audience": "Аудитория",
   "common.recipients": "Получатели",
   "common.thisMonth": "в этом месяце",
+  "common.loading": "Загрузка...",
+  "common.saving": "Сохранение...",
+  "common.sending": "Отправка...",
 
   // ───── Navigation
   "nav.brand": "JOJO ADMIN",
@@ -882,6 +900,14 @@ const ru: Dict = {
   "notifications.bodyPlaceholder": "Текст уведомления...",
   "notifications.recent": "Недавно отправленные",
   "notifications.deliveredLabel": "Доставлено: ",
+  "notifications.empty": "Уведомлений нет",
+  "notifications.recordsCount": "{count} записей",
+  "notifications.editTitle": "Редактирование уведомления",
+  "notifications.category": "Категория",
+  "notifications.confirmDelete": "Удалить уведомление?",
+  "notifications.readMark": "прочитано",
+  "notifications.uzRequired": "Заголовок и текст на узбекском (латиница) обязательны",
+  "notifications.alsoSms": "Отправить также по SMS",
 
   // ───── SMS
   "sms.subtitle": "Отправка SMS пользователям и история",
@@ -1088,6 +1114,10 @@ const ru: Dict = {
   "orders.tbl.created": "Создан",
   "orders.tbl.action": "Действие",
   "orders.notFound": "Заказы не найдены",
+  "orders.empty": "Заказов нет",
+  "orders.countSubtitle": "{count} заказов",
+  "orders.tbl.quantity": "Кол-во",
+  "orders.tbl.amount": "Сумма",
   "orders.detail.customer": "Клиент",
   "orders.detail.changeStatus": "Изменить статус",
   "orders.detail.now": "Сейчас: {status}",
@@ -1269,6 +1299,9 @@ const en: Dict = {
   "common.audience": "Audience",
   "common.recipients": "Recipients",
   "common.thisMonth": "this month",
+  "common.loading": "Loading...",
+  "common.saving": "Saving...",
+  "common.sending": "Sending...",
 
   // ───── Navigation
   "nav.brand": "JOJO ADMIN",
@@ -1496,6 +1529,14 @@ const en: Dict = {
   "notifications.bodyPlaceholder": "Notification body...",
   "notifications.recent": "Recently sent",
   "notifications.deliveredLabel": "Delivered: ",
+  "notifications.empty": "No notifications",
+  "notifications.recordsCount": "{count} records",
+  "notifications.editTitle": "Edit notification",
+  "notifications.category": "Category",
+  "notifications.confirmDelete": "Delete this notification?",
+  "notifications.readMark": "read",
+  "notifications.uzRequired": "Uzbek (Latin) title and body are required",
+  "notifications.alsoSms": "Also send via SMS",
 
   // ───── SMS
   "sms.subtitle": "Send SMS to users and history",
@@ -1702,6 +1743,10 @@ const en: Dict = {
   "orders.tbl.created": "Created",
   "orders.tbl.action": "Action",
   "orders.notFound": "No orders found",
+  "orders.empty": "No orders",
+  "orders.countSubtitle": "{count} orders",
+  "orders.tbl.quantity": "Qty",
+  "orders.tbl.amount": "Amount",
   "orders.detail.customer": "Customer",
   "orders.detail.changeStatus": "Change status",
   "orders.detail.now": "Now: {status}",
