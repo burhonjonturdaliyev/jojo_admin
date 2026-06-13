@@ -833,6 +833,17 @@ function LeadDetailPanel({
     }
   };
 
+  const deleteLead = async () => {
+    if (!confirm("Bu murojaatni butunlay o'chirishni xohlaysizmi?")) return;
+    try {
+      await leadsApi.remove(leadId);
+      onChanged();
+      onClose();
+    } catch (e) {
+      alert((e as { message?: string }).message || "Xato");
+    }
+  };
+
   const filteredComments = useMemo(() => {
     if (commentFilter === "all") return comments;
     return comments.filter(
@@ -1307,9 +1318,15 @@ function LeadDetailPanel({
             </button>
             <button
               onClick={blockUser}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 text-[12.5px] font-medium"
+            >
+              <Ban className="h-3.5 w-3.5" /> Bloklash
+            </button>
+            <button
+              onClick={deleteLead}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white px-3 py-2 text-[12.5px] font-medium"
             >
-              <Trash2 className="h-3.5 w-3.5" /> Bloklash
+              <Trash2 className="h-3.5 w-3.5" /> O'chirish
             </button>
             <a
               href={p?.phone ? `tel:${p.phone}` : undefined}
