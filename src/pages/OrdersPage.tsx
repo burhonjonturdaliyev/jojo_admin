@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Pencil, Trash2, X, Save } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { useT } from "../lib/i18n";
 import { ordersApi, unwrapList, type AdminOrder } from "../lib/resources";
@@ -29,6 +29,7 @@ export function OrdersPage() {
   const [items, setItems] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string | null>(null);
+  const [editing, setEditing] = useState<AdminOrder | null>(null);
 
   const reload = async () => {
     setLoading(true);
@@ -47,6 +48,16 @@ export function OrdersPage() {
   const setStatus = async (id: number, status: string) => {
     await ordersApi.update(id, { status });
     void reload();
+  };
+
+  const remove = async (id: number) => {
+    if (!confirm(t("orders.confirmDelete"))) return;
+    try {
+      await ordersApi.remove(id);
+      setItems((prev) => prev.filter((o) => o.id !== id));
+    } catch (e) {
+      alert((e as { message?: string }).message || "Xato");
+    }
   };
 
   return (
@@ -96,19 +107,20 @@ export function OrdersPage() {
                 <th className="px-4 py-3">{t("orders.tbl.amount")}</th>
                 <th className="px-4 py-3">{t("common.status")}</th>
                 <th className="px-4 py-3">{t("common.date")}</th>
+                <th className="px-4 py-3 text-right">{t("common.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
+                  <td colSpan={8} className="px-4 py-8 text-center text-text-muted">
                     {t("common.loading")}
                   </td>
                 </tr>
               )}
               {!loading && items.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-text-muted">
+                  <td colSpan={8} className="px-4 py-12 text-center text-text-muted">
                     <ShoppingBag className="mx-auto mb-2 h-8 w-8 opacity-40" />
                     {t("orders.empty")}
                   </td>
@@ -154,10 +166,165 @@ export function OrdersPage() {
                   <td className="px-4 py-3 text-text-secondary">
                     {new Date(o.created_at).toLocaleDateString("uz-UZ")}
                   </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => setEditing(o)}
+                        className="icon-btn h-7 w-7"
+                        title={t("common.edit")}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => remove(o.id)}
+                        className="icon-btn h-7 w-7 hover:bg-status-blocked/15 hover:text-status-blocked"
+                        title={t("common.delete")}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {editing && (
+        <OrderEditor
+          order={editing}
+          onClose={() => setEditing(null)}
+          onSaved={(saved) => {
+            setItems((prev) =>
+              prev.map((o) => (o.id === saved.id ? { ...o, ...saved } : o)),
+            );
+            setEditing(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function OrderEditor({
+  order,
+  onClose,
+  onSaved,
+}: {
+  order: AdminOrder;
+  onClose: () => void;
+  onSaved: (s: AdminOrder) => void;
+}) {
+  const { t } = useT();
+  const [contactName, setContactName] = useState(order.contact_name || "");
+  const [contactPhone, setContactPhone] = useState(order.contact_phone || "");
+  const [address, setAddress] = useState(order.address || "");
+  const [quantity, setQuantity] = useState(order.quantity ?? 1);
+  const [note, setNote] = useState(order.note || "");
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const r = await ordersApi.update(order.id, {
+        contact_name: contactName.trim(),
+        contact_phone: contactPhone.trim(),
+        address: address.trim(),
+        quantity,
+        note: note.trim(),
+      });
+      onSaved(r);
+    } catch (e) {
+      alert((e as { message?: string }).message || "Xato");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-bg w-full max-w-md rounded-2xl p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[16px] font-semibold text-text-primary">
+            {t("orders.editTitle")} #{order.id}
+          </h3>
+          <button onClick={onClose} className="icon-btn h-7 w-7">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <div className="text-[11.5px] font-medium text-text-secondary mb-1">
+              {t("orders.csv.customer")}
+            </div>
+            <input
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <div className="text-[11.5px] font-medium text-text-secondary mb-1">
+              {t("orders.csv.phone")}
+            </div>
+            <input
+              value={contactPhone}
+              onChange={(e) => setContactPhone(e.target.value)}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <div className="text-[11.5px] font-medium text-text-secondary mb-1">
+              {t("orders.csv.address")}
+            </div>
+            <input
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <div className="text-[11.5px] font-medium text-text-secondary mb-1">
+              {t("orders.tbl.quantity")}
+            </div>
+            <input
+              type="number"
+              min={1}
+              value={quantity}
+              onChange={(e) => setQuantity(Number(e.target.value) || 1)}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <div className="text-[11.5px] font-medium text-text-secondary mb-1">
+              {t("orders.csv.note")}
+            </div>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button onClick={onClose} className="btn-secondary text-[12.5px]">
+            {t("common.cancel")}
+          </button>
+          <button
+            onClick={save}
+            disabled={busy}
+            className="btn-primary text-[12.5px] disabled:opacity-50"
+          >
+            <Save className="h-3.5 w-3.5" /> {busy ? t("common.saving") : t("common.save")}
+          </button>
         </div>
       </div>
     </div>

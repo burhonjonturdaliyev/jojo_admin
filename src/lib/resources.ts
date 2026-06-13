@@ -298,6 +298,24 @@ export const usersApi = {
       `/admin/users/${id}/toggle-active/`,
       { method: "POST" },
     ),
+  update: (
+    id: number,
+    data: Partial<{
+      first_name: string;
+      last_name: string;
+      full_name: string;
+      phone: string;
+      username: string;
+      age: number | null;
+      gender: string;
+      language: string;
+      is_premium: boolean;
+      is_active: boolean;
+    }>,
+  ) =>
+    api<AdminUserRow>(`/admin/users/${id}/`, { method: "PATCH", body: data }),
+  remove: (id: number) =>
+    api<void>(`/admin/users/${id}/`, { method: "DELETE" }),
 };
 
 // ============================================================================
@@ -633,6 +651,8 @@ export const ordersApi = {
     }),
   update: (id: number, data: Partial<AdminOrder>) =>
     api<AdminOrder>(`/admin/orders/${id}/`, { method: "PATCH", body: data }),
+  remove: (id: number) =>
+    api<void>(`/admin/orders/${id}/`, { method: "DELETE" }),
 };
 
 // ============================================================================
@@ -1138,6 +1158,21 @@ export const childrenApi = {
       offset: number;
       page_size: number;
     }>("/admin/children/", { query: query as Record<string, number> }),
+  update: (
+    id: number,
+    data: Partial<{
+      first_name: string;
+      phone: string;
+      username: string;
+      age: number | null;
+      gender: string;
+      language: string;
+      is_active: boolean;
+    }>,
+  ) =>
+    api<AdminChild>(`/admin/children/${id}/`, { method: "PATCH", body: data }),
+  remove: (id: number) =>
+    api<void>(`/admin/children/${id}/`, { method: "DELETE" }),
 };
 
 // ============================================================================

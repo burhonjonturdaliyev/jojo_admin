@@ -6,6 +6,9 @@ import {
   Crown,
   Users as UsersIcon,
   X,
+  Pencil,
+  Trash2,
+  Save,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
@@ -30,6 +33,7 @@ export function UsersPage() {
     "all",
   );
   const [givingPremium, setGivingPremium] = useState<AdminUserRow | null>(null);
+  const [editing, setEditing] = useState<AdminUserRow | null>(null);
 
   const reload = async () => {
     setLoading(true);
@@ -67,6 +71,17 @@ export function UsersPage() {
   const toggleActive = async (id: number) => {
     await usersApi.toggleActive(id);
     void reload();
+  };
+
+  const remove = async (u: AdminUserRow) => {
+    const name = u.first_name || u.username || u.phone || `#${u.id}`;
+    if (!confirm(`"${name}" foydalanuvchini butunlay o'chirishni xohlaysizmi?`)) return;
+    try {
+      await usersApi.remove(u.id);
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+    } catch (e) {
+      alert((e as { message?: string }).message || "Xato");
+    }
   };
 
   const totalActive = users.filter((u) => u.is_active).length;
@@ -226,6 +241,20 @@ export function UsersPage() {
                           </>
                         )}
                       </button>
+                      <button
+                        onClick={() => setEditing(u)}
+                        className="icon-btn h-7 w-7"
+                        title="Tahrirlash"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => remove(u)}
+                        className="icon-btn h-7 w-7 hover:bg-status-blocked/15 hover:text-status-blocked"
+                        title="O'chirish"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -244,6 +273,162 @@ export function UsersPage() {
           }}
         />
       )}
+      {editing && (
+        <UserEditor
+          user={editing}
+          onClose={() => setEditing(null)}
+          onSaved={(saved) => {
+            setUsers((prev) =>
+              prev.map((u) => (u.id === saved.id ? { ...u, ...saved } : u)),
+            );
+            setEditing(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function UserEditor({
+  user,
+  onClose,
+  onSaved,
+}: {
+  user: AdminUserRow;
+  onClose: () => void;
+  onSaved: (u: AdminUserRow) => void;
+}) {
+  const [firstName, setFirstName] = useState(user.first_name || "");
+  const [lastName, setLastName] = useState(user.last_name || "");
+  const [phone, setPhone] = useState(user.phone || "");
+  const [username, setUsername] = useState(user.username || "");
+  const [age, setAge] = useState<string>(user.age != null ? String(user.age) : "");
+  const [gender, setGender] = useState(user.gender || "");
+  const [language, setLanguage] = useState(user.language || "uz");
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    setBusy(true);
+    try {
+      const r = await usersApi.update(user.id, {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        phone: phone.trim(),
+        username: username.trim(),
+        age: age.trim() === "" ? null : Number(age),
+        gender: gender.trim(),
+        language: language.trim(),
+      });
+      onSaved(r);
+    } catch (e) {
+      alert((e as { message?: string }).message || "Xato");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-bg w-full max-w-md max-h-[92vh] overflow-y-auto rounded-2xl p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[16px] font-semibold text-text-primary">
+            Foydalanuvchini tahrirlash
+          </h3>
+          <button onClick={onClose} className="icon-btn h-7 w-7">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <div className="text-[11.5px] font-medium text-text-secondary mb-1">Ism</div>
+              <input
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <div className="text-[11.5px] font-medium text-text-secondary mb-1">Familiya</div>
+              <input
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+              />
+            </div>
+          </div>
+          <div>
+            <div className="text-[11.5px] font-medium text-text-secondary mb-1">Telefon</div>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <div className="text-[11.5px] font-medium text-text-secondary mb-1">Username</div>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <div className="text-[11.5px] font-medium text-text-secondary mb-1">Yosh</div>
+              <input
+                type="number"
+                min={0}
+                value={age}
+                onChange={(e) => setAge(e.target.value)}
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <div className="text-[11.5px] font-medium text-text-secondary mb-1">Jinsi</div>
+              <select
+                value={gender}
+                onChange={(e) => setGender(e.target.value)}
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+              >
+                <option value="">—</option>
+                <option value="male">Erkak</option>
+                <option value="female">Ayol</option>
+              </select>
+            </div>
+            <div>
+              <div className="text-[11.5px] font-medium text-text-secondary mb-1">Til</div>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+              >
+                <option value="uz">UZ</option>
+                <option value="ru">RU</option>
+                <option value="en">EN</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button onClick={onClose} className="btn-secondary text-[12.5px]">
+            Bekor
+          </button>
+          <button
+            onClick={save}
+            disabled={busy}
+            className="btn-primary text-[12.5px] disabled:opacity-50"
+          >
+            <Save className="h-3.5 w-3.5" /> {busy ? "Saqlanmoqda..." : "Saqlash"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
