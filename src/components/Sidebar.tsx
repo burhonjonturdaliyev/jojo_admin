@@ -13,7 +13,6 @@ import {
   Settings,
   Headphones,
   LogOut,
-  Headset,
   Package,
   Image as ImageIcon,
   ShoppingBag,
@@ -137,9 +136,11 @@ export function Sidebar() {
   return (
     <aside className="flex h-full w-[260px] shrink-0 flex-col border-r border-line bg-bg-panel">
       <div className="flex items-center gap-3 px-5 py-5 border-b border-line">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand to-blue-500 shadow-lg shadow-brand/30">
-          <Headset className="h-5 w-5 text-white" strokeWidth={2.4} />
-        </div>
+        <img
+          src="/favicon.png"
+          alt="Jojo Admin"
+          className="h-10 w-10 rounded-xl object-cover shadow-lg shadow-brand/30"
+        />
         <div className="leading-tight">
           <div className="text-[15px] font-bold tracking-wide text-text-primary">
             {t("nav.brand")}

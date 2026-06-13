@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
-import { Headset, Lock, User as UserIcon, Eye, EyeOff } from "lucide-react";
+import { Lock, User as UserIcon, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { useT } from "../lib/i18n";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
@@ -43,9 +43,11 @@ export function LoginPage() {
     <div className="flex min-h-screen w-full items-center justify-center bg-bg px-4">
       <div className="w-full max-w-[400px] rounded-2xl border border-line bg-bg-panel p-8 shadow-panel">
         <div className="mb-7 flex flex-col items-center text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand to-blue-500 shadow-lg shadow-brand/30">
-            <Headset className="h-7 w-7 text-white" strokeWidth={2.4} />
-          </div>
+          <img
+            src="/favicon.png"
+            alt="Jojo Admin"
+            className="h-16 w-16 rounded-2xl object-cover shadow-lg shadow-brand/30"
+          />
           <h1 className="mt-4 text-xl font-bold tracking-wide text-text-primary">
             {t("nav.brand")}
           </h1>

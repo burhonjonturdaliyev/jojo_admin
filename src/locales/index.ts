@@ -43,7 +43,7 @@ const uz: Dict = {
   "common.thisMonth": "bu oyda",
 
   // ───── Navigation / Sidebar
-  "nav.brand": "CALL CENTER",
+  "nav.brand": "JOJO ADMIN",
   "nav.adminPanel": "Admin Panel",
   "nav.section.home": "BOSH SAHIFA",
   "nav.section.users": "FOYDALANUVCHILAR",
@@ -97,6 +97,24 @@ const uz: Dict = {
   "orderStatus.shipping": "Yetkazilmoqda",
   "orderStatus.delivered": "Yetkazildi",
   "orderStatus.cancelled": "Bekor qilingan",
+
+  // ───── Notification category enum
+  "notifCategory.zone_in": "Zonaga kirish",
+  "notifCategory.zone_out": "Zonadan chiqish",
+  "notifCategory.destination": "Maqsadga yetish",
+  "notifCategory.battery": "Batareya",
+  "notifCategory.offline": "Oflayn",
+  "notifCategory.login": "Login",
+  "notifCategory.order": "Buyurtma",
+  "notifCategory.shipping": "Yetkazib berish",
+  "notifCategory.deal": "Aksiya",
+  "notifCategory.screen": "Ekran vaqti",
+  "notifCategory.premium": "Premium",
+  "notifCategory.tip": "Maslahat",
+  "notifCategory.route": "Marshrut",
+  "notifCategory.place_recommendation": "Joy tavsiyasi",
+  "notifCategory.system": "Tizim",
+  "notifCategory.sos": "SOS",
 
   // ───── Product enums
   "productType.stem": "STEM",
@@ -639,7 +657,7 @@ const ru: Dict = {
   "common.thisMonth": "в этом месяце",
 
   // ───── Navigation
-  "nav.brand": "CALL CENTER",
+  "nav.brand": "JOJO ADMIN",
   "nav.adminPanel": "Админ панель",
   "nav.section.home": "ГЛАВНАЯ",
   "nav.section.users": "ПОЛЬЗОВАТЕЛИ",
@@ -693,6 +711,24 @@ const ru: Dict = {
   "orderStatus.shipping": "В доставке",
   "orderStatus.delivered": "Доставлен",
   "orderStatus.cancelled": "Отменён",
+
+  // ───── Notification category enum
+  "notifCategory.zone_in": "Вход в зону",
+  "notifCategory.zone_out": "Выход из зоны",
+  "notifCategory.destination": "Прибытие",
+  "notifCategory.battery": "Батарея",
+  "notifCategory.offline": "Оффлайн",
+  "notifCategory.login": "Вход",
+  "notifCategory.order": "Заказ",
+  "notifCategory.shipping": "Доставка",
+  "notifCategory.deal": "Акция",
+  "notifCategory.screen": "Экранное время",
+  "notifCategory.premium": "Premium",
+  "notifCategory.tip": "Совет",
+  "notifCategory.route": "Маршрут",
+  "notifCategory.place_recommendation": "Рекомендация места",
+  "notifCategory.system": "Система",
+  "notifCategory.sos": "SOS",
 
   // ───── Product enums
   "productType.stem": "STEM",
@@ -1235,7 +1271,7 @@ const en: Dict = {
   "common.thisMonth": "this month",
 
   // ───── Navigation
-  "nav.brand": "CALL CENTER",
+  "nav.brand": "JOJO ADMIN",
   "nav.adminPanel": "Admin Panel",
   "nav.section.home": "HOME",
   "nav.section.users": "USERS",
@@ -1289,6 +1325,24 @@ const en: Dict = {
   "orderStatus.shipping": "Shipping",
   "orderStatus.delivered": "Delivered",
   "orderStatus.cancelled": "Cancelled",
+
+  // ───── Notification category enum
+  "notifCategory.zone_in": "Zone enter",
+  "notifCategory.zone_out": "Zone exit",
+  "notifCategory.destination": "Arrival",
+  "notifCategory.battery": "Battery",
+  "notifCategory.offline": "Offline",
+  "notifCategory.login": "Login",
+  "notifCategory.order": "Order",
+  "notifCategory.shipping": "Shipping",
+  "notifCategory.deal": "Deal",
+  "notifCategory.screen": "Screen time",
+  "notifCategory.premium": "Premium",
+  "notifCategory.tip": "Tip",
+  "notifCategory.route": "Route",
+  "notifCategory.place_recommendation": "Place recommendation",
+  "notifCategory.system": "System",
+  "notifCategory.sos": "SOS",
 
   // ───── Product enums
   "productType.stem": "STEM",
