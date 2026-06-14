@@ -57,6 +57,13 @@ export function UsersPage() {
     void reload();
   }, [activeFilter]);
 
+  const displayName = (u: AdminUserRow): string => {
+    if (u.full_name?.trim()) return u.full_name.trim();
+    const fl = [u.first_name, u.last_name].filter(Boolean).join(" ").trim();
+    if (fl) return fl;
+    return u.username || u.phone || `#${u.id}`;
+  };
+
   const filtered = useMemo(() => {
     if (!search.trim()) return users;
     const q = search.toLowerCase();
@@ -64,6 +71,8 @@ export function UsersPage() {
       (u) =>
         u.phone?.toLowerCase().includes(q) ||
         u.first_name?.toLowerCase().includes(q) ||
+        u.last_name?.toLowerCase().includes(q) ||
+        u.full_name?.toLowerCase().includes(q) ||
         u.username?.toLowerCase().includes(q),
     );
   }, [users, search]);
@@ -74,7 +83,7 @@ export function UsersPage() {
   };
 
   const remove = async (u: AdminUserRow) => {
-    const name = u.first_name || u.username || u.phone || `#${u.id}`;
+    const name = displayName(u);
     if (!confirm(`"${name}" foydalanuvchini butunlay o'chirishni xohlaysizmi?`)) return;
     try {
       await usersApi.remove(u.id);
@@ -160,10 +169,10 @@ export function UsersPage() {
                 >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <Avatar name={u.first_name || u.phone || u.username} size={32} />
+                      <Avatar name={displayName(u)} size={32} />
                       <div>
                         <div className="font-medium text-text-primary">
-                          {u.first_name || u.username || "—"}
+                          {displayName(u)}
                         </div>
                         <div className="text-[11px] text-text-muted">#{u.id}</div>
                       </div>
