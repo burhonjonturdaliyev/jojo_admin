@@ -1,8 +1,18 @@
 import { useEffect, useState } from "react";
-import { Plus, Headset, Pencil, Trash2, X, KeyRound, Shield } from "lucide-react";
+import {
+  Plus,
+  Headset,
+  Pencil,
+  Trash2,
+  X,
+  KeyRound,
+  Shield,
+  Crown,
+} from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
 import { useT } from "../lib/i18n";
+import { useAuth } from "../lib/auth";
 import {
   operatorsApi,
   adminRolesApi,
@@ -12,6 +22,8 @@ import {
 
 export function OperatorsPage() {
   const { t } = useT();
+  const { user: me } = useAuth();
+  const canManageSuperuser = !!me?.is_superuser;
   const [items, setItems] = useState<AdminOperatorWithRole[]>([]);
   const [roles, setRoles] = useState<AdminRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,16 +108,20 @@ export function OperatorsPage() {
                   {op.is_active ? "Faol" : "Nofaol"}
                 </span>
               </div>
-              {op.role_name && (
-                <div className="mt-2 inline-flex items-center gap-1 rounded-md bg-blue-500/15 px-2 py-0.5 text-[11px] font-medium text-blue-500">
-                  <Shield className="h-3 w-3" /> {op.role_name}
-                </div>
-              )}
-              {!op.role_name && (
-                <div className="mt-2 text-[11px] text-text-muted italic">
-                  Rolsiz
-                </div>
-              )}
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {op.is_superuser && (
+                  <div className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-500">
+                    <Crown className="h-3 w-3" /> Super Admin
+                  </div>
+                )}
+                {op.role_name ? (
+                  <div className="inline-flex items-center gap-1 rounded-md bg-blue-500/15 px-2 py-0.5 text-[11px] font-medium text-blue-500">
+                    <Shield className="h-3 w-3" /> {op.role_name}
+                  </div>
+                ) : !op.is_superuser ? (
+                  <div className="text-[11px] text-text-muted italic">Rolsiz</div>
+                ) : null}
+              </div>
               <div className="mt-3 flex items-center justify-between">
                 <div className="text-[11px] text-text-muted">
                   Qo'shilgan: {new Date(op.date_joined).toLocaleDateString("uz-UZ")}
@@ -137,6 +153,7 @@ export function OperatorsPage() {
       {adding && (
         <CreateOperatorModal
           roles={roles}
+          canManageSuperuser={canManageSuperuser}
           onClose={() => setAdding(false)}
           onCreated={async () => {
             setAdding(false);
@@ -148,6 +165,7 @@ export function OperatorsPage() {
         <EditOperatorModal
           op={editing}
           roles={roles}
+          canManageSuperuser={canManageSuperuser}
           onClose={() => setEditing(null)}
           onSaved={async () => {
             setEditing(null);
@@ -162,17 +180,20 @@ export function OperatorsPage() {
 function EditOperatorModal({
   op,
   roles,
+  canManageSuperuser,
   onClose,
   onSaved,
 }: {
   op: AdminOperatorWithRole;
   roles: AdminRole[];
+  canManageSuperuser: boolean;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const [fullName, setFullName] = useState(op.first_name);
   const [phone, setPhone] = useState(op.phone);
   const [isActive, setIsActive] = useState(op.is_active);
+  const [isSuperuser, setIsSuperuser] = useState(!!op.is_superuser);
   const [newPassword, setNewPassword] = useState("");
   const [roleId, setRoleId] = useState<number | null>(op.role_id);
   const [busy, setBusy] = useState(false);
@@ -188,6 +209,7 @@ function EditOperatorModal({
         is_active: isActive,
         new_password: newPassword || undefined,
         role_id: roleId,
+        ...(canManageSuperuser ? { is_superuser: isSuperuser } : {}),
       });
       onSaved();
     } catch (e) {
@@ -280,6 +302,22 @@ function EditOperatorModal({
             />
             Faol (bloklanmagan)
           </label>
+          {canManageSuperuser && (
+            <label className="flex items-start gap-2 text-[12.5px] text-text-secondary cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={isSuperuser}
+                onChange={(e) => setIsSuperuser(e.target.checked)}
+              />
+              <span>
+                <span className="font-medium text-amber-500">Super Admin</span>
+                <span className="block text-[10.5px] text-text-muted">
+                  Barcha bo'limlarga to'liq ruxsat, rol cheklovlaridan tashqari
+                </span>
+              </span>
+            </label>
+          )}
           {error && (
             <div className="rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
               {error}
@@ -305,10 +343,12 @@ function EditOperatorModal({
 
 function CreateOperatorModal({
   roles,
+  canManageSuperuser,
   onClose,
   onCreated,
 }: {
   roles: AdminRole[];
+  canManageSuperuser: boolean;
   onClose: () => void;
   onCreated: () => void;
 }) {
@@ -316,6 +356,7 @@ function CreateOperatorModal({
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [roleId, setRoleId] = useState<number | null>(null);
+  const [isSuperuser, setIsSuperuser] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -332,6 +373,7 @@ function CreateOperatorModal({
         password,
         full_name: fullName.trim() || undefined,
         role_id: roleId,
+        ...(canManageSuperuser && isSuperuser ? { is_superuser: true } : {}),
       });
       onCreated();
     } catch (e) {
@@ -402,6 +444,22 @@ function CreateOperatorModal({
               ))}
             </select>
           </div>
+          {canManageSuperuser && (
+            <label className="flex items-start gap-2 text-[12.5px] text-text-secondary cursor-pointer rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={isSuperuser}
+                onChange={(e) => setIsSuperuser(e.target.checked)}
+              />
+              <span>
+                <span className="font-semibold text-amber-500">Super Admin sifatida yaratish</span>
+                <span className="block text-[10.5px] text-text-muted">
+                  Barcha bo'limlarga to'liq ruxsat, rol cheklovlaridan tashqari
+                </span>
+              </span>
+            </label>
+          )}
           {error && (
             <div className="rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
               {error}

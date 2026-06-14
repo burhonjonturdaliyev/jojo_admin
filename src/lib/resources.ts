@@ -857,6 +857,7 @@ export interface AdminOperator {
   first_name: string;
   last_name?: string;
   is_active: boolean;
+  is_superuser?: boolean;
   date_joined: string;
 }
 
@@ -868,7 +869,13 @@ export interface AdminOperatorWithRole extends AdminOperator {
 export const operatorsApi = {
   list: () =>
     api<{ count: number; results: AdminOperatorWithRole[] }>("/admin/operators/"),
-  create: (data: { phone: string; password: string; full_name?: string; role_id?: number | null }) =>
+  create: (data: {
+    phone: string;
+    password: string;
+    full_name?: string;
+    role_id?: number | null;
+    is_superuser?: boolean;
+  }) =>
     api<AdminOperatorWithRole>("/admin/operators/create/", {
       method: "POST",
       body: data,
@@ -881,6 +888,7 @@ export const operatorsApi = {
       is_active: boolean;
       new_password: string;
       role_id: number | null;
+      is_superuser: boolean;
     }>,
   ) =>
     api<AdminOperatorWithRole>(`/admin/operators/${id}/`, {
