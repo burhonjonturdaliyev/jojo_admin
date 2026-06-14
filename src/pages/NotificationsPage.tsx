@@ -172,9 +172,31 @@ export function NotificationsPage() {
                   <div className="mt-0.5 text-[12px] text-text-secondary line-clamp-2">
                     {n.body}
                   </div>
-                  <div className="mt-1 flex items-center gap-2 text-[11px] text-text-muted">
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-text-muted">
                     <span>{new Date(n.created_at).toLocaleString("uz-UZ")}</span>
-                    {n.parent && <span>· user #{n.parent}</span>}
+                    {typeof n.parent === "object" && n.parent ? (
+                      <span className="inline-flex items-center gap-1">
+                        · <span className="text-text-secondary">Qabul qildi:</span>{" "}
+                        <span className="font-medium text-text-primary">{n.parent.name}</span>
+                        {n.parent.phone && (
+                          <span className="font-mono text-text-muted">({n.parent.phone})</span>
+                        )}
+                      </span>
+                    ) : (
+                      typeof n.parent === "number" && <span>· parent #{n.parent}</span>
+                    )}
+                    {typeof n.child === "object" && n.child && (
+                      <span className="inline-flex items-center gap-1">
+                        · <span className="text-text-secondary">Bola:</span>{" "}
+                        <span className="font-medium text-text-primary">{n.child.name}</span>
+                      </span>
+                    )}
+                    {n.sender && (
+                      <span className="inline-flex items-center gap-1">
+                        · <span className="text-text-secondary">Yubordi:</span>{" "}
+                        <span className="font-medium text-text-primary">{n.sender.name}</span>
+                      </span>
+                    )}
                     {n.is_read && (
                       <span className="text-status-resolved">{t("notifications.readMark")}</span>
                     )}

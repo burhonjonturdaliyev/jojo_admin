@@ -274,7 +274,15 @@ export interface AdminUserRow {
   language?: string;
   child_status?: string | null;
   device_count?: number;
-  last_device?: { type: string; id: string } | null;
+  last_device?: {
+    type: string;
+    id: string;
+    brand?: string;
+    model?: string;
+    os_version?: string;
+    app_version?: string;
+  } | null;
+  children?: { id: number; name: string }[];
 }
 
 export const usersApi = {
@@ -771,8 +779,9 @@ export const paymentsApi = {
 
 export interface AdminNotificationRow {
   id: number;
-  parent?: number;
-  child?: number | null;
+  parent?: { id: number; name: string; phone?: string } | number | null;
+  child?: { id: number; name: string } | number | null;
+  sender?: { id: number; name: string } | null;
   category: string;
   title: string;
   body: string;

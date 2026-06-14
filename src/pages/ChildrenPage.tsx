@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Baby, CircleUser, User as UserIcon, Pencil, Trash2, X, Save } from "lucide-react";
+import { Link } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
 import { useT } from "../lib/i18n";
 import { childrenApi, type AdminChild } from "../lib/resources";
@@ -89,19 +90,22 @@ export function ChildrenPage() {
                   </td>
                   <td className="px-4 py-3">
                     {c.parent ? (
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-500/15 text-blue-500">
+                      <Link
+                        to={`/users?focus=${c.parent.id}`}
+                        className="group flex items-center gap-2 rounded-md hover:bg-bg-hover px-1 py-1 -mx-1"
+                      >
+                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-500/15 text-blue-500 group-hover:bg-blue-500/25">
                           <UserIcon className="h-3.5 w-3.5" />
                         </div>
                         <div className="leading-tight">
-                          <div className="text-[12.5px] font-medium text-text-primary">
+                          <div className="text-[12.5px] font-medium text-text-primary group-hover:text-blue-500">
                             {c.parent.full_name || c.parent.first_name || "—"}
                           </div>
                           <div className="text-[11px] text-text-muted font-mono">
                             {c.parent.phone}
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     ) : (
                       <span className="text-[11.5px] text-text-muted italic">
                         — bog'lanmagan —

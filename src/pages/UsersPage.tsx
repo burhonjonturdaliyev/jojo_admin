@@ -9,7 +9,9 @@ import {
   Pencil,
   Trash2,
   Save,
+  Baby,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
 import { useT } from "../lib/i18n";
@@ -138,6 +140,7 @@ export function UsersPage() {
             <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
                 <th className="px-4 py-3">Ota-ona</th>
+                <th className="px-4 py-3">Bolalar</th>
                 <th className="px-4 py-3">Telefon</th>
                 <th className="px-4 py-3">Qurilma</th>
                 <th className="px-4 py-3">Oxirgi faollik</th>
@@ -149,14 +152,14 @@ export function UsersPage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
+                  <td colSpan={8} className="px-4 py-8 text-center text-text-muted">
                     Yuklanmoqda...
                   </td>
                 </tr>
               )}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
+                  <td colSpan={8} className="px-4 py-8 text-center text-text-muted">
                     <UsersIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
                     Ota-onalar topilmadi
                   </td>
@@ -178,19 +181,44 @@ export function UsersPage() {
                       </div>
                     </div>
                   </td>
+                  <td className="px-4 py-3">
+                    {u.children && u.children.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {u.children.map((c) => (
+                          <Link
+                            key={c.id}
+                            to={`/children?parent=${u.id}`}
+                            className="inline-flex items-center gap-1 rounded-md bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-500 hover:bg-blue-500/20"
+                          >
+                            <Baby className="h-3 w-3" />
+                            {c.name}
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-[11.5px] text-text-muted italic">Yo'q</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-mono text-[12px] text-text-secondary">
                     {u.phone || "—"}
                   </td>
                   <td className="px-4 py-3">
                     {u.device_count != null && u.device_count > 0 ? (
-                      <div className="flex items-center gap-1.5">
-                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        <span className="text-[12px] text-text-secondary">
-                          {u.last_device?.type === "ios" ? "iPhone" : "Android"}
-                        </span>
-                        <span className="text-[10.5px] text-text-muted">
-                          ×{u.device_count}
-                        </span>
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          <span className="text-[12px] text-text-secondary">
+                            {(u.last_device?.brand || u.last_device?.model)
+                              ? `${u.last_device?.brand ?? ""} ${u.last_device?.model ?? ""}`.trim()
+                              : (u.last_device?.type === "ios" ? "iPhone" : "Android")}
+                          </span>
+                          <span className="text-[10.5px] text-text-muted">×{u.device_count}</span>
+                        </div>
+                        {u.last_device?.os_version && (
+                          <span className="text-[10.5px] text-text-muted">
+                            {u.last_device.type === "ios" ? "iOS" : "Android"} {u.last_device.os_version}
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <span className="text-[12px] text-text-muted">—</span>
