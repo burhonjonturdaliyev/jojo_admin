@@ -656,6 +656,60 @@ export const ordersApi = {
 };
 
 // ============================================================================
+// Order statuses — admin manages slug + 4-language labels + color
+// ============================================================================
+
+export interface AdminOrderStatus {
+  id: number;
+  slug: string;
+  name: string;
+  name_uz_cyrl: string;
+  name_ru: string;
+  name_en: string;
+  color: string;
+  sort_order: number;
+  is_active: boolean;
+  is_system: boolean;
+}
+
+export const orderStatusesApi = {
+  list: () =>
+    api<{ results: AdminOrderStatus[] }>("/admin/order-statuses/"),
+  create: (data: {
+    slug: string;
+    name: string;
+    name_uz_cyrl?: string;
+    name_ru?: string;
+    name_en?: string;
+    color?: string;
+    sort_order?: number;
+    is_active?: boolean;
+  }) =>
+    api<AdminOrderStatus>("/admin/order-statuses/", {
+      method: "POST",
+      body: data,
+    }),
+  update: (
+    id: number,
+    data: Partial<{
+      name: string;
+      name_uz_cyrl: string;
+      name_ru: string;
+      name_en: string;
+      color: string;
+      sort_order: number;
+      is_active: boolean;
+    }>,
+  ) =>
+    api<AdminOrderStatus>(`/admin/order-statuses/${id}/`, {
+      method: "PATCH",
+      body: data,
+    }),
+  remove: (id: number) =>
+    api<void>(`/admin/order-statuses/${id}/`, { method: "DELETE" }),
+};
+
+// ============================================================================
 // Subscription plans (Premium)
 // ============================================================================
 
