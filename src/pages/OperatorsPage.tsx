@@ -110,7 +110,7 @@ export function OperatorsPage() {
                 <div className="text-[11px] text-text-muted">
                   Qo'shilgan: {new Date(op.date_joined).toLocaleDateString("uz-UZ")}
                 </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex gap-1">
                   <button
                     onClick={() => setEditing(op)}
                     className="icon-btn h-7 w-7"
