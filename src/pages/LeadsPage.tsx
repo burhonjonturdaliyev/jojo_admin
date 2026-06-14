@@ -1117,9 +1117,36 @@ function LeadDetailPanel({
                             {fmtDateTime(c.created_at)}
                           </div>
                         </div>
-                        <div className="text-[12.5px] text-text-primary whitespace-pre-wrap">
-                          {c.text}
-                        </div>
+                        {c.text && (
+                          <div className="text-[12.5px] text-text-primary whitespace-pre-wrap">
+                            {c.text}
+                          </div>
+                        )}
+                        {c.attachment_url && c.attachment_kind === "photo" && (
+                          <a
+                            href={c.attachment_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block mt-1"
+                          >
+                            <img
+                              src={c.attachment_url}
+                              alt={c.attachment_name || "photo"}
+                              className="max-h-64 w-auto rounded-lg border border-line object-contain"
+                              loading="lazy"
+                            />
+                          </a>
+                        )}
+                        {c.attachment_url && c.attachment_kind === "document" && (
+                          <a
+                            href={c.attachment_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 mt-1 rounded-lg border border-line bg-bg p-2 text-[12px] text-primary hover:bg-bg-hover"
+                          >
+                            📎 {c.attachment_name || "Fayl"}
+                          </a>
+                        )}
                       </div>
                     );
                   })}
