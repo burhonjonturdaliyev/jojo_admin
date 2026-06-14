@@ -680,15 +680,14 @@ function ChatPanel({
     }
     setSending(true);
     try {
-      const c = await leadsApi.addCommentWithFile(
-        ticket.id,
-        file,
-        draft.trim() || undefined,
-      );
+      // Fayl alohida ketadi — hozirgi input'dagi matnni biriktirmaymiz,
+      // chunki ko'p hollarda u boshqa maqsadda yozilgan bo'ladi (avvalgi
+      // xabar qoldigi yoki keyingisi uchun loyiha). Caption kerak bo'lsa
+      // foydalanuvchi alohida xabar yuboradi.
+      const c = await leadsApi.addCommentWithFile(ticket.id, file);
       setComments((prev) =>
         prev.find((x) => x.id === c.id) ? prev : [...prev, c],
       );
-      setDraft("");
       setShowQr(false);
     } catch (e) {
       alert((e as { message?: string })?.message || "Faylni yuborib bo'lmadi");
