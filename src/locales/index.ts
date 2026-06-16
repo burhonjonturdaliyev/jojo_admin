@@ -997,6 +997,28 @@ const uz: Dict = {
   "requests.col.title": "Mavzu",
   "requests.col.status": "Status",
   "requests.col.date": "Sana",
+
+  // ───── Ads page (broadcast push xabari)
+  "ads.subtitle": "Hamma parentlarga umumiy push xabari yuborish",
+  "ads.newAnnouncement": "Yangi elon yaratish",
+  "ads.deliveryHint": "Yuborilgan zahoti barcha parent dasturlariga FCM va inbox orqali yetkaziladi",
+  "ads.titleLabel": "Sarlavha",
+  "ads.titlePlaceholder": "Masalan: Yangi maslahatlar qo'shildi",
+  "ads.bodyLabel": "Matn",
+  "ads.bodyPlaceholder": "Elon matnini kiriting...",
+  "ads.categoryLabel": "Kategoriya",
+  "ads.category.system": "Tizim",
+  "ads.category.tip": "Maslahat",
+  "ads.category.premium": "Premium",
+  "ads.withSms": "SMS bilan dublikat yuborish",
+  "ads.withSmsHint": "SMSFLY orqali ham bittadan SMS yuboriladi",
+  "ads.sendButton": "Hammaga yuborish",
+  "ads.sending": "Yuborilmoqda...",
+  "ads.preview": "Ko'rinish",
+  "ads.previewTitlePlaceholder": "Sarlavha shu yerda ko'rinadi",
+  "ads.previewBodyPlaceholder": "Matn shu yerda ko'rinadi...",
+  "ads.error": "Xato yuz berdi",
+  "ads.smsExtra": " + {count} ta SMS",
 };
 
 const ru: Dict = {
@@ -1996,6 +2018,28 @@ const ru: Dict = {
   "requests.col.title": "Тема",
   "requests.col.status": "Статус",
   "requests.col.date": "Дата",
+
+  // ───── Ads page
+  "ads.subtitle": "Общая push рассылка всем родителям",
+  "ads.newAnnouncement": "Новое объявление",
+  "ads.deliveryHint": "После отправки сразу доставляется во все приложения родителей через FCM и Inbox",
+  "ads.titleLabel": "Заголовок",
+  "ads.titlePlaceholder": "Например: Добавлены новые советы",
+  "ads.bodyLabel": "Текст",
+  "ads.bodyPlaceholder": "Введите текст объявления...",
+  "ads.categoryLabel": "Категория",
+  "ads.category.system": "Система",
+  "ads.category.tip": "Совет",
+  "ads.category.premium": "Premium",
+  "ads.withSms": "Дублировать через SMS",
+  "ads.withSmsHint": "Также будет отправлено по SMSFLY по одному каждому",
+  "ads.sendButton": "Отправить всем",
+  "ads.sending": "Отправляется...",
+  "ads.preview": "Предпросмотр",
+  "ads.previewTitlePlaceholder": "Заголовок появится здесь",
+  "ads.previewBodyPlaceholder": "Текст появится здесь...",
+  "ads.error": "Произошла ошибка",
+  "ads.smsExtra": " + {count} SMS",
 };
 
 const en: Dict = {
@@ -2995,6 +3039,28 @@ const en: Dict = {
   "requests.col.title": "Subject",
   "requests.col.status": "Status",
   "requests.col.date": "Date",
+
+  // ───── Ads page
+  "ads.subtitle": "Broadcast a push message to all parents",
+  "ads.newAnnouncement": "Create announcement",
+  "ads.deliveryHint": "Delivered immediately to all parent apps via FCM and inbox",
+  "ads.titleLabel": "Title",
+  "ads.titlePlaceholder": "E.g.: New advice added",
+  "ads.bodyLabel": "Body",
+  "ads.bodyPlaceholder": "Enter announcement text...",
+  "ads.categoryLabel": "Category",
+  "ads.category.system": "System",
+  "ads.category.tip": "Tip",
+  "ads.category.premium": "Premium",
+  "ads.withSms": "Also send as SMS",
+  "ads.withSmsHint": "Sent via SMSFLY one by one to each recipient",
+  "ads.sendButton": "Send to all",
+  "ads.sending": "Sending...",
+  "ads.preview": "Preview",
+  "ads.previewTitlePlaceholder": "Title appears here",
+  "ads.previewBodyPlaceholder": "Body appears here...",
+  "ads.error": "An error occurred",
+  "ads.smsExtra": " + {count} SMS",
 };
 
 // Admin UI tarjimalari — uz_cyrl tab kontent (mahsulot/kategoriya nomi va h.k.)

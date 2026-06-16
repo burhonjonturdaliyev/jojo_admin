@@ -79,13 +79,13 @@ export function AdsPage() {
         category,
         send_sms: withSms,
       });
-      const smsLine = r.sms_sent ? ` + ${r.sms_sent} ta SMS` : "";
+      const smsLine = r.sms_sent ? t("ads.smsExtra", { count: r.sms_sent }) : "";
       setResult(`${r.sent_to} ta ota-onaga yetkazildi${smsLine}`);
       setTitleL({ uz: "", uz_cyrl: "", ru: "", en: "" });
       setBodyL({ uz: "", uz_cyrl: "", ru: "", en: "" });
       loadHistory();
     } catch (e) {
-      const msg = (e as { message?: string }).message || "Xato yuz berdi";
+      const msg = (e as { message?: string }).message || t("ads.error");
       setError(msg);
     } finally {
       setSending(false);
@@ -96,7 +96,7 @@ export function AdsPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.ads")}
-        subtitle="Hamma parentlarga umumiy push xabari yuborish"
+        subtitle={t("ads.subtitle")}
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
@@ -108,40 +108,39 @@ export function AdsPage() {
               </div>
               <div>
                 <h3 className="text-[15px] font-semibold text-text-primary">
-                  Yangi elon yaratish
+                  {t("ads.newAnnouncement")}
                 </h3>
                 <p className="text-[12px] text-text-secondary">
-                  Yuborilgan zahoti barcha parent dasturlariga FCM va inbox
-                  orqali yetkaziladi
+                  {t("ads.deliveryHint")}
                 </p>
               </div>
             </div>
 
             <div className="space-y-4">
               <MultilangInput
-                label="Sarlavha"
+                label={t("ads.titleLabel")}
                 value={titleL}
                 onChange={setTitleL}
-                placeholder="Masalan: Yangi maslahatlar qo'shildi"
+                placeholder={t("ads.titlePlaceholder")}
               />
               <MultilangInput
-                label="Matn"
+                label={t("ads.bodyLabel")}
                 value={bodyL}
                 onChange={setBodyL}
-                placeholder="Elon matnini kiriting..."
+                placeholder={t("ads.bodyPlaceholder")}
                 multiline
                 rows={6}
               />
 
               <div>
                 <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                  Kategoriya
+                  {t("ads.categoryLabel")}
                 </label>
                 <div className="flex gap-2">
                   {[
-                    { value: "system", label: "Tizim" },
-                    { value: "tip", label: "Maslahat" },
-                    { value: "premium", label: "Premium" },
+                    { value: "system", label: t("ads.category.system") },
+                    { value: "tip", label: t("ads.category.tip") },
+                    { value: "premium", label: t("ads.category.premium") },
                   ].map((c) => (
                     <button
                       key={c.value}
@@ -177,10 +176,10 @@ export function AdsPage() {
                 />
                 <div className="flex-1">
                   <div className="text-[12.5px] font-semibold text-text-primary">
-                    SMS bilan dublikat yuborish
+                    {t("ads.withSms")}
                   </div>
                   <div className="text-[11px] text-text-muted">
-                    SMSFLY orqali ham bittadan SMS yuboriladi
+                    {t("ads.withSmsHint")}
                   </div>
                 </div>
               </label>
@@ -204,7 +203,7 @@ export function AdsPage() {
                 className="btn-primary w-full justify-center py-2.5 text-[13px] disabled:opacity-60"
               >
                 <Send className="h-4 w-4" />
-                {sending ? "Yuborilmoqda..." : "Hammaga yuborish"}
+                {sending ? t("ads.sending") : t("ads.sendButton")}
               </button>
             </div>
           </div>
@@ -212,7 +211,7 @@ export function AdsPage() {
           {/* Preview */}
           <div className="card p-5">
             <h3 className="mb-3 text-[13px] font-semibold text-text-primary">
-              Ko'rinish
+              {t("ads.preview")}
             </h3>
             <div className="rounded-2xl border border-line bg-bg-input p-3">
               <div className="flex items-start gap-3">
@@ -221,10 +220,10 @@ export function AdsPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] font-semibold text-text-primary">
-                    {title || "Sarlavha shu yerda ko'rinadi"}
+                    {title || t("ads.previewTitlePlaceholder")}
                   </div>
                   <div className="mt-1 line-clamp-3 text-[12px] text-text-secondary">
-                    {body || "Matn shu yerda ko'rinadi..."}
+                    {body || t("ads.previewBodyPlaceholder")}
                   </div>
                 </div>
               </div>
