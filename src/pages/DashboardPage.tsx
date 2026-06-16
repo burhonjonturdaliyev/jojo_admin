@@ -24,8 +24,27 @@ import {
   type AdminDashboardStats,
   type LeadBoardResponse,
   type AdminUserRow,
-  type AdminLead,
 } from "../lib/resources";
+
+type RecentRequest = NonNullable<AdminDashboardStats["recent_requests"]>[number];
+
+function formatRelativeTime(iso: string): string {
+  // "5 daqiqa oldin", "2 soat oldin", "Kecha 14:30" yoki "5-iyun 14:30" ko'rinishida —
+  // kartochkada qisqa ko'rinish bo'lishi uchun.
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const sec = Math.floor(diffMs / 1000);
+  if (sec < 60) return "hozir";
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min} daq oldin`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} soat oldin`;
+  const days = Math.floor(hr / 24);
+  if (days < 7) return `${days} kun oldin`;
+  return d.toLocaleDateString("uz-UZ", { day: "numeric", month: "short" });
+}
 
 const STATUS_META: Record<
   string,
@@ -44,7 +63,7 @@ export function DashboardPage() {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [board, setBoard] = useState<LeadBoardResponse | null>(null);
   const [recentUsers, setRecentUsers] = useState<AdminUserRow[]>([]);
-  const [recentLeads, setRecentLeads] = useState<AdminLead[]>([]);
+  const [recentRequests, setRecentRequests] = useState<RecentRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -58,12 +77,10 @@ export function DashboardPage() {
         setStats(s);
         setBoard(b);
         setRecentUsers(unwrapList(u).slice(0, 6));
-        const all: AdminLead[] = Object.values(b.columns).flat();
-        all.sort(
-          (a, c) =>
-            new Date(c.updated_at).getTime() - new Date(a.updated_at).getTime(),
-        );
-        setRecentLeads(all.slice(0, 6));
+        // So'nggi murojaatlar — backend dashboard endpointidan keladi
+        // (So'rovlar bo'limi manbasi, kanban kolonkasi emas) — oxirgi
+        // xabar vaqti va manba yorlig'i shu yerda to'g'ridan-to'g'ri bor.
+        setRecentRequests((s.recent_requests || []).slice(0, 6));
       } catch (e) {
         console.error("dashboard load failed", e);
       } finally {
@@ -271,51 +288,59 @@ export function DashboardPage() {
                   So'nggi murojaatlar
                 </h3>
                 <p className="text-[12px] text-text-secondary">
-                  Kanban'dan oxirgi 6 ta
+                  So'rovlardan oxirgi 6 ta
                 </p>
               </div>
               <Link
-                to="/leads"
+                to="/requests"
                 className="text-[11.5px] text-primary hover:underline inline-flex items-center gap-0.5"
               >
                 Hammasi <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
             <div className="space-y-2">
-              {recentLeads.length === 0 && (
+              {recentRequests.length === 0 && (
                 <div className="text-center py-6 text-[12px] text-text-muted">
-                  {loading ? "Yuklanmoqda..." : "Lead yo'q"}
+                  {loading ? "Yuklanmoqda..." : "So'rov yo'q"}
                 </div>
               )}
-              {recentLeads.map((l) => {
-                const meta = STATUS_META[l.status] || {
-                  label: l.status,
+              {recentRequests.map((r) => {
+                const meta = STATUS_META[r.status] || {
+                  label: r.status,
                   color: "#9CA3AF",
                 };
+                const userName = r.user?.name || "?";
+                const userPhone = r.user?.phone || "";
                 return (
                   <Link
-                    to="/leads"
-                    key={l.id}
+                    to="/requests"
+                    key={r.id}
                     className="flex items-center gap-3 rounded-lg border border-line p-2.5 hover:bg-bg-hover transition-colors"
                   >
-                    <Avatar name={l.parent?.name || "?"} size={32} />
+                    <Avatar name={userName} size={32} />
                     <div className="min-w-0 flex-1">
                       <div className="text-[12.5px] font-medium text-text-primary truncate">
-                        {l.title}
+                        {r.title}
                       </div>
                       <div className="text-[11px] text-text-muted truncate">
-                        {l.parent?.name} • {l.parent?.phone}
+                        {userName}
+                        {userPhone ? ` • ${userPhone}` : ""}
                       </div>
                     </div>
-                    <span
-                      className="rounded-full px-2 py-0.5 text-[10.5px] font-medium"
-                      style={{
-                        backgroundColor: meta.color + "20",
-                        color: meta.color,
-                      }}
-                    >
-                      {meta.label}
-                    </span>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span
+                        className="rounded-full px-2 py-0.5 text-[10.5px] font-medium"
+                        style={{
+                          backgroundColor: meta.color + "20",
+                          color: meta.color,
+                        }}
+                      >
+                        {meta.label}
+                      </span>
+                      <span className="text-[10.5px] text-text-muted whitespace-nowrap">
+                        {formatRelativeTime(r.last_message_at)}
+                      </span>
+                    </div>
                   </Link>
                 );
               })}

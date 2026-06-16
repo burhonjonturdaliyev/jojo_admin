@@ -630,6 +630,19 @@ export interface AdminDashboardStats {
   sos_alerts: number;
   signups_7d?: Array<{ date: string; count: number }>;
   revenue_7d?: Array<{ date: string; amount: number }>;
+  // So'rovlar (Requests) bo'limidan so'nggi murojaatlar — Bosh sahifadagi
+  // "So'nggi murojaatlar" kartochkasi shu qatordan o'qiydi (kanban emas).
+  recent_requests?: Array<{
+    id: number;
+    title: string;
+    status: string;
+    source: string;
+    source_section: string;
+    user: { name: string; phone: string; avatar_url: string | null } | null;
+    last_message_at: string;
+    last_message_text: string;
+    updated_at: string;
+  }>;
 }
 
 export const dashboardApi = {
