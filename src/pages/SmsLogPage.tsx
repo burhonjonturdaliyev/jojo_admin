@@ -21,6 +21,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { useT } from "../lib/i18n";
 import {
   smsApi,
   type SmsKind,
@@ -63,6 +64,7 @@ function fmtTime(iso: string): string {
 }
 
 export function SmsLogPage() {
+  const { t } = useT();
   const [rows, setRows] = useState<SmsSendLogRow[]>([]);
   const [stats, setStats] = useState<SmsLogStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -120,11 +122,16 @@ export function SmsLogPage() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="SMS jurnali"
+        title={t("smsLog.title")}
         subtitle={
           stats
-            ? `${stats.total} ta urinish · ${stats.sent} yetkazildi · ${stats.failed} xato (${failureRate}%)`
-            : "Yuklanmoqda..."
+            ? t("smsLog.subtitle", {
+                total: stats.total,
+                sent: stats.sent,
+                failed: stats.failed,
+                rate: failureRate,
+              })
+            : t("common.loading")
         }
       />
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
@@ -132,22 +139,22 @@ export function SmsLogPage() {
         {stats && (
           <div className="mb-4 grid grid-cols-4 gap-3">
             <StatCard
-              label="Jami urinishlar"
+              label={t("smsLog.kpi.total")}
               value={stats.total.toLocaleString()}
               tone="default"
             />
             <StatCard
-              label="Yetkazilgan"
+              label={t("smsLog.kpi.sent")}
               value={stats.sent.toLocaleString()}
               tone="success"
             />
             <StatCard
-              label="Xato"
+              label={t("smsLog.kpi.failed")}
               value={stats.failed.toLocaleString()}
               tone="error"
             />
             <StatCard
-              label="Failure rate"
+              label={t("smsLog.kpi.failureRate")}
               value={`${failureRate}%`}
               tone={failureRate > 20 ? "error" : failureRate > 5 ? "warn" : "success"}
             />
@@ -159,7 +166,7 @@ export function SmsLogPage() {
           <div className="mb-4 card p-4">
             <div className="mb-2 flex items-center gap-2 text-[12.5px] font-semibold text-text-secondary">
               <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
-              Eng tez-tez uchraydigan xato sabablari
+              {t("smsLog.topFailureReasons")}
             </div>
             <div className="flex flex-wrap gap-2">
               {stats.top_failure_reasons.map((r) => (
@@ -185,7 +192,7 @@ export function SmsLogPage() {
               <input
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Raqam bo'yicha qidirish... (Enter)"
+                placeholder={t("smsLog.searchPlaceholder")}
                 className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] text-text-primary outline-none focus:border-brand"
               />
             </form>
@@ -197,7 +204,7 @@ export function SmsLogPage() {
               }}
               className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-brand"
             >
-              <option value="">Hamma turlari</option>
+              <option value="">{t("smsLog.allKinds")}</option>
               {Object.entries(KIND_META).map(([k, v]) => (
                 <option key={k} value={k}>
                   {v.label}
