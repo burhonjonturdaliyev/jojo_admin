@@ -76,6 +76,18 @@ const STATUS_DOT: Record<LeadStatus, string> = {
   blocked: "bg-red-500",
 };
 
+const ACTIVITY_DOT: Record<string, string> = {
+  login: "bg-emerald-500",
+  sos: "bg-red-500",
+  child_linked: "bg-purple-500",
+  order: "bg-indigo-500",
+  payment: "bg-amber-500",
+  notification: "bg-blue-500",
+  status: "bg-cyan-500",
+  comment: "bg-text-muted",
+  lead_created: "bg-primary",
+};
+
 function fmtNumber(n: number | undefined | null): string {
   return (n ?? 0).toLocaleString("uz-UZ").replace(/,/g, " ");
 }
@@ -1277,24 +1289,34 @@ function LeadDetailPanel({
                   Faollik yozuvlari yo'q
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {full.activity.map((a, i) => (
-                    <div
-                      key={i}
-                      className="flex items-start gap-3 rounded-lg border border-line p-3"
-                    >
-                      <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-[12.5px] text-text-primary">
-                          {a.label}
-                        </div>
-                        <div className="text-[10.5px] text-text-muted">
-                          {fmtDateTime(a.at)}
+                <>
+                  <div className="mb-3 text-[11px] text-text-muted">
+                    Jami: {full.activity.length} ta yozuv
+                  </div>
+                  <div className="space-y-2">
+                    {full.activity.map((a, i) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-3 rounded-lg border border-line p-3"
+                      >
+                        <div
+                          className={
+                            "h-2 w-2 rounded-full mt-1.5 shrink-0 " +
+                            (ACTIVITY_DOT[a.type] || "bg-text-muted")
+                          }
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[12.5px] text-text-primary">
+                            {a.label}
+                          </div>
+                          <div className="text-[10.5px] text-text-muted">
+                            {fmtDateTime(a.at)}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           )}
