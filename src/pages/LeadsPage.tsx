@@ -50,15 +50,6 @@ const COLUMNS: ColumnDef[] = [
   { status: "blocked", label: "Bloklangan", dotClass: "bg-red-500" },
 ];
 
-const STATUS_LABEL: Record<LeadStatus, string> = {
-  new: "Yangi",
-  in_progress: "Jarayonda",
-  waiting: "Kutilmoqda",
-  resolved: "Hal qilingan",
-  closed: "Yopilgan",
-  blocked: "Bloklangan",
-};
-
 const STATUS_PILL: Record<LeadStatus, string> = {
   new: "bg-blue-500/15 text-blue-500",
   in_progress: "bg-amber-500/15 text-amber-500",

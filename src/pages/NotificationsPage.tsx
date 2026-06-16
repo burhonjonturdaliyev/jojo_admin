@@ -176,7 +176,7 @@ export function NotificationsPage() {
                     <span>{new Date(n.created_at).toLocaleString("uz-UZ")}</span>
                     {typeof n.parent === "object" && n.parent ? (
                       <span className="inline-flex items-center gap-1">
-                        · <span className="text-text-secondary">Qabul qildi:</span>{" "}
+                        · <span className="text-text-secondary">{t("notifications.recipient")}</span>{" "}
                         <span className="font-medium text-text-primary">{n.parent.name}</span>
                         {n.parent.phone && (
                           <span className="font-mono text-text-muted">({n.parent.phone})</span>
@@ -187,13 +187,13 @@ export function NotificationsPage() {
                     )}
                     {typeof n.child === "object" && n.child && (
                       <span className="inline-flex items-center gap-1">
-                        · <span className="text-text-secondary">Bola:</span>{" "}
+                        · <span className="text-text-secondary">{t("notifications.relatedChild")}</span>{" "}
                         <span className="font-medium text-text-primary">{n.child.name}</span>
                       </span>
                     )}
                     {n.sender && (
                       <span className="inline-flex items-center gap-1">
-                        · <span className="text-text-secondary">Yubordi:</span>{" "}
+                        · <span className="text-text-secondary">{t("notifications.sender")}</span>{" "}
                         <span className="font-medium text-text-primary">{n.sender.name}</span>
                       </span>
                     )}

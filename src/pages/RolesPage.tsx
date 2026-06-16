@@ -137,13 +137,13 @@ export function RolesPage() {
       setEditing(null);
       reload();
     } catch (e) {
-      alert((e as { message?: string }).message || "Saqlashda xato");
+      alert((e as { message?: string }).message || t("common.save_failed"));
     }
   };
 
   const remove = async (r: AdminRole) => {
     if (r.is_system) return;
-    if (!window.confirm(`"${r.name}" rolini o'chirasizmi?`)) return;
+    if (!window.confirm(t("roles.confirmDelete", { name: r.name }))) return;
     try {
       await adminRolesApi.remove(r.id);
       reload();
@@ -156,13 +156,13 @@ export function RolesPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.roles")}
-        subtitle={`${roles.length} rol · ${totalAssigned} xodim`}
+        subtitle={`${roles.length} · ${t("roles.staffCount", { n: totalAssigned })}`}
         actions={
           <button
             onClick={startCreate}
             className="btn-primary text-[12.5px]"
           >
-            <Plus className="h-4 w-4" /> Yangi rol
+            <Plus className="h-4 w-4" /> {t("roles.newButton")}
           </button>
         }
       />
@@ -173,7 +173,7 @@ export function RolesPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Qidirish..."
+              placeholder={t("roles.searchPlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] outline-none focus:border-primary"
             />
           </div>
@@ -181,13 +181,13 @@ export function RolesPage() {
 
         {loading && (
           <div className="card p-12 text-center text-text-muted">
-            Yuklanmoqda...
+            {t("common.loading")}
           </div>
         )}
         {!loading && filtered.length === 0 && (
           <div className="card p-12 text-center text-text-muted">
             <Shield className="mx-auto mb-3 h-10 w-10 opacity-40" />
-            <div className="text-[14px]">Rol topilmadi</div>
+            <div className="text-[14px]">{t("roles.empty")}</div>
           </div>
         )}
         <div className="grid grid-cols-2 gap-3">
@@ -207,7 +207,7 @@ export function RolesPage() {
                       {r.name}
                       {r.is_system && (
                         <span className="ml-2 text-[10px] font-medium text-text-muted rounded bg-bg-input px-1.5 py-0.5">
-                          Tizim
+                          {t("roles.system")}
                         </span>
                       )}
                     </div>
@@ -220,10 +220,10 @@ export function RolesPage() {
                   <div className="mt-2 flex items-center gap-3 text-[11px] text-text-muted">
                     <span className="inline-flex items-center gap-1">
                       <UsersIcon className="h-3 w-3" />
-                      {r.users_count} xodim
+                      {t("roles.staffCount", { n: r.users_count })}
                     </span>
                     <span>·</span>
-                    <span>{r.permissions.length} ruxsat</span>
+                    <span>{t("roles.permsCount", { n: r.permissions.length })}</span>
                   </div>
                 </div>
               </div>
@@ -231,7 +231,7 @@ export function RolesPage() {
                 <button
                   onClick={() => startEdit(r)}
                   className="icon-btn h-7 w-7"
-                  title="Tahrirlash"
+                  title={t("users.action.edit")}
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
@@ -244,7 +244,7 @@ export function RolesPage() {
                       ? "opacity-40 cursor-not-allowed"
                       : "hover:bg-status-blocked/15 hover:text-status-blocked")
                   }
-                  title={r.is_system ? "Tizim rolini o'chirib bo'lmaydi" : "O'chirish"}
+                  title={r.is_system ? t("roles.cantDeleteSystem") : t("users.action.delete")}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

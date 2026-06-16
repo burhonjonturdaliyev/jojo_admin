@@ -62,13 +62,13 @@ export function OperatorsPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.operators")}
-        subtitle={`${items.length} ta call operator`}
+        subtitle={t("operators.subtitle", { count: items.length })}
         actions={
           <button
             className="btn-primary text-[12.5px]"
             onClick={() => setAdding(true)}
           >
-            <Plus className="h-4 w-4" /> Yangi xodim qo'shish
+            <Plus className="h-4 w-4" /> {t("operators.newButton")}
           </button>
         }
       />
@@ -76,13 +76,13 @@ export function OperatorsPage() {
         <div className="grid grid-cols-3 gap-4">
           {loading && (
             <div className="col-span-3 py-12 text-center text-text-muted">
-              Yuklanmoqda...
+              {t("common.loading")}
             </div>
           )}
           {!loading && items.length === 0 && (
             <div className="col-span-3 py-12 text-center text-text-muted">
               <Headset className="mx-auto mb-2 h-8 w-8 opacity-40" />
-              Xodimlar yo'q
+              {t("operators.empty")}
             </div>
           )}
           {items.map((op) => (
@@ -111,7 +111,7 @@ export function OperatorsPage() {
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 {op.is_superuser && (
                   <div className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-500">
-                    <Crown className="h-3 w-3" /> Super Admin
+                    <Crown className="h-3 w-3" /> {t("form.superAdmin")}
                   </div>
                 )}
                 {op.role_name ? (
@@ -119,12 +119,12 @@ export function OperatorsPage() {
                     <Shield className="h-3 w-3" /> {op.role_name}
                   </div>
                 ) : !op.is_superuser ? (
-                  <div className="text-[11px] text-text-muted italic">Rolsiz</div>
+                  <div className="text-[11px] text-text-muted italic">{t("operators.roleless")}</div>
                 ) : null}
               </div>
               <div className="mt-3 flex items-center justify-between">
                 <div className="text-[11px] text-text-muted">
-                  Qo'shilgan: {new Date(op.date_joined).toLocaleDateString("uz-UZ")}
+                  {t("operators.added")}: {new Date(op.date_joined).toLocaleDateString("uz-UZ")}
                 </div>
                 <div className="flex gap-1">
                   <button
@@ -190,6 +190,7 @@ function EditOperatorModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useT();
   const [fullName, setFullName] = useState(op.first_name);
   const [phone, setPhone] = useState(op.phone);
   const [isActive, setIsActive] = useState(op.is_active);
@@ -213,7 +214,7 @@ function EditOperatorModal({
       });
       onSaved();
     } catch (e) {
-      setError((e as { message?: string }).message || "Xato");
+      setError((e as { message?: string }).message || t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -230,7 +231,7 @@ function EditOperatorModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[16px] font-semibold text-text-primary">
-            Xodimni tahrirlash
+            {t("form.editEmployee")}
           </h3>
           <button onClick={onClose} className="icon-btn h-7 w-7">
             <X className="h-4 w-4" />
@@ -239,32 +240,32 @@ function EditOperatorModal({
         <div className="space-y-3">
           <div>
             <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
-              To'liq ism
+              {t("form.fullName")}
             </label>
             <input
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Masalan: Ali Valiyev"
+              placeholder={t("form.namePlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             />
           </div>
           <div>
             <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
-              Telefon raqami (login)
+              {t("form.phone")}
             </label>
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="+998901234567"
+              placeholder={t("form.phonePlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] font-mono outline-none focus:border-primary"
             />
             <p className="mt-1 text-[10.5px] text-text-muted">
-              Xodim shu raqam orqali tizimga kiradi
+              {t("form.phoneLoginHint")}
             </p>
           </div>
           <div>
             <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
-              Yangi parol
+              {t("form.newPassword")}
             </label>
             <div className="relative">
               <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
@@ -272,21 +273,21 @@ function EditOperatorModal({
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Bo'sh qoldirsangiz o'zgarmaydi"
+                placeholder={t("form.passwordKeepEmpty")}
                 className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] outline-none focus:border-primary"
               />
             </div>
           </div>
           <div>
             <div className="text-[11.5px] font-medium text-text-secondary mb-1">
-              Rol
+              {t("form.role")}
             </div>
             <select
               value={roleId ?? ""}
               onChange={(e) => setRoleId(e.target.value ? Number(e.target.value) : null)}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             >
-              <option value="">— Rolsiz —</option>
+              <option value="">{t("form.roleNone")}</option>
               {roles.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name}
@@ -300,7 +301,7 @@ function EditOperatorModal({
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
             />
-            Faol (bloklanmagan)
+            {t("form.activeNotBlocked")}
           </label>
           {canManageSuperuser && (
             <label className="flex items-start gap-2 text-[12.5px] text-text-secondary cursor-pointer">
@@ -311,9 +312,9 @@ function EditOperatorModal({
                 onChange={(e) => setIsSuperuser(e.target.checked)}
               />
               <span>
-                <span className="font-medium text-amber-500">Super Admin</span>
+                <span className="font-medium text-amber-500">{t("form.superAdmin")}</span>
                 <span className="block text-[10.5px] text-text-muted">
-                  Barcha bo'limlarga to'liq ruxsat, rol cheklovlaridan tashqari
+                  {t("form.superAdminHint")}
                 </span>
               </span>
             </label>
@@ -326,14 +327,14 @@ function EditOperatorModal({
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onClose} className="btn-secondary text-[12.5px]">
-            Bekor
+            {t("form.cancel")}
           </button>
           <button
             onClick={submit}
             disabled={busy}
             className="btn-primary text-[12.5px] disabled:opacity-50"
           >
-            {busy ? "Saqlanmoqda..." : "Saqlash"}
+            {busy ? t("form.saving") : t("form.save")}
           </button>
         </div>
       </div>
@@ -352,6 +353,7 @@ function CreateOperatorModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const { t } = useT();
   const [phone, setPhone] = useState("+998");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -363,7 +365,7 @@ function CreateOperatorModal({
   const submit = async () => {
     setError(null);
     if (!phone.trim() || !password.trim()) {
-      setError("Telefon va parol majburiy");
+      setError(`${t("form.phone")} ${t("form.required").toLowerCase()}`);
       return;
     }
     setBusy(true);
@@ -377,7 +379,7 @@ function CreateOperatorModal({
       });
       onCreated();
     } catch (e) {
-      setError((e as { message?: string }).message || "Xato");
+      setError((e as { message?: string }).message || t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -387,56 +389,56 @@ function CreateOperatorModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-md rounded-2xl bg-bg p-5">
         <h3 className="text-[16px] font-semibold text-text-primary mb-4">
-          Yangi xodim qo'shish
+          {t("form.addEmployee")}
         </h3>
         <div className="space-y-3">
           <div>
             <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
-              Telefon raqami (login) <span className="text-red-500">*</span>
+              {t("form.phone")} <span className="text-red-500">*</span>
             </label>
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="+998901234567"
+              placeholder={t("form.phonePlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] font-mono text-text-primary outline-none focus:border-primary"
             />
             <p className="mt-1 text-[10.5px] text-text-muted">
-              Xodim shu raqam orqali tizimga kiradi
+              {t("form.phoneLoginHint")}
             </p>
           </div>
           <div>
             <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
-              To'liq ism
+              {t("form.fullName")}
             </label>
             <input
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Masalan: Ali Valiyev"
+              placeholder={t("form.namePlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
             />
           </div>
           <div>
             <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
-              Parol <span className="text-red-500">*</span>
+              {t("form.password")} <span className="text-red-500">*</span>
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Kamida 6 belgi"
+              placeholder={t("form.passwordPlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
             />
           </div>
           <div>
             <div className="text-[11.5px] font-medium text-text-secondary mb-1">
-              Rol
+              {t("form.role")}
             </div>
             <select
               value={roleId ?? ""}
               onChange={(e) => setRoleId(e.target.value ? Number(e.target.value) : null)}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             >
-              <option value="">— Rolsiz —</option>
+              <option value="">{t("form.roleNone")}</option>
               {roles.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name}
@@ -453,9 +455,9 @@ function CreateOperatorModal({
                 onChange={(e) => setIsSuperuser(e.target.checked)}
               />
               <span>
-                <span className="font-semibold text-amber-500">Super Admin sifatida yaratish</span>
+                <span className="font-semibold text-amber-500">{t("form.superAdminCreate")}</span>
                 <span className="block text-[10.5px] text-text-muted">
-                  Barcha bo'limlarga to'liq ruxsat, rol cheklovlaridan tashqari
+                  {t("form.superAdminHint")}
                 </span>
               </span>
             </label>
@@ -468,14 +470,14 @@ function CreateOperatorModal({
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <button className="btn-secondary text-[12.5px]" onClick={onClose}>
-            Bekor
+            {t("form.cancel")}
           </button>
           <button
             className="btn-primary text-[12.5px]"
             onClick={submit}
             disabled={busy}
           >
-            {busy ? "Yaratilmoqda..." : "Yaratish"}
+            {busy ? t("form.creating") : t("form.create")}
           </button>
         </div>
       </div>
