@@ -261,7 +261,7 @@ export function LeadsPage() {
             color="#3B82F6"
           />
           <StatTile
-            title="Bolani ulangan"
+            title="Bolasi ulangan"
             value={fmtNumber(stats?.children_connected)}
             icon={UserCheck}
             color="#10B981"
@@ -988,7 +988,7 @@ function LeadDetailPanel({
 
                 <InfoCard title="Hisob holati">
                   <InfoRow
-                    label="Bolani ulangan"
+                    label="Bolasi ulangan"
                     value={
                       p?.child_connected ? (
                         <span className="inline-flex items-center gap-1 text-emerald-600">
