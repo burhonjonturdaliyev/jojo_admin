@@ -535,11 +535,14 @@ export function DashboardPage() {
                   className="flex items-center gap-3 rounded-lg border border-line p-3"
                   title={`${t("dashboard.joinedTip")}: ${joinedDate} ${joinedTime}\n${t("dashboard.phoneTip")}: ${u.phone || "—"}`}
                 >
-                  <Avatar name={u.first_name || u.phone || "?"} size={36} />
+                  <Avatar name={u.full_name?.trim() || u.first_name || u.phone || "?"} size={36} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <div className="text-[13px] font-medium text-text-primary truncate">
-                        {u.first_name || u.last_name || u.phone || t("dashboard.unknown")}
+                        {u.full_name?.trim() ||
+                          [u.first_name, u.last_name].filter(Boolean).join(" ").trim() ||
+                          u.phone ||
+                          t("dashboard.unknown")}
                       </div>
                       <span
                         className={
