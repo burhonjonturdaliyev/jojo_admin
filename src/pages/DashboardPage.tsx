@@ -374,34 +374,34 @@ export function DashboardPage() {
           <div className="mb-3 flex items-center justify-between">
             <div>
               <h3 className="text-[15px] font-semibold text-text-primary">
-                Yangi foydalanuvchilar
+                {t("dashboard.newUsers.title")}
               </h3>
               <p className="text-[12px] text-text-secondary">
-                Oxirgi ro'yxatdan o'tganlar
+                {t("dashboard.newUsers.sub")}
               </p>
             </div>
             <Link
               to="/users"
               className="text-[11.5px] text-primary hover:underline inline-flex items-center gap-0.5"
             >
-              Hammasi <ArrowRight className="h-3 w-3" />
+              {t("dashboard.allLink")} <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
           <div className="grid grid-cols-3 gap-3">
             {recentUsers.length === 0 && (
               <div className="col-span-3 text-center py-6 text-[12px] text-text-muted">
-                {loading ? "Yuklanmoqda..." : "Foydalanuvchilar yo'q"}
+                {loading ? t("common.loading") : t("dashboard.newUsers.empty")}
               </div>
             )}
             {recentUsers.map((u) => {
               const isChild = u.role === "child";
               const joined = new Date(u.date_joined);
-              const joinedDate = joined.toLocaleDateString("uz-UZ", {
+              const joinedDate = joined.toLocaleDateString(locale, {
                 day: "2-digit",
                 month: "2-digit",
                 year: "numeric",
               });
-              const joinedTime = joined.toLocaleTimeString("uz-UZ", {
+              const joinedTime = joined.toLocaleTimeString(locale, {
                 hour: "2-digit",
                 minute: "2-digit",
               });
@@ -409,13 +409,13 @@ export function DashboardPage() {
                 <div
                   key={`${u.role}-${u.id}`}
                   className="flex items-center gap-3 rounded-lg border border-line p-3"
-                  title={`Qo'shilgan: ${joinedDate} ${joinedTime}\nTelefon: ${u.phone || "—"}`}
+                  title={`${t("dashboard.joinedTip")}: ${joinedDate} ${joinedTime}\n${t("dashboard.phoneTip")}: ${u.phone || "—"}`}
                 >
                   <Avatar name={u.first_name || u.phone || "?"} size={36} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <div className="text-[13px] font-medium text-text-primary truncate">
-                        {u.first_name || u.last_name || u.phone || "Noma'lum"}
+                        {u.first_name || u.last_name || u.phone || t("dashboard.unknown")}
                       </div>
                       <span
                         className={
@@ -425,7 +425,7 @@ export function DashboardPage() {
                             : "bg-[#3B82F6]/15 text-[#3B82F6]")
                         }
                       >
-                        {isChild ? "Farzand" : "Ota-ona"}
+                        {isChild ? t("dashboard.userBadge.child") : t("dashboard.userBadge.parent")}
                       </span>
                     </div>
                     {u.phone && (
@@ -438,12 +438,12 @@ export function DashboardPage() {
                     {u.is_active ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 shadow-sm shadow-emerald-500/20">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Faol
+                        {t("dashboard.activeShort")}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 rounded-full bg-text-muted/15 px-2 py-0.5 text-[10px] font-semibold text-text-muted">
                         <span className="h-1.5 w-1.5 rounded-full bg-text-muted" />
-                        Faol emas
+                        {t("dashboard.inactiveShort")}
                       </span>
                     )}
                     <div className="flex flex-col items-end leading-none">
