@@ -577,7 +577,7 @@ function LeadCard({
           (childOK ? "text-emerald-600" : "text-red-500")
         }
       >
-        {childOK ? "Bolani ulangan" : "Bolani ulanmagan"}
+        {childOK ? "Bolasi ulangan" : "Bolasi ulanmagan"}
       </div>
       <div className="text-[11.5px] text-text-secondary">{premiumLabel}</div>
       {lead.operator && (
