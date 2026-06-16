@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ArrowUp } from "lucide-react";
 import { useT } from "../lib/i18n";
@@ -10,6 +11,9 @@ interface StatCardProps {
   iconColor: string;
   iconBg: string;
   positive?: boolean;
+  /** Footer'da delta o'rniga ko'rsatiladigan maxsus matn (masalan,
+   *  breakdown — "12 ota-ona · 8 farzand"). */
+  subtitle?: ReactNode;
 }
 
 export function StatCard({
@@ -20,6 +24,7 @@ export function StatCard({
   iconColor,
   iconBg,
   positive = true,
+  subtitle,
 }: StatCardProps) {
   const { t } = useT();
   return (
@@ -36,17 +41,23 @@ export function StatCard({
       <div className="mt-2 text-[26px] font-bold leading-tight tracking-tight text-text-primary">
         {value}
       </div>
-      <div className="mt-1.5 flex items-center gap-1.5 text-[12px]">
-        <span
-          className={`flex items-center gap-0.5 font-semibold ${
-            positive ? "text-status-resolved" : "text-status-blocked"
-          }`}
-        >
-          <ArrowUp className="h-3 w-3" strokeWidth={2.6} />
-          {delta}
-        </span>
-        <span className="text-text-muted">{t("common.thisMonth")}</span>
-      </div>
+      {subtitle !== undefined ? (
+        <div className="mt-1.5 text-[12px] text-text-muted truncate">
+          {subtitle}
+        </div>
+      ) : (
+        <div className="mt-1.5 flex items-center gap-1.5 text-[12px]">
+          <span
+            className={`flex items-center gap-0.5 font-semibold ${
+              positive ? "text-status-resolved" : "text-status-blocked"
+            }`}
+          >
+            <ArrowUp className="h-3 w-3" strokeWidth={2.6} />
+            {delta}
+          </span>
+          <span className="text-text-muted">{t("common.thisMonth")}</span>
+        </div>
+      )}
     </div>
   );
 }

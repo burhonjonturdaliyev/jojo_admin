@@ -619,6 +619,8 @@ export interface AdminDashboardStats {
   children: number;
   children_connected?: number;
   active_24h: number;
+  parents_active_today?: number;
+  children_active_today?: number;
   premium_users?: number;
   premium_revenue?: number;
   blocked_users?: number;

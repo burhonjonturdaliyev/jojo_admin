@@ -116,12 +116,24 @@ export function DashboardPage() {
             iconBg="rgba(139,92,246,0.15)"
           />
           <StatCard
-            label="24 soatda faol"
+            label="Bugun faol"
             value={fmt(stats?.active_24h)}
             delta=""
             icon={PhoneCall}
             iconColor="#F59E0B"
             iconBg="rgba(245,158,11,0.15)"
+            subtitle={
+              <span>
+                <span className="font-semibold text-[#3B82F6]">
+                  {fmt(stats?.parents_active_today)}
+                </span>{" "}
+                ota-ona ·{" "}
+                <span className="font-semibold text-[#8B5CF6]">
+                  {fmt(stats?.children_active_today)}
+                </span>{" "}
+                farzand
+              </span>
+            }
           />
           <StatCard
             label="SOS bildirishnomalar"
