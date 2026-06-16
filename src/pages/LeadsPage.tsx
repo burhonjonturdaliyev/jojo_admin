@@ -31,7 +31,7 @@ import {
   type AdminDashboardStats,
   type AdminUserRow,
 } from "../lib/resources";
-import { subscribe } from "../lib/leadsSocket";
+import { subscribe, reconnect as reconnectSocket } from "../lib/leadsSocket";
 
 interface ColumnDef {
   status: LeadStatus;
@@ -295,24 +295,36 @@ export function LeadsPage() {
             </span>{" "}
             ta lead
           </div>
-          <div
+          <button
+            onClick={() => {
+              if (!socketUp) reconnectSocket();
+            }}
+            disabled={socketUp}
+            title={socketUp ? "Real-time ulangan" : "Qayta ulanish"}
             className={
-              "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium " +
+              "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors " +
               (socketUp
-                ? "bg-emerald-500/15 text-emerald-600"
-                : "bg-text-muted/15 text-text-muted")
+                ? "bg-emerald-500/15 text-emerald-600 cursor-default"
+                : "bg-red-500/10 text-red-500 hover:bg-red-500/20 cursor-pointer")
             }
           >
             <span
               className={
                 "h-1.5 w-1.5 rounded-full " +
-                (socketUp ? "bg-emerald-500 animate-pulse" : "bg-text-muted")
+                (socketUp ? "bg-emerald-500 animate-pulse" : "bg-red-500")
               }
             />
-            {socketUp ? "Real-time ulangan" : "Ulanmagan"}
-          </div>
+            {socketUp ? "Real-time ulangan" : "Qayta ulanish"}
+          </button>
         </div>
-        <button onClick={reload} className="icon-btn h-8 w-8" title="Yangilash">
+        <button
+          onClick={() => {
+            reconnectSocket();
+            void reload();
+          }}
+          className="icon-btn h-8 w-8"
+          title="Yangilash + qayta ulanish"
+        >
           <RefreshCw className="h-4 w-4" />
         </button>
       </div>

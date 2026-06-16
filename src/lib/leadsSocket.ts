@@ -25,10 +25,15 @@ type LeadEvent =
 let socket: Socket | null = null;
 let refCount = 0;
 
-function ensureSocket(): Socket {
-  if (socket) return socket;
+// Listener'larni o'zimiz registr qilamiz — qayta connect bo'lganda yangi
+// socket'ga ham bir xil handler'larni bog'lab beramiz. socket-io-client
+// `disconnect()`dan keyin handler'larni unutadi.
+type Registered = { event: LeadEvent; handler: (data: unknown) => void };
+const registered: Set<Registered> = new Set();
+
+function buildSocket(): Socket {
   const token = getAccessToken();
-  socket = io(SOCKET_URL, {
+  const s = io(SOCKET_URL, {
     path: "/socket.io",
     transports: ["websocket", "polling"],
     auth: { token },
@@ -38,6 +43,14 @@ function ensureSocket(): Socket {
     reconnectionDelayMax: 8000,
     timeout: 10000,
   });
+  // Saqlangan listener'larni yangi socket'ga qayta ulaymiz.
+  for (const r of registered) s.on(r.event, r.handler);
+  return s;
+}
+
+function ensureSocket(): Socket {
+  if (socket) return socket;
+  socket = buildSocket();
   return socket;
 }
 
@@ -46,16 +59,35 @@ export function subscribe(
   handler: (data: unknown) => void,
 ): () => void {
   const s = ensureSocket();
+  const reg: Registered = { event, handler };
+  registered.add(reg);
   refCount++;
   s.on(event, handler);
   return () => {
     s.off(event, handler);
+    registered.delete(reg);
     refCount = Math.max(0, refCount - 1);
-    if (refCount === 0 && socket) {
-      socket.disconnect();
-      socket = null;
-    }
+    // refCount=0 bo'lganda socket'ni darhol uzmaymiz — Lead'lar sahifasi
+    // tezroq qaytib kelganda qayta connect qilmasligi uchun (komponent
+    // re-mount tabiiy uzilish-ulanishini hisobga olib). Real ulanish
+    // sahifa yopilganda brauzer tomonidan tozalanadi.
   };
+}
+
+/** Ulanishni majburan yangilaydi — token yangilanganda yoki foydalanuvchi
+ *  "Reconnect" bossagandan keyin ishlatamiz. Eski handler'lar yangi
+ *  socket'ga avtomatik bog'lanadi. */
+export function reconnect(): void {
+  if (socket) {
+    try {
+      socket.disconnect();
+    } catch {
+      // ignore
+    }
+    socket = null;
+  }
+  socket = buildSocket();
+  socket.connect();
 }
 
 export function isConnected(): boolean {
