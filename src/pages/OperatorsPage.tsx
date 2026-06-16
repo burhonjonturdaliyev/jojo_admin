@@ -105,7 +105,7 @@ export function OperatorsPage() {
                       : "bg-text-muted/15 text-text-muted")
                   }
                 >
-                  {op.is_active ? "Faol" : "Nofaol"}
+                  {op.is_active ? t("users.filter.active") : t("common.inactive")}
                 </span>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -130,7 +130,7 @@ export function OperatorsPage() {
                   <button
                     onClick={() => setEditing(op)}
                     className="icon-btn h-7 w-7"
-                    title="Tahrirlash"
+                    title={t("users.action.edit")}
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
@@ -139,7 +139,7 @@ export function OperatorsPage() {
                       removeOperator(op.id, op.first_name || op.phone)
                     }
                     className="icon-btn h-7 w-7 hover:bg-status-blocked/15 hover:text-status-blocked"
-                    title="O'chirish"
+                    title={t("users.action.delete")}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

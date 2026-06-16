@@ -26,12 +26,12 @@ export function ChildrenPage() {
 
   const remove = async (c: AdminChild) => {
     const name = c.first_name || c.username || `#${c.id}`;
-    if (!confirm(`"${name}" bolani o'chirishni xohlaysizmi?`)) return;
+    if (!confirm(t("users.confirmDelete", { name }))) return;
     try {
       await childrenApi.remove(c.id);
       setItems((prev) => prev.filter((x) => x.id !== c.id));
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     }
   };
 
@@ -47,13 +47,13 @@ export function ChildrenPage() {
           <table className="min-w-full text-[13px]">
             <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
-                <th className="px-4 py-3">Bola</th>
-                <th className="px-4 py-3">Ota-ona</th>
-                <th className="px-4 py-3">Yosh</th>
-                <th className="px-4 py-3">Jins</th>
-                <th className="px-4 py-3">Til</th>
-                <th className="px-4 py-3">Holati</th>
-                <th className="px-4 py-3">Ulangan</th>
+                <th className="px-4 py-3">{t("nav.children")}</th>
+                <th className="px-4 py-3">{t("users.col.parent")}</th>
+                <th className="px-4 py-3">{t("users.col.age")}</th>
+                <th className="px-4 py-3">{t("users.col.gender")}</th>
+                <th className="px-4 py-3">{t("users.col.language")}</th>
+                <th className="px-4 py-3">{t("users.col.status")}</th>
+                <th className="px-4 py-3">{t("user.connected")}</th>
                 <th className="px-4 py-3 text-right">{t("common.actions")}</th>
               </tr>
             </thead>
@@ -69,7 +69,7 @@ export function ChildrenPage() {
                 <tr>
                   <td colSpan={8} className="px-4 py-12 text-center text-text-muted">
                     <Baby className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                    Bolalar topilmadi
+                    {t("users.empty.children")}
                   </td>
                 </tr>
               )}
@@ -108,7 +108,7 @@ export function ChildrenPage() {
                       </Link>
                     ) : (
                       <span className="text-[11.5px] text-text-muted italic">
-                        — bog'lanmagan —
+                        {t("users.unlinked")}
                       </span>
                     )}
                   </td>

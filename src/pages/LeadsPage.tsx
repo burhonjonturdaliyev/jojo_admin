@@ -18,6 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Avatar } from "../components/Avatar";
+import { useT } from "../lib/i18n";
 import {
   leadsApi,
   dashboardApi,
@@ -136,6 +137,37 @@ function fmtRelativeTime(iso: string | null | undefined): string {
 }
 
 export function LeadsPage() {
+  const { t } = useT();
+
+  // Status'lar i18n bilan — har safar lang o'zgarganda yangi label'lar olinadi.
+  const statusLabel = (s: LeadStatus): string => t(`leadStatus.${s}`);
+
+  const columnsList: ColumnDef[] = COLUMNS.map((c) => ({
+    ...c,
+    label: statusLabel(c.status),
+  }));
+
+  const fmtRelativeI18n = (iso: string | null | undefined): string => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "—";
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - d.getTime()) / 1000);
+    if (diff < 60) return t("time.now");
+    if (diff < 3600) return t("time.minAgo", { n: Math.floor(diff / 60) });
+    if (diff < 86400) {
+      return d.toLocaleTimeString("uz-UZ", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+    if (diff < 172800) return t("time.yesterday");
+    if (diff < 86400 * 7) return t("time.dayAgo", { n: Math.floor(diff / 86400) });
+    return fmtDate(iso);
+  };
+  void fmtRelativeI18n; // qachon kerak bo'lsa kartochkalarda ishlatish uchun
+  void columnsList; // pastdagi kolonkalarda ishlatamiz
+
   const [board, setBoard] = useState<LeadBoardResponse | null>(null);
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -209,10 +241,10 @@ export function LeadsPage() {
       });
       if (ev.type === "status_changed" && ev.from !== ev.to) {
         showToast(
-          `Lead #${ev.id}: ${STATUS_LABEL[ev.from!]} → ${STATUS_LABEL[ev.to!]}`,
+          `Lead #${ev.id}: ${statusLabel(ev.from!)} → ${statusLabel(ev.to!)}`,
         );
       } else if (ev.type === "created") {
-        showToast("Yangi murojaat keldi");
+        showToast(t("lead.newRequest"));
       }
     });
     return () => {
@@ -251,7 +283,7 @@ export function LeadsPage() {
     try {
       await leadsApi.update(leadId, { status: toStatus });
     } catch {
-      showToast("Saqlanmadi");
+      showToast(t("common.save_failed"));
       void reload();
     }
   };
@@ -313,7 +345,7 @@ export function LeadsPage() {
               if (!socketUp) reconnectSocket();
             }}
             disabled={socketUp}
-            title={socketUp ? "Real-time ulangan" : "Qayta ulanish"}
+            title={socketUp ? t("lead.realtimeConnected") : t("lead.reconnect")}
             className={
               "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors " +
               (socketUp
@@ -327,7 +359,7 @@ export function LeadsPage() {
                 (socketUp ? "bg-emerald-500 animate-pulse" : "bg-red-500")
               }
             />
-            {socketUp ? "Real-time ulangan" : "Qayta ulanish"}
+            {socketUp ? t("lead.realtimeConnected") : t("lead.reconnect")}
           </button>
         </div>
         <button
@@ -379,15 +411,15 @@ export function LeadsPage() {
                   <div className="flex items-center gap-2 px-4 py-3 border-b border-line">
                     <div className={"h-2 w-2 rounded-full " + col.dotClass} />
                     <div className="text-[13px] font-semibold text-text-primary flex-1">
-                      {col.label}
+                      {statusLabel(col.status)}
                     </div>
                     <div className="text-[12px] font-semibold text-text-secondary">
                       {count}
                     </div>
                     <button
                       onClick={() => setAddingInCol(col.status)}
-                      title="Karta qo'shish"
-                      aria-label="Karta qo'shish"
+                      title={t("lead.addCard")}
+                      aria-label={t("lead.addCard")}
                       className="group/add inline-flex h-6 w-6 items-center justify-center rounded-md text-text-muted transition-all duration-200 ease-out hover:bg-brand hover:text-white hover:scale-110 hover:shadow-sm hover:shadow-brand/40 active:scale-95"
                     >
                       <Plus
@@ -626,6 +658,8 @@ function AddLeadModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const { t } = useT();
+  const statusLabel = (s: LeadStatus): string => t(`leadStatus.${s}`);
   const [parents, setParents] = useState<AdminUserRow[]>([]);
   const [parentId, setParentId] = useState<number | null>(null);
   const [title, setTitle] = useState("");
@@ -676,7 +710,7 @@ function AddLeadModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[15px] font-semibold text-text-primary">
-            Yangi lead — {STATUS_LABEL[initialStatus]}
+            Yangi lead — {statusLabel(initialStatus)}
           </h3>
           <button onClick={onClose} className="icon-btn h-7 w-7">
             <X className="h-4 w-4" />
@@ -780,6 +814,8 @@ function LeadDetailPanel({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const { t } = useT();
+  const statusLabel = (s: LeadStatus): string => t(`leadStatus.${s}`);
   const [full, setFull] = useState<AdminLeadFull | null>(null);
   const [lead, setLead] = useState<AdminLead>(initialLead);
   const [comments, setComments] = useState<LeadComment[]>([]);
@@ -921,7 +957,7 @@ function LeadDetailPanel({
                       "h-1.5 w-1.5 rounded-full " + STATUS_DOT[lead.status]
                     }
                   />
-                  {STATUS_LABEL[lead.status]}
+                  {statusLabel(lead.status)}
                 </span>
               </div>
               <a
@@ -1052,7 +1088,7 @@ function LeadDetailPanel({
                             "h-1 w-1 rounded-full " + STATUS_DOT[lead.status]
                           }
                         />
-                        {STATUS_LABEL[lead.status]}
+                        {statusLabel(lead.status)}
                       </span>
                     }
                   />
@@ -1141,7 +1177,7 @@ function LeadDetailPanel({
                                 STATUS_PILL[badgeStatus as LeadStatus]
                               }
                             >
-                              {STATUS_LABEL[badgeStatus as LeadStatus]}
+                              {statusLabel(badgeStatus as LeadStatus)}
                             </span>
                           )}
                           <div className="ml-auto text-[10.5px] text-text-muted">

@@ -86,12 +86,12 @@ export function UsersPage() {
 
   const remove = async (u: AdminUserRow) => {
     const name = displayName(u);
-    if (!confirm(`"${name}" foydalanuvchini butunlay o'chirishni xohlaysizmi?`)) return;
+    if (!confirm(t("users.confirmDelete", { name }))) return;
     try {
       await usersApi.remove(u.id);
       setUsers((prev) => prev.filter((x) => x.id !== u.id));
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     }
   };
 
@@ -113,7 +113,7 @@ export function UsersPage() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Telefon yoki ism bo'yicha qidirish..."
+                placeholder={t("users.search.placeholder")}
                 className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
               />
             </div>
@@ -128,7 +128,7 @@ export function UsersPage() {
                     : "border-line bg-bg-input text-text-secondary hover:text-text-primary")
                 }
               >
-                {k === "all" ? "Hammasi" : k === "active" ? "Faol" : "Bloklangan"}
+                {k === "all" ? t("users.filter.all") : k === "active" ? t("users.filter.active") : t("users.filter.blocked")}
               </button>
             ))}
           </div>
@@ -139,21 +139,21 @@ export function UsersPage() {
           <table className="min-w-full text-[13px]">
             <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
-                <th className="px-4 py-3">Ota-ona</th>
-                <th className="px-4 py-3">Bolalar</th>
-                <th className="px-4 py-3">Telefon</th>
-                <th className="px-4 py-3">Qurilma</th>
-                <th className="px-4 py-3">Oxirgi faollik</th>
-                <th className="px-4 py-3">Holati</th>
-                <th className="px-4 py-3">Qo'shilgan</th>
-                <th className="px-4 py-3 text-right">Amal</th>
+                <th className="px-4 py-3">{t("users.col.parent")}</th>
+                <th className="px-4 py-3">{t("users.col.children")}</th>
+                <th className="px-4 py-3">{t("users.col.phone")}</th>
+                <th className="px-4 py-3">{t("users.col.device")}</th>
+                <th className="px-4 py-3">{t("users.col.lastActivity")}</th>
+                <th className="px-4 py-3">{t("users.col.status")}</th>
+                <th className="px-4 py-3">{t("users.col.joined")}</th>
+                <th className="px-4 py-3 text-right">{t("users.col.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-text-muted">
-                    Yuklanmoqda...
+                    {t("common.loading")}
                   </td>
                 </tr>
               )}
@@ -161,7 +161,7 @@ export function UsersPage() {
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-text-muted">
                     <UsersIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                    Ota-onalar topilmadi
+                    {t("users.empty.parents")}
                   </td>
                 </tr>
               )}
@@ -244,7 +244,7 @@ export function UsersPage() {
                           : "bg-status-blocked/15 text-status-blocked")
                       }
                     >
-                      {u.is_active ? "Faol" : "Bloklangan"}
+                      {u.is_active ? t("users.filter.active") : t("users.filter.blocked")}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-text-secondary">
@@ -270,25 +270,25 @@ export function UsersPage() {
                       >
                         {u.is_active ? (
                           <>
-                            <Ban className="h-3.5 w-3.5" /> Bloklash
+                            <Ban className="h-3.5 w-3.5" /> {t("users.action.block")}
                           </>
                         ) : (
                           <>
-                            <CheckCircle2 className="h-3.5 w-3.5" /> Faollashtirish
+                            <CheckCircle2 className="h-3.5 w-3.5" /> {t("users.action.activate")}
                           </>
                         )}
                       </button>
                       <button
                         onClick={() => setEditing(u)}
                         className="icon-btn h-7 w-7"
-                        title="Tahrirlash"
+                        title={t("users.action.edit")}
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => remove(u)}
                         className="icon-btn h-7 w-7 hover:bg-status-blocked/15 hover:text-status-blocked"
-                        title="O'chirish"
+                        title={t("users.action.delete")}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
