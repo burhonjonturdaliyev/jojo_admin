@@ -69,16 +69,27 @@ export function DashboardPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [s, b, u] = await Promise.all([
+        const [s, b, parents, children] = await Promise.all([
           dashboardApi.stats(),
           // LeadsPage'dagi filter bilan moslashtirildi — telegram (So'rovlar)
           // bu hisobga kirmaydi, lead va so'rov ikki alohida bo'lim.
           leadsApi.board({ per_column: 5, source: "app,manual" }),
-          usersApi.list({ page_size: 6 }),
+          // "Yangi foydalanuvchilar" kartochkasi faqat ota-onalar va
+          // farzandlarni ko'rsatadi — xodimlar (is_staff=True) chiqarib
+          // tashlanadi. role=parent backendda is_staff=False bilan filtrlanadi.
+          usersApi.list({ role: "parent", page_size: 6 }),
+          usersApi.list({ role: "child", page_size: 6 }),
         ]);
         setStats(s);
         setBoard(b);
-        setRecentUsers(unwrapList(u).slice(0, 6));
+        const merged = [...unwrapList(parents), ...unwrapList(children)]
+          .sort(
+            (a, c) =>
+              new Date(c.date_joined).getTime() -
+              new Date(a.date_joined).getTime(),
+          )
+          .slice(0, 6);
+        setRecentUsers(merged);
         // So'nggi murojaatlar — backend dashboard endpointidan keladi
         // (So'rovlar bo'limi manbasi, kanban kolonkasi emas) — oxirgi
         // xabar vaqti va manba yorlig'i shu yerda to'g'ridan-to'g'ri bor.
@@ -374,31 +385,46 @@ export function DashboardPage() {
                 {loading ? "Yuklanmoqda..." : "Foydalanuvchilar yo'q"}
               </div>
             )}
-            {recentUsers.map((u) => (
-              <div
-                key={u.id}
-                className="flex items-center gap-3 rounded-lg border border-line p-3"
-              >
-                <Avatar name={u.first_name || u.phone || "?"} size={36} />
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-medium text-text-primary truncate">
-                    {u.first_name || u.last_name || u.phone || "Noma'lum"}
+            {recentUsers.map((u) => {
+              const isChild = u.role === "child";
+              return (
+                <div
+                  key={`${u.role}-${u.id}`}
+                  className="flex items-center gap-3 rounded-lg border border-line p-3"
+                >
+                  <Avatar name={u.first_name || u.phone || "?"} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <div className="text-[13px] font-medium text-text-primary truncate">
+                        {u.first_name || u.last_name || u.phone || "Noma'lum"}
+                      </div>
+                      <span
+                        className={
+                          "shrink-0 rounded-full px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-wide " +
+                          (isChild
+                            ? "bg-[#8B5CF6]/15 text-[#8B5CF6]"
+                            : "bg-[#3B82F6]/15 text-[#3B82F6]")
+                        }
+                      >
+                        {isChild ? "Farzand" : "Ota-ona"}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-text-muted font-mono truncate">
+                      {u.phone || "—"}
+                    </div>
                   </div>
-                  <div className="text-[11px] text-text-muted font-mono truncate">
-                    {u.phone}
-                  </div>
+                  {u.is_active ? (
+                    <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
+                      Faol
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-text-muted/15 px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
+                      Faol emas
+                    </span>
+                  )}
                 </div>
-                {u.is_active ? (
-                  <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
-                    Faol
-                  </span>
-                ) : (
-                  <span className="rounded-full bg-text-muted/15 px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
-                    Faol emas
-                  </span>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
