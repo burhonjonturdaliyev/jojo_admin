@@ -48,7 +48,7 @@ export function PremiumPage() {
   };
 
   const remove = async (id: number) => {
-    if (!confirm("O'chirishni tasdiqlaysizmi?")) return;
+    if (!confirm(t("premium.confirmDelete"))) return;
     await plansApi.remove(id);
     void reload();
   };
@@ -57,7 +57,7 @@ export function PremiumPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.premium")}
-        subtitle="Premium obuna planlari"
+        subtitle={t("premium.plansSubtitle")}
         actions={
           <button
             className="btn-primary text-[12.5px]"
@@ -72,7 +72,7 @@ export function PremiumPage() {
               })
             }
           >
-            <Plus className="h-4 w-4" /> Yangi plan
+            <Plus className="h-4 w-4" /> {t("premium.newPlan")}
           </button>
         }
       />
@@ -80,12 +80,12 @@ export function PremiumPage() {
         <div className="grid grid-cols-3 gap-4">
           {loading && (
             <div className="col-span-3 text-center text-text-muted py-12">
-              Yuklanmoqda...
+              {t("common.loading")}
             </div>
           )}
           {!loading && plans.length === 0 && (
             <div className="col-span-3 text-center text-text-muted py-12">
-              <Crown className="mx-auto mb-2 h-8 w-8 opacity-40" /> Planlar yo'q
+              <Crown className="mx-auto mb-2 h-8 w-8 opacity-40" /> {t("premium.plansEmpty")}
             </div>
           )}
           {plans.map((p) => (
@@ -119,10 +119,10 @@ export function PremiumPage() {
                 <span className="text-[24px] font-bold text-text-primary">
                   {(p.price_uzs ?? 0).toLocaleString("uz-UZ").replace(/,/g, " ")}
                 </span>
-                <span className="text-[12.5px] text-text-muted">so'm</span>
+                <span className="text-[12.5px] text-text-muted">{t("premium.priceCurrency")}</span>
               </div>
               <div className="mt-1 text-[11.5px] text-text-muted">
-                {p.duration_days} kun
+                {t("premium.duration", { n: p.duration_days ?? 0 })}
               </div>
               <span
                 className={
@@ -132,7 +132,7 @@ export function PremiumPage() {
                     : "bg-text-muted/15 text-text-muted")
                 }
               >
-                {p.is_active ? "Faol" : "Nofaol"}
+                {p.is_active ? t("users.filter.active") : t("common.inactive")}
               </span>
             </div>
           ))}
