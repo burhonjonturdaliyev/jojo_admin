@@ -359,6 +359,17 @@ export function LeadsPage() {
                     <div className="text-[12px] font-semibold text-text-secondary">
                       {count}
                     </div>
+                    <button
+                      onClick={() => setAddingInCol(col.status)}
+                      title="Karta qo'shish"
+                      aria-label="Karta qo'shish"
+                      className="group/add inline-flex h-6 w-6 items-center justify-center rounded-md text-text-muted transition-all duration-200 ease-out hover:bg-brand hover:text-white hover:scale-110 hover:shadow-sm hover:shadow-brand/40 active:scale-95"
+                    >
+                      <Plus
+                        className="h-3.5 w-3.5 transition-transform duration-300 ease-out group-hover/add:rotate-90"
+                        strokeWidth={2.5}
+                      />
+                    </button>
                   </div>
                   <div className="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-2">
                     {items.length === 0 && (
@@ -380,12 +391,6 @@ export function LeadsPage() {
                         onClick={() => setSelectedLead(lead)}
                       />
                     ))}
-                    <button
-                      onClick={() => setAddingInCol(col.status)}
-                      className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-line py-2 text-[12px] text-text-muted hover:bg-bg-hover hover:text-text-primary"
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Karta qo'shish
-                    </button>
                   </div>
                 </div>
               );
