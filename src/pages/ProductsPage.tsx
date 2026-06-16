@@ -65,7 +65,7 @@ export function ProductsPage() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Mahsulotni o'chirasizmi?")) return;
+    if (!confirm(t("products.confirmDelete"))) return;
     await storeProductsApi.remove(Number(id));
     void reload();
   };
@@ -93,13 +93,13 @@ export function ProductsPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.products")}
-        subtitle={`${products.length} ta mahsulot`}
+        subtitle={t("products.subtitle", { count: products.length })}
         actions={
           <button
             className="btn-primary text-[12.5px]"
             onClick={() => setEditing(emptyProduct())}
           >
-            <Plus className="h-4 w-4" /> Yangi mahsulot
+            <Plus className="h-4 w-4" /> {t("products.newTitle")}
           </button>
         }
       />
@@ -112,7 +112,7 @@ export function ProductsPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && reload()}
-                placeholder="Qidirish va Enter..."
+                placeholder={t("products.searchPlaceholder")}
                 className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
               />
             </div>
@@ -121,7 +121,7 @@ export function ProductsPage() {
               onChange={(e) => setCategoryFilter(e.target.value || null)}
               className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
             >
-              <option value="">Barcha kategoriyalar</option>
+              <option value="">{t("products.allCategories")}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -134,13 +134,13 @@ export function ProductsPage() {
         <div className="mt-4 grid grid-cols-3 gap-4">
           {loading && (
             <div className="col-span-3 py-12 text-center text-text-muted">
-              Yuklanmoqda...
+              {t("common.loading")}
             </div>
           )}
           {!loading && products.length === 0 && (
             <div className="col-span-3 py-12 text-center text-text-muted">
               <Package className="mx-auto mb-2 h-8 w-8 opacity-40" />
-              Mahsulotlar yo'q
+              {t("products.empty")}
             </div>
           )}
           {products.map((p) => (
@@ -175,6 +175,7 @@ function ProductCard({
   onEdit: () => void;
   onRemove: () => void;
 }) {
+  const { t } = useT();
   const name = p.name.uz || p.name.ru || p.name.en || "—";
   return (
     <div className="card overflow-hidden">
@@ -242,7 +243,7 @@ function ProductCard({
                 : "bg-text-muted/15 text-text-muted")
             }
           >
-            {p.isActive ? "Faol" : "Nofaol"}
+            {p.isActive ? t("users.filter.active") : t("common.inactive")}
           </span>
           <span className="text-[10.5px] text-text-muted ml-auto">
             Stok: {p.stock}
@@ -267,6 +268,7 @@ function ProductEditor({
     opts: { autoTranslate?: boolean; translateSource?: TranslateLang },
   ) => void | Promise<void>;
 }) {
+  const { t } = useT();
   const [draft, setDraft] = useState(product);
   const [translating, setTranslating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -347,7 +349,7 @@ function ProductEditor({
         <div className="sticky top-0 bg-bg/95 backdrop-blur border-b border-line px-6 py-4 flex items-center justify-between rounded-t-3xl">
           <div>
             <h3 className="text-[17px] font-bold text-text-primary">
-              {product.id !== "0" ? "Mahsulotni tahrirlash" : "Yangi mahsulot"}
+              {product.id !== "0" ? t("products.editTitle") : t("products.newTitle")}
             </h3>
             <p className="text-[12px] text-text-muted">
               Uz / Ru / En tillarida to'ldiring — yoki avtomatik tarjima qildiring
