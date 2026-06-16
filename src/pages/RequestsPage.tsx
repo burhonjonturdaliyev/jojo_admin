@@ -269,14 +269,18 @@ export function RequestsPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.requests")}
-        subtitle={`${counts.all} ta murojaat · ${counts.new || 0} yangi · ${counts.in_progress || 0} jarayonda`}
+        subtitle={t("requests.subtitle", {
+          total: counts.all,
+          newCount: counts.new || 0,
+          inProgress: counts.in_progress || 0,
+        })}
         actions={
           <button
             onClick={() => setQrEditorOpen(true)}
             className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-bg-input px-3 py-1.5 text-[12.5px] font-medium text-text-secondary hover:text-text-primary hover:border-brand/40"
           >
             <Sparkles className="h-3.5 w-3.5" />
-            Shortcutlar ({quickReplies.length})
+            {t("requests.shortcuts", { count: quickReplies.length })}
           </button>
         }
       />

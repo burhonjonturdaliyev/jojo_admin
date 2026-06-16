@@ -997,6 +997,8 @@ const uz: Dict = {
   "requests.col.title": "Mavzu",
   "requests.col.status": "Status",
   "requests.col.date": "Sana",
+  "requests.subtitle": "{total} ta murojaat · {newCount} yangi · {inProgress} jarayonda",
+  "requests.shortcuts": "Shortcutlar ({count})",
 
   // ───── SMS journal page
   "smsLog.title": "SMS jurnali",
@@ -2041,6 +2043,8 @@ const ru: Dict = {
   "requests.col.title": "Тема",
   "requests.col.status": "Статус",
   "requests.col.date": "Дата",
+  "requests.subtitle": "{total} обращений · {newCount} новых · {inProgress} в работе",
+  "requests.shortcuts": "Шорткаты ({count})",
 
   // ───── SMS journal
   "smsLog.title": "Журнал SMS",
@@ -3085,6 +3089,8 @@ const en: Dict = {
   "requests.col.title": "Subject",
   "requests.col.status": "Status",
   "requests.col.date": "Date",
+  "requests.subtitle": "{total} requests · {newCount} new · {inProgress} in progress",
+  "requests.shortcuts": "Shortcuts ({count})",
 
   // ───── SMS journal
   "smsLog.title": "SMS log",
