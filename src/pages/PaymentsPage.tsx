@@ -32,7 +32,7 @@ export function PaymentsPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.payments")}
-        subtitle={t("payments.subtitle", {
+        subtitle={t("payments.subtitleCount", {
           count: items.length,
           total: totalAmount.toLocaleString("uz-UZ").replace(/,/g, " "),
         })}

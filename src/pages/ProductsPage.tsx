@@ -93,7 +93,7 @@ export function ProductsPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.products")}
-        subtitle={t("products.subtitle", { count: products.length })}
+        subtitle={t("products.subtitleCount", { count: products.length })}
         actions={
           <button
             className="btn-primary text-[12.5px]"

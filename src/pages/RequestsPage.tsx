@@ -269,7 +269,7 @@ export function RequestsPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.requests")}
-        subtitle={t("requests.subtitle", {
+        subtitle={t("requests.subtitleCounts", {
           total: counts.all,
           newCount: counts.new || 0,
           inProgress: counts.in_progress || 0,

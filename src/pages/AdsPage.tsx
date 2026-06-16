@@ -96,7 +96,7 @@ export function AdsPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.ads")}
-        subtitle={t("ads.subtitle")}
+        subtitle={t("ads.subtitleBroadcast")}
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">

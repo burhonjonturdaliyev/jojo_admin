@@ -42,7 +42,7 @@ export function BlockedPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.blocked")}
-        subtitle={t("blocked.subtitle", { count: items.length })}
+        subtitle={t("blocked.subtitleCount", { count: items.length })}
       />
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
         <div className="card p-4">

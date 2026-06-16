@@ -81,7 +81,7 @@ export function AdvicePage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.advice")}
-        subtitle={t("advice.subtitle", { count: posts.length })}
+        subtitle={t("advice.subtitleCount", { count: posts.length })}
         actions={
           <button
             className="btn-primary text-[12.5px]"
