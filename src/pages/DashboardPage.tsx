@@ -71,7 +71,9 @@ export function DashboardPage() {
       try {
         const [s, b, u] = await Promise.all([
           dashboardApi.stats(),
-          leadsApi.board({ per_column: 5 }),
+          // LeadsPage'dagi filter bilan moslashtirildi — telegram (So'rovlar)
+          // bu hisobga kirmaydi, lead va so'rov ikki alohida bo'lim.
+          leadsApi.board({ per_column: 5, source: "app,manual" }),
           usersApi.list({ page_size: 6 }),
         ]);
         setStats(s);
