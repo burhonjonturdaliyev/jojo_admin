@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Users,
   Baby,
@@ -10,6 +10,7 @@ import {
   Calendar,
   Download,
   ArrowRight,
+  Check,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { StatCard } from "../components/StatCard";
@@ -76,11 +77,27 @@ export function DashboardPage() {
   const [recentRequests, setRecentRequests] = useState<RecentRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Davr filteri — chart va backend stats davriga ta'sir qiladi.
+  const [period, setPeriod] = useState<number>(7);
+  const [periodOpen, setPeriodOpen] = useState(false);
+  const periodRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
+    if (!periodOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (!periodRef.current?.contains(e.target as Node)) setPeriodOpen(false);
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [periodOpen]);
+
+  useEffect(() => {
+    let cancelled = false;
     (async () => {
+      setLoading(true);
       try {
         const [s, b, parents, children] = await Promise.all([
-          dashboardApi.stats(),
+          dashboardApi.stats({ period }),
           // LeadsPage'dagi filter bilan moslashtirildi — telegram (So'rovlar)
           // bu hisobga kirmaydi, lead va so'rov ikki alohida bo'lim.
           leadsApi.board({ per_column: 5, source: "app,manual" }),
@@ -90,6 +107,7 @@ export function DashboardPage() {
           usersApi.list({ role: "parent", page_size: 6 }),
           usersApi.list({ role: "child", page_size: 6 }),
         ]);
+        if (cancelled) return;
         setStats(s);
         setBoard(b);
         const merged = [...unwrapList(parents), ...unwrapList(children)]
@@ -107,10 +125,72 @@ export function DashboardPage() {
       } catch (e) {
         console.error("dashboard load failed", e);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [period]);
+
+  const exportCsv = () => {
+    if (!stats) return;
+    const lines: string[] = [];
+    const push = (k: string, v: string | number | null | undefined) =>
+      lines.push(`"${k}","${(v ?? "").toString().replace(/"/g, '""')}"`);
+
+    push(t("dashboard.export.generated"), new Date().toLocaleString(locale));
+    push(t("dashboard.export.period"), `${period} ${t("dashboard.export.days")}`);
+    lines.push("");
+
+    lines.push(`"${t("dashboard.export.kpi")}",""`);
+    push(t("dashboard.tile.parents"), stats.parents);
+    push(t("dashboard.tile.children"), stats.children);
+    push(t("dashboard.tile.activeToday"), stats.active_24h);
+    push(`${t("dashboard.tile.activeToday")} — ${t("dashboard.tile.activeSub.parents")}`, stats.parents_active_today);
+    push(`${t("dashboard.tile.activeToday")} — ${t("dashboard.tile.activeSub.children")}`, stats.children_active_today);
+    push(t("dashboard.tile.sos"), stats.sos_alerts);
+    push(t("dashboard.tile.products"), stats.products);
+    push(t("dashboard.tile.posts"), stats.blog_posts);
+    push(t("dashboard.tile.banners"), stats.banners);
+    push(t("dashboard.tile.leads"), totalLeads);
+    lines.push("");
+
+    if (board) {
+      lines.push(`"${t("dashboard.leadStatus.title")}",""`);
+      for (const s of board.statuses) {
+        push(statusLabel(s), board.counts[s] || 0);
+      }
+      lines.push("");
+    }
+
+    if (stats.signups_7d?.length) {
+      lines.push(`"${t("dashboard.signups.title")}",""`);
+      lines.push(`"${t("common.date")}","${t("dashboard.signups.unit").trim() || t("dashboard.tile.parents")}"`);
+      for (const row of stats.signups_7d) push(row.date, row.count);
+      lines.push("");
+    }
+
+    if (stats.revenue_7d?.length) {
+      lines.push(`"${t("dashboard.revenue.title")}",""`);
+      lines.push(`"${t("common.date")}","${t("common.sum")}"`);
+      for (const row of stats.revenue_7d) push(row.date, row.amount);
+      lines.push("");
+    }
+
+    // BOM + CRLF for Excel friendly opening
+    const csv = "﻿" + lines.join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const ts = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `dashboard-${ts}-${period}d.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const fmt = (n: number | undefined) =>
     (n ?? 0).toLocaleString(locale).replace(/,/g, " ");
@@ -125,11 +205,55 @@ export function DashboardPage() {
         subtitle={t("dashboard.subtitle")}
         actions={
           <>
-            <button className="btn-secondary text-[12.5px]">
-              <Calendar className="h-4 w-4" />{" "}
-              {new Date().toLocaleDateString(locale)}
-            </button>
-            <button className="btn-secondary text-[12.5px]">
+            <div className="relative" ref={periodRef}>
+              <button
+                onClick={() => setPeriodOpen((v) => !v)}
+                className="btn-secondary text-[12.5px]"
+              >
+                <Calendar className="h-4 w-4" />{" "}
+                {t(
+                  period === 7
+                    ? "dashboard.period.7d"
+                    : period === 30
+                    ? "dashboard.period.30d"
+                    : period === 90
+                    ? "dashboard.period.90d"
+                    : "dashboard.period.custom",
+                  { n: period },
+                )}
+              </button>
+              {periodOpen && (
+                <div className="absolute right-0 top-full mt-1 z-20 min-w-[160px] rounded-lg border border-line bg-bg shadow-lg overflow-hidden">
+                  {([
+                    { v: 7, k: "dashboard.period.7d" },
+                    { v: 30, k: "dashboard.period.30d" },
+                    { v: 90, k: "dashboard.period.90d" },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.v}
+                      onClick={() => {
+                        setPeriod(opt.v);
+                        setPeriodOpen(false);
+                      }}
+                      className={
+                        "w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-[12.5px] hover:bg-bg-hover " +
+                        (period === opt.v
+                          ? "bg-primary/5 text-primary"
+                          : "text-text-primary")
+                      }
+                    >
+                      {t(opt.k)}
+                      {period === opt.v && <Check className="h-3.5 w-3.5" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={exportCsv}
+              disabled={!stats}
+              className="btn-secondary text-[12.5px] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Download className="h-4 w-4" /> {t("common.export")}
             </button>
           </>
@@ -216,7 +340,7 @@ export function DashboardPage() {
         {/* 7-day signups bar chart + revenue */}
         <div className="mt-5 grid grid-cols-2 gap-4">
           <ChartCard
-            title={t("dashboard.signups.title")}
+            title={t("dashboard.signups.title", { n: period })}
             subtitle={t("dashboard.signups.sub")}
             data={(stats?.signups_7d ?? []).map((d) => ({
               label: new Date(d.date).toLocaleDateString(locale, {
@@ -229,7 +353,7 @@ export function DashboardPage() {
             suffix={t("dashboard.signups.unit")}
           />
           <ChartCard
-            title={t("dashboard.revenue.title")}
+            title={t("dashboard.revenue.title", { n: period })}
             subtitle={t("dashboard.revenue.sub")}
             data={(stats?.revenue_7d ?? []).map((d) => ({
               label: new Date(d.date).toLocaleDateString(locale, {

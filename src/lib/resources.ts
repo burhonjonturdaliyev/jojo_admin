@@ -628,8 +628,11 @@ export interface AdminDashboardStats {
   blog_posts: number;
   banners: number;
   sos_alerts: number;
+  // Tarixiy nom — backend filter `period` qatorida nechta kun bo'lsa shu
+  // qator kelashi mumkin. Frontend'da uzunlikni o'zi tekshiradi.
   signups_7d?: Array<{ date: string; count: number }>;
   revenue_7d?: Array<{ date: string; amount: number }>;
+  period_days?: number;
   // So'rovlar (Requests) bo'limidan so'nggi murojaatlar — Bosh sahifadagi
   // "So'nggi murojaatlar" kartochkasi shu qatordan o'qiydi (kanban emas).
   recent_requests?: Array<{
@@ -646,7 +649,10 @@ export interface AdminDashboardStats {
 }
 
 export const dashboardApi = {
-  stats: () => api<AdminDashboardStats>("/admin/dashboard/stats/"),
+  stats: (params?: { period?: number }) =>
+    api<AdminDashboardStats>("/admin/dashboard/stats/", {
+      query: params as Record<string, number>,
+    }),
 };
 
 // ============================================================================
