@@ -3,6 +3,7 @@ import { Plus, FolderTree, Pencil, Trash2, Package, BookOpen } from "lucide-reac
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
 import { MultilangInput, type LangValue } from "../components/MultilangInput";
+import { useT } from "../lib/i18n";
 import {
   storeCategoriesApi,
   blogCategoriesApi,
@@ -26,6 +27,7 @@ interface CategoryDraft {
 }
 
 export function CategoriesPage() {
+  const { t } = useT();
   const [tab, setTab] = useState<Tab>("store");
   const [storeCats, setStoreCats] = useState<AdminStoreCategory[]>([]);
   const [blogCats, setBlogCats] = useState<AdminBlogCategory[]>([]);
@@ -74,13 +76,13 @@ export function CategoriesPage() {
   };
 
   const remove = async (id: number) => {
-    if (!confirm("Kategoriyani o'chirasizmi?")) return;
+    if (!confirm(t("categories.confirmDelete", { name: "" }))) return;
     try {
       if (tab === "store") await storeCategoriesApi.remove(id);
       else await blogCategoriesApi.remove(id);
       void reload();
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     }
   };
 
@@ -111,8 +113,8 @@ export function CategoriesPage() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Kategoriyalar"
-        subtitle={`${items.length} ta kategoriya`}
+        title={t("categories.title")}
+        subtitle={t("categories.subtitle", { count: items.length })}
         actions={
           <button
             className="btn-primary text-[12.5px]"
@@ -129,7 +131,7 @@ export function CategoriesPage() {
               })
             }
           >
-            <Plus className="h-4 w-4" /> Yangi kategoriya
+            <Plus className="h-4 w-4" /> {t("categories.newButton")}
           </button>
         }
       />
@@ -144,7 +146,7 @@ export function CategoriesPage() {
                 : "text-text-secondary hover:bg-bg-hover")
             }
           >
-            <Package className="h-4 w-4" /> Do'kon
+            <Package className="h-4 w-4" /> {t("categories.tab.store")}
           </button>
           <button
             onClick={() => setTab("blog")}
@@ -155,7 +157,7 @@ export function CategoriesPage() {
                 : "text-text-secondary hover:bg-bg-hover")
             }
           >
-            <BookOpen className="h-4 w-4" /> Maslahatlar
+            <BookOpen className="h-4 w-4" /> {t("categories.tab.blog")}
           </button>
         </div>
 
@@ -164,19 +166,19 @@ export function CategoriesPage() {
             <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
                 <th className="px-4 py-3 w-16">№</th>
-                <th className="px-4 py-3">Nomi</th>
-                <th className="px-4 py-3">Slug</th>
-                {tab === "store" && <th className="px-4 py-3">Belgi</th>}
-                <th className="px-4 py-3 w-24">Tartib</th>
-                <th className="px-4 py-3 w-24">Holat</th>
-                <th className="px-4 py-3 w-28 text-right">Amal</th>
+                <th className="px-4 py-3">{t("categories.col.name")}</th>
+                <th className="px-4 py-3">{t("categories.col.slug")}</th>
+                {tab === "store" && <th className="px-4 py-3">{t("categories.col.icon")}</th>}
+                <th className="px-4 py-3 w-24">{t("categories.col.order")}</th>
+                <th className="px-4 py-3 w-24">{t("categories.col.status")}</th>
+                <th className="px-4 py-3 w-28 text-right">{t("common.actions")}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
-                    Yuklanmoqda...
+                    {t("common.loading")}
                   </td>
                 </tr>
               )}
@@ -184,7 +186,7 @@ export function CategoriesPage() {
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center text-text-muted">
                     <FolderTree className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                    Kategoriyalar yo'q
+                    {t("categories.empty")}
                   </td>
                 </tr>
               )}
@@ -214,7 +216,7 @@ export function CategoriesPage() {
                           : "bg-text-muted/15 text-text-muted")
                       }
                     >
-                      {c.is_active ? "Faol" : "Nofaol"}
+                      {c.is_active ? t("users.filter.active") : t("common.inactive")}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -261,16 +263,17 @@ function CategoryEditor({
   onClose: () => void;
   onSave: (d: CategoryDraft) => void;
 }) {
+  const { t } = useT();
   const [d, setD] = useState(draft);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-md rounded-2xl bg-bg p-5">
         <h3 className="text-[16px] font-semibold text-text-primary mb-4">
-          {draft.id ? "Kategoriya tahrirlash" : "Yangi kategoriya"}
+          {draft.id ? t("categories.editTitle") : t("categories.newTitle")}
         </h3>
         <div className="space-y-3">
           <MultilangInput
-            label="Nomi"
+            label={t("categories.col.name")}
             value={{
               uz: d.name || "",
               uz_cyrl: d.name_uz_cyrl || "",
@@ -332,19 +335,19 @@ function CategoryEditor({
               checked={d.is_active ?? true}
               onChange={(e) => setD({ ...d, is_active: e.target.checked })}
             />
-            Faol
+            {t("form.activeChecked")}
           </label>
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <button className="btn-secondary text-[12.5px]" onClick={onClose}>
-            Bekor
+            {t("form.cancel")}
           </button>
           <button
             className="btn-primary text-[12.5px]"
             onClick={() => onSave(d)}
             disabled={!d.name.trim()}
           >
-            Saqlash
+            {t("form.save")}
           </button>
         </div>
       </div>
