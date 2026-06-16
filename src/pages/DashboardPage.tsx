@@ -10,7 +10,6 @@ import {
   Calendar,
   Download,
   ArrowRight,
-  Clock,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { StatCard } from "../components/StatCard";
@@ -29,38 +28,48 @@ import {
 
 type RecentRequest = NonNullable<AdminDashboardStats["recent_requests"]>[number];
 
-function formatRelativeTime(iso: string): string {
-  // "5 daqiqa oldin", "2 soat oldin", "Kecha 14:30" yoki "5-iyun 14:30" ko'rinishida —
-  // kartochkada qisqa ko'rinish bo'lishi uchun.
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const sec = Math.floor(diffMs / 1000);
-  if (sec < 60) return "hozir";
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min} daq oldin`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr} soat oldin`;
-  const days = Math.floor(hr / 24);
-  if (days < 7) return `${days} kun oldin`;
-  return d.toLocaleDateString("uz-UZ", { day: "numeric", month: "short" });
-}
+const STATUS_COLOR: Record<string, string> = {
+  new: "#3B82F6",
+  in_progress: "#F59E0B",
+  waiting: "#A855F7",
+  resolved: "#10B981",
+  closed: "#6B7280",
+  blocked: "#EF4444",
+};
 
-const STATUS_META: Record<
-  string,
-  { label: string; color: string }
-> = {
-  new: { label: "Yangi", color: "#3B82F6" },
-  in_progress: { label: "Jarayonda", color: "#F59E0B" },
-  waiting: { label: "Kutilmoqda", color: "#A855F7" },
-  resolved: { label: "Hal qilingan", color: "#10B981" },
-  closed: { label: "Yopilgan", color: "#6B7280" },
-  blocked: { label: "Bloklangan", color: "#EF4444" },
+const LOCALE_FOR_LANG: Record<string, string> = {
+  uz: "uz-UZ",
+  uz_cyrl: "uz-Cyrl-UZ",
+  ru: "ru-RU",
+  en: "en-US",
 };
 
 export function DashboardPage() {
-  const { t } = useT();
+  const { t, lang } = useT();
+  const locale = LOCALE_FOR_LANG[lang] || "uz-UZ";
+
+  const statusLabel = (s: string): string => {
+    const key = `leadStatus.${s}`;
+    const v = t(key);
+    return v === key ? s : v;
+  };
+
+  const formatRelativeTime = (iso: string): string => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const sec = Math.floor(diffMs / 1000);
+    if (sec < 60) return t("dashboard.rel.now");
+    const min = Math.floor(sec / 60);
+    if (min < 60) return t("dashboard.rel.minAgo", { n: min });
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return t("dashboard.rel.hourAgo", { n: hr });
+    const days = Math.floor(hr / 24);
+    if (days < 7) return t("dashboard.rel.dayAgo", { n: days });
+    return d.toLocaleDateString(locale, { day: "numeric", month: "short" });
+  };
+
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [board, setBoard] = useState<LeadBoardResponse | null>(null);
   const [recentUsers, setRecentUsers] = useState<AdminUserRow[]>([]);
@@ -104,7 +113,7 @@ export function DashboardPage() {
   }, []);
 
   const fmt = (n: number | undefined) =>
-    (n ?? 0).toLocaleString("uz-UZ").replace(/,/g, " ");
+    (n ?? 0).toLocaleString(locale).replace(/,/g, " ");
 
   const totalLeads =
     board ? Object.values(board.counts).reduce((a, b) => a + b, 0) : 0;
@@ -118,7 +127,7 @@ export function DashboardPage() {
           <>
             <button className="btn-secondary text-[12.5px]">
               <Calendar className="h-4 w-4" />{" "}
-              {new Date().toLocaleDateString("uz-UZ")}
+              {new Date().toLocaleDateString(locale)}
             </button>
             <button className="btn-secondary text-[12.5px]">
               <Download className="h-4 w-4" /> {t("common.export")}
@@ -131,7 +140,7 @@ export function DashboardPage() {
         {/* Stat tiles */}
         <div className="grid grid-cols-4 gap-4">
           <StatCard
-            label="Ota-onalar"
+            label={t("dashboard.tile.parents")}
             value={fmt(stats?.parents)}
             delta=""
             icon={Users}
@@ -139,7 +148,7 @@ export function DashboardPage() {
             iconBg="rgba(59,130,246,0.15)"
           />
           <StatCard
-            label="Farzandlar"
+            label={t("dashboard.tile.children")}
             value={fmt(stats?.children)}
             delta=""
             icon={Baby}
@@ -147,7 +156,7 @@ export function DashboardPage() {
             iconBg="rgba(139,92,246,0.15)"
           />
           <StatCard
-            label="Bugun faol"
+            label={t("dashboard.tile.activeToday")}
             value={fmt(stats?.active_24h)}
             delta=""
             icon={PhoneCall}
@@ -158,16 +167,16 @@ export function DashboardPage() {
                 <span className="font-semibold text-[#3B82F6]">
                   {fmt(stats?.parents_active_today)}
                 </span>{" "}
-                ota-ona ·{" "}
+                {t("dashboard.tile.activeSub.parents")} ·{" "}
                 <span className="font-semibold text-[#8B5CF6]">
                   {fmt(stats?.children_active_today)}
                 </span>{" "}
-                farzand
+                {t("dashboard.tile.activeSub.children")}
               </span>
             }
           />
           <StatCard
-            label="SOS bildirishnomalar"
+            label={t("dashboard.tile.sos")}
             value={fmt(stats?.sos_alerts)}
             delta=""
             icon={AlertTriangle}
@@ -178,25 +187,25 @@ export function DashboardPage() {
 
         <div className="mt-4 grid grid-cols-4 gap-4">
           <SmallStat
-            label="Mahsulotlar"
+            label={t("dashboard.tile.products")}
             value={fmt(stats?.products)}
             icon={Package}
             color="#10B981"
           />
           <SmallStat
-            label="Maqolalar"
+            label={t("dashboard.tile.posts")}
             value={fmt(stats?.blog_posts)}
             icon={BookOpen}
             color="#0EA5E9"
           />
           <SmallStat
-            label="Bannerlar"
+            label={t("dashboard.tile.banners")}
             value={fmt(stats?.banners)}
             icon={ImageIcon}
             color="#EC4899"
           />
           <SmallStat
-            label="Leadlar"
+            label={t("dashboard.tile.leads")}
             value={fmt(totalLeads)}
             icon={PhoneCall}
             color="#6366F1"
@@ -207,23 +216,23 @@ export function DashboardPage() {
         {/* 7-day signups bar chart + revenue */}
         <div className="mt-5 grid grid-cols-2 gap-4">
           <ChartCard
-            title="7 kunlik ro'yxatdan o'tish"
-            subtitle="Yangi ota-onalar / kun"
+            title={t("dashboard.signups.title")}
+            subtitle={t("dashboard.signups.sub")}
             data={(stats?.signups_7d ?? []).map((d) => ({
-              label: new Date(d.date).toLocaleDateString("uz-UZ", {
+              label: new Date(d.date).toLocaleDateString(locale, {
                 day: "2-digit",
                 month: "2-digit",
               }),
               value: d.count,
             }))}
             color="#3B82F6"
-            suffix=" ta"
+            suffix={t("dashboard.signups.unit")}
           />
           <ChartCard
-            title="7 kunlik daromad"
-            subtitle="Premium to'lovlar / kun"
+            title={t("dashboard.revenue.title")}
+            subtitle={t("dashboard.revenue.sub")}
             data={(stats?.revenue_7d ?? []).map((d) => ({
-              label: new Date(d.date).toLocaleDateString("uz-UZ", {
+              label: new Date(d.date).toLocaleDateString(locale, {
                 day: "2-digit",
                 month: "2-digit",
               }),
@@ -235,7 +244,7 @@ export function DashboardPage() {
                 ? `${(v / 1000).toFixed(0)}k`
                 : v.toString()
             }
-            suffix=" so'm"
+            suffix={` ${t("common.sum")}`}
           />
         </div>
 
@@ -245,23 +254,23 @@ export function DashboardPage() {
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <h3 className="text-[15px] font-semibold text-text-primary">
-                  Lead statuslari
+                  {t("dashboard.leadStatus.title")}
                 </h3>
                 <p className="text-[12px] text-text-secondary">
-                  Joriy taqsimot
+                  {t("dashboard.leadStatus.sub")}
                 </p>
               </div>
               <Link
                 to="/leads"
                 className="text-[11.5px] text-primary hover:underline inline-flex items-center gap-0.5"
               >
-                Ko'rish <ArrowRight className="h-3 w-3" />
+                {t("dashboard.viewLink")} <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
             <div className="space-y-3">
               {board ? (
                 board.statuses.map((s) => {
-                  const meta = STATUS_META[s] || { label: s, color: "#9CA3AF" };
+                  const color = STATUS_COLOR[s] || "#9CA3AF";
                   const count = board.counts[s] || 0;
                   const pct = totalLeads
                     ? Math.round((count / totalLeads) * 100)
@@ -269,7 +278,7 @@ export function DashboardPage() {
                   return (
                     <div key={s}>
                       <div className="mb-1 flex items-center justify-between text-[12.5px]">
-                        <span className="text-text-secondary">{meta.label}</span>
+                        <span className="text-text-secondary">{statusLabel(s)}</span>
                         <span className="font-medium text-text-primary">
                           {count}{" "}
                           <span className="text-text-muted text-[11px]">
@@ -282,7 +291,7 @@ export function DashboardPage() {
                           className="h-full rounded-full transition-all"
                           style={{
                             width: `${pct}%`,
-                            backgroundColor: meta.color,
+                            backgroundColor: color,
                           }}
                         />
                       </div>
@@ -290,7 +299,7 @@ export function DashboardPage() {
                   );
                 })
               ) : (
-                <div className="text-[12px] text-text-muted">Yuklanmoqda...</div>
+                <div className="text-[12px] text-text-muted">{t("common.loading")}</div>
               )}
             </div>
           </div>
@@ -299,30 +308,28 @@ export function DashboardPage() {
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <h3 className="text-[15px] font-semibold text-text-primary">
-                  So'nggi murojaatlar
+                  {t("dashboard.recent.title")}
                 </h3>
                 <p className="text-[12px] text-text-secondary">
-                  So'rovlardan oxirgi 6 ta
+                  {t("dashboard.recent.sub")}
                 </p>
               </div>
               <Link
                 to="/requests"
                 className="text-[11.5px] text-primary hover:underline inline-flex items-center gap-0.5"
               >
-                Hammasi <ArrowRight className="h-3 w-3" />
+                {t("dashboard.allLink")} <ArrowRight className="h-3 w-3" />
               </Link>
             </div>
             <div className="space-y-2">
               {recentRequests.length === 0 && (
                 <div className="text-center py-6 text-[12px] text-text-muted">
-                  {loading ? "Yuklanmoqda..." : "So'rov yo'q"}
+                  {loading ? t("common.loading") : t("dashboard.recent.empty")}
                 </div>
               )}
               {recentRequests.map((r) => {
-                const meta = STATUS_META[r.status] || {
-                  label: r.status,
-                  color: "#9CA3AF",
-                };
+                const color = STATUS_COLOR[r.status] || "#9CA3AF";
+                const label = statusLabel(r.status);
                 const userName = r.user?.name || "?";
                 const userPhone = r.user?.phone || "";
                 return (
@@ -345,11 +352,11 @@ export function DashboardPage() {
                       <span
                         className="rounded-full px-2 py-0.5 text-[10.5px] font-medium"
                         style={{
-                          backgroundColor: meta.color + "20",
-                          color: meta.color,
+                          backgroundColor: color + "20",
+                          color: color,
                         }}
                       >
-                        {meta.label}
+                        {label}
                       </span>
                       <span className="text-[10.5px] text-text-muted whitespace-nowrap">
                         {formatRelativeTime(r.last_message_at)}
@@ -427,7 +434,7 @@ export function DashboardPage() {
                       </div>
                     )}
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
                     {u.is_active ? (
                       <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 shadow-sm shadow-emerald-500/20">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -439,16 +446,13 @@ export function DashboardPage() {
                         Faol emas
                       </span>
                     )}
-                    <div className="flex items-center gap-1 text-[10.5px] leading-tight text-text-muted">
-                      <Clock className="h-2.5 w-2.5" strokeWidth={2.4} />
-                      <div className="flex flex-col items-end">
-                        <span className="font-medium tabular-nums text-text-secondary">
-                          {joinedTime}
-                        </span>
-                        <span className="tabular-nums text-text-muted">
-                          {joinedDate}
-                        </span>
-                      </div>
+                    <div className="flex flex-col items-end leading-none">
+                      <span className="text-[11px] font-semibold tabular-nums text-text-secondary">
+                        {joinedTime}
+                      </span>
+                      <span className="mt-1 text-[10px] tabular-nums text-text-muted">
+                        {joinedDate}
+                      </span>
                     </div>
                   </div>
                 </div>
