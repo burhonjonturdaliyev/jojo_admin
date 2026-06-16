@@ -81,13 +81,13 @@ export function AdvicePage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.advice")}
-        subtitle={`${posts.length} ta maqola`}
+        subtitle={t("advice.subtitle", { count: posts.length })}
         actions={
           <button
             className="btn-primary text-[12.5px]"
             onClick={() => setEditing(emptyAdvice())}
           >
-            <Plus className="h-4 w-4" /> Yangi maqola
+            <Plus className="h-4 w-4" /> {t("advice.newButton")}
           </button>
         }
       />
@@ -100,7 +100,7 @@ export function AdvicePage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && reload()}
-                placeholder="Qidirish va Enter..."
+                placeholder={t("advice.searchPlaceholder")}
                 className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
               />
             </div>
@@ -109,7 +109,7 @@ export function AdvicePage() {
               onChange={(e) => setCategoryFilter(e.target.value || null)}
               className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
             >
-              <option value="">Barcha kategoriyalar</option>
+              <option value="">{t("advice.allCategories")}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -122,13 +122,13 @@ export function AdvicePage() {
         <div className="mt-4 grid gap-3">
           {loading && (
             <div className="card p-12 text-center text-text-muted">
-              Yuklanmoqda...
+              {t("common.loading")}
             </div>
           )}
           {!loading && posts.length === 0 && (
             <div className="card p-12 text-center text-text-muted">
               <BookOpen className="mx-auto mb-2 h-8 w-8 opacity-40" />
-              Maqolalar yo'q
+              {t("advice.empty")}
             </div>
           )}
           {posts.map((p) => {
@@ -169,7 +169,7 @@ export function AdvicePage() {
                     {previewExcerpt || previewBody || "—"}
                   </p>
                   <div className="mt-2 flex items-center gap-2 text-[11px] text-text-muted">
-                    <span>{p.readMinutes} daqiqa</span>
+                    <span>{t("advice.readMinutes", { n: p.readMinutes ?? 0 })}</span>
                     {p.videoUrl && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-red-500">
                         ▶ YouTube
@@ -177,7 +177,7 @@ export function AdvicePage() {
                     )}
                     {p.isFeatured && (
                       <span className="rounded-full bg-yellow-500/15 px-2 py-0.5 text-yellow-600">
-                        Tavsiya
+                        {t("advice.featured")}
                       </span>
                     )}
                     <span
@@ -188,7 +188,7 @@ export function AdvicePage() {
                           : "bg-text-muted/15 text-text-muted")
                       }
                     >
-                      {p.isActive ? "Faol" : "Nofaol"}
+                      {p.isActive ? t("users.filter.active") : t("common.inactive")}
                     </span>
                   </div>
                 </div>

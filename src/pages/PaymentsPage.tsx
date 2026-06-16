@@ -32,16 +32,19 @@ export function PaymentsPage() {
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.payments")}
-        subtitle={`${items.length} ta to'lov · jami ${totalAmount.toLocaleString("uz-UZ").replace(/,/g, " ")} so'm`}
+        subtitle={t("payments.subtitle", {
+          count: items.length,
+          total: totalAmount.toLocaleString("uz-UZ").replace(/,/g, " "),
+        })}
       />
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
         <div className="card p-4">
           <div className="flex gap-2">
             {[
-              { v: null, label: "Hammasi" },
-              { v: "succeeded", label: "Muvaffaqiyatli" },
-              { v: "pending", label: "Kutilmoqda" },
-              { v: "failed", label: "Bajarilmagan" },
+              { v: null, label: t("payments.filter.all") },
+              { v: "succeeded", label: t("payments.filter.succeeded") },
+              { v: "pending", label: t("payments.filter.pending") },
+              { v: "failed", label: t("payments.filter.failed") },
             ].map((f) => (
               <button
                 key={f.label}
@@ -63,19 +66,19 @@ export function PaymentsPage() {
             <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
                 <th className="px-4 py-3">ID</th>
-                <th className="px-4 py-3">Foydalanuvchi</th>
-                <th className="px-4 py-3">Plan</th>
-                <th className="px-4 py-3">Summasi</th>
-                <th className="px-4 py-3">Holati</th>
-                <th className="px-4 py-3">Usul</th>
-                <th className="px-4 py-3">Sana</th>
+                <th className="px-4 py-3">{t("payments.col.user")}</th>
+                <th className="px-4 py-3">{t("payments.col.plan")}</th>
+                <th className="px-4 py-3">{t("payments.col.amount")}</th>
+                <th className="px-4 py-3">{t("payments.col.status")}</th>
+                <th className="px-4 py-3">{t("payments.col.method")}</th>
+                <th className="px-4 py-3">{t("payments.col.date")}</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
                   <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
-                    Yuklanmoqda...
+                    {t("common.loading")}
                   </td>
                 </tr>
               )}
@@ -83,7 +86,7 @@ export function PaymentsPage() {
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center text-text-muted">
                     <Wallet className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                    To'lovlar yo'q
+                    {t("payments.empty")}
                   </td>
                 </tr>
               )}
@@ -99,7 +102,7 @@ export function PaymentsPage() {
                     {p.plan?.name || "—"}
                   </td>
                   <td className="px-4 py-3 font-semibold text-text-primary">
-                    {(p.amount_uzs ?? 0).toLocaleString("uz-UZ").replace(/,/g, " ")} so'm
+                    {(p.amount_uzs ?? 0).toLocaleString("uz-UZ").replace(/,/g, " ")} {t("common.sum")}
                   </td>
                   <td className="px-4 py-3">
                     <span
