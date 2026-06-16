@@ -10,6 +10,7 @@ import {
   Calendar,
   Download,
   ArrowRight,
+  Clock,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { StatCard } from "../components/StatCard";
@@ -387,10 +388,19 @@ export function DashboardPage() {
             )}
             {recentUsers.map((u) => {
               const isChild = u.role === "child";
+              const joined = new Date(u.date_joined);
+              const joinedFull = joined.toLocaleString("uz-UZ", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              });
               return (
                 <div
                   key={`${u.role}-${u.id}`}
                   className="flex items-center gap-3 rounded-lg border border-line p-3"
+                  title={`Qo'shilgan: ${joinedFull}\nTelefon: ${u.phone || "—"}`}
                 >
                   <Avatar name={u.first_name || u.phone || "?"} size={36} />
                   <div className="min-w-0 flex-1">
@@ -409,9 +419,15 @@ export function DashboardPage() {
                         {isChild ? "Farzand" : "Ota-ona"}
                       </span>
                     </div>
-                    <div className="text-[11px] text-text-muted font-mono truncate">
-                      {u.phone || "—"}
+                    <div className="mt-0.5 flex items-center gap-1 text-[11px] text-text-muted truncate">
+                      <Clock className="h-3 w-3 shrink-0" strokeWidth={2.2} />
+                      <span>{joinedFull}</span>
                     </div>
+                    {u.phone && (
+                      <div className="text-[10.5px] text-text-muted font-mono truncate">
+                        {u.phone}
+                      </div>
+                    )}
                   </div>
                   {u.is_active ? (
                     <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
