@@ -389,10 +389,12 @@ export function DashboardPage() {
             {recentUsers.map((u) => {
               const isChild = u.role === "child";
               const joined = new Date(u.date_joined);
-              const joinedFull = joined.toLocaleString("uz-UZ", {
+              const joinedDate = joined.toLocaleDateString("uz-UZ", {
                 day: "2-digit",
                 month: "2-digit",
                 year: "numeric",
+              });
+              const joinedTime = joined.toLocaleTimeString("uz-UZ", {
                 hour: "2-digit",
                 minute: "2-digit",
               });
@@ -400,7 +402,7 @@ export function DashboardPage() {
                 <div
                   key={`${u.role}-${u.id}`}
                   className="flex items-center gap-3 rounded-lg border border-line p-3"
-                  title={`Qo'shilgan: ${joinedFull}\nTelefon: ${u.phone || "—"}`}
+                  title={`Qo'shilgan: ${joinedDate} ${joinedTime}\nTelefon: ${u.phone || "—"}`}
                 >
                   <Avatar name={u.first_name || u.phone || "?"} size={36} />
                   <div className="min-w-0 flex-1">
@@ -419,25 +421,36 @@ export function DashboardPage() {
                         {isChild ? "Farzand" : "Ota-ona"}
                       </span>
                     </div>
-                    <div className="mt-0.5 flex items-center gap-1 text-[11px] text-text-muted truncate">
-                      <Clock className="h-3 w-3 shrink-0" strokeWidth={2.2} />
-                      <span>{joinedFull}</span>
-                    </div>
                     {u.phone && (
-                      <div className="text-[10.5px] text-text-muted font-mono truncate">
+                      <div className="mt-0.5 text-[11px] text-text-muted font-mono truncate">
                         {u.phone}
                       </div>
                     )}
                   </div>
-                  {u.is_active ? (
-                    <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
-                      Faol
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-text-muted/15 px-1.5 py-0.5 text-[10px] font-medium text-text-muted">
-                      Faol emas
-                    </span>
-                  )}
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    {u.is_active ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 shadow-sm shadow-emerald-500/20">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Faol
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-text-muted/15 px-2 py-0.5 text-[10px] font-semibold text-text-muted">
+                        <span className="h-1.5 w-1.5 rounded-full bg-text-muted" />
+                        Faol emas
+                      </span>
+                    )}
+                    <div className="flex items-center gap-1 text-[10.5px] leading-tight text-text-muted">
+                      <Clock className="h-2.5 w-2.5" strokeWidth={2.4} />
+                      <div className="flex flex-col items-end">
+                        <span className="font-medium tabular-nums text-text-secondary">
+                          {joinedTime}
+                        </span>
+                        <span className="tabular-nums text-text-muted">
+                          {joinedDate}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               );
             })}
