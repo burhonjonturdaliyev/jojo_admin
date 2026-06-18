@@ -212,7 +212,6 @@ export function UsersPage() {
                               : "Muddatsiz"}
                           </div>
                         )}
-                        <div className="text-[11px] text-text-muted">#{u.id}</div>
                       </div>
                     </div>
                   </td>
