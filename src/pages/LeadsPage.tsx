@@ -108,37 +108,10 @@ function fmtDateTime(iso: string | null | undefined): string {
   });
 }
 
-function fmtRelativeTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  const now = new Date();
-  const diff = Math.floor((now.getTime() - d.getTime()) / 1000);
-  if (diff < 60) return "Hozir";
-  if (diff < 3600) return `${Math.floor(diff / 60)} daq oldin`;
-  if (diff < 86400) {
-    return d.toLocaleTimeString("uz-UZ", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-  if (diff < 172800) return "Kecha";
-  if (diff < 86400 * 7) return `${Math.floor(diff / 86400)} kun oldin`;
-  return fmtDate(iso);
-}
-
-export function LeadsPage() {
-  const { t } = useT();
-
-  // Status'lar i18n bilan — har safar lang o'zgarganda yangi label'lar olinadi.
-  const statusLabel = (s: LeadStatus): string => t(`leadStatus.${s}`);
-
-  const columnsList: ColumnDef[] = COLUMNS.map((c) => ({
-    ...c,
-    label: statusLabel(c.status),
-  }));
-
-  const fmtRelativeI18n = (iso: string | null | undefined): string => {
+function makeRelativeFormatter(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+) {
+  return function fmtRelativeTime(iso: string | null | undefined): string {
     if (!iso) return "—";
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "—";
@@ -156,8 +129,13 @@ export function LeadsPage() {
     if (diff < 86400 * 7) return t("time.dayAgo", { n: Math.floor(diff / 86400) });
     return fmtDate(iso);
   };
-  void fmtRelativeI18n; // qachon kerak bo'lsa kartochkalarda ishlatish uchun
-  void columnsList; // pastdagi kolonkalarda ishlatamiz
+}
+
+export function LeadsPage() {
+  const { t } = useT();
+
+  // Status'lar i18n bilan — har safar lang o'zgarganda yangi label'lar olinadi.
+  const statusLabel = (s: LeadStatus): string => t(`leadStatus.${s}`);
 
   const [board, setBoard] = useState<LeadBoardResponse | null>(null);
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
@@ -289,32 +267,32 @@ export function LeadsPage() {
       <div className="px-7 pt-5">
         <div className="grid grid-cols-5 gap-3">
           <StatTile
-            title="Jami foydalanuvchilar"
+            title={t("lead.totalUsers")}
             value={fmtNumber(stats?.parents)}
             delta={stats?.parents_delta_pct}
             icon={Users}
             color="#3B82F6"
           />
           <StatTile
-            title="Bolasi ulangan"
+            title={t("lead.childConnected")}
             value={fmtNumber(stats?.children_connected)}
             icon={UserCheck}
             color="#10B981"
           />
           <StatTile
-            title="Premium foydalanuvchilar"
+            title={t("lead.premiumUsers")}
             value={fmtNumber(stats?.premium_users)}
             icon={Crown}
             color="#8B5CF6"
           />
           <StatTile
-            title="Premium daromad"
+            title={t("lead.premiumRevenue")}
             value={fmtNumber(stats?.premium_revenue)}
             icon={Wallet}
             color="#F59E0B"
           />
           <StatTile
-            title="Bloklangan foydalanuvchilar"
+            title={t("lead.blockedUsers")}
             value={fmtNumber(stats?.blocked_users)}
             icon={Ban}
             color="#EF4444"
@@ -326,10 +304,7 @@ export function LeadsPage() {
       <div className="px-7 pt-4 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="text-[13px] text-text-secondary">
-            <span className="font-semibold text-text-primary">
-              {totalLeads}
-            </span>{" "}
-            ta lead
+            {t("lead.countSuffix", { n: totalLeads })}
           </div>
           <button
             onClick={() => {
@@ -359,7 +334,7 @@ export function LeadsPage() {
             void reload();
           }}
           className="icon-btn h-8 w-8"
-          title="Yangilash + qayta ulanish"
+          title={t("lead.refreshReconnect")}
         >
           <RefreshCw className="h-4 w-4" />
         </button>
@@ -369,7 +344,7 @@ export function LeadsPage() {
       <div className="flex-1 overflow-x-auto overflow-y-hidden scrollbar-thin px-7 pb-5">
         {loading && !board ? (
           <div className="card p-12 text-center text-text-muted">
-            Yuklanmoqda...
+            {t("common.loading")}
           </div>
         ) : (
           <div className="flex gap-3 h-full pb-2">
@@ -422,7 +397,7 @@ export function LeadsPage() {
                   <div className="flex-1 overflow-y-auto scrollbar-thin p-2 space-y-2">
                     {items.length === 0 && (
                       <div className="text-center py-6 text-[11.5px] text-text-muted">
-                        Bo'sh
+                        {t("lead.emptyColumn")}
                       </div>
                     )}
                     {items.map((lead) => (
@@ -537,30 +512,33 @@ function LeadCard({
   onDragEnd: () => void;
   onClick: () => void;
 }) {
+  const { t } = useT();
+  const fmtRelativeTime = useMemo(() => makeRelativeFormatter(t), [t]);
   const p = lead.parent;
   const childOK = !!p?.child_connected;
   const premiumActive = !!p?.premium_active;
   const premiumLabel = premiumActive
     ? p?.premium_days_left != null
-      ? `Premium tugashi: ${p.premium_days_left} kun`
-      : "Premium: Faol"
-    : "Premium: Sotib olmagan";
+      ? t("lead.premiumEndsIn", { n: p.premium_days_left })
+      : t("lead.premiumActive")
+    : t("lead.premiumNotPurchased");
 
   const contextLine = useMemo(() => {
     switch (lead.status) {
       case "in_progress":
-        return `Boshlangan: ${fmtRelativeTime(lead.created_at)}`;
+        return t("lead.startedLabel", { when: fmtRelativeTime(lead.created_at) });
       case "waiting":
-        return `Kutilmoqda: ${fmtRelativeTime(lead.last_contact_at || lead.updated_at)}`;
+        return t("lead.waitingLabel", { when: fmtRelativeTime(lead.last_contact_at || lead.updated_at) });
       case "resolved":
-        return `Hal qilingan: ${fmtRelativeTime(lead.updated_at)}`;
+        return t("lead.resolvedLabel", { when: fmtRelativeTime(lead.updated_at) });
       case "closed":
-        return `Yopilgan: ${fmtDate(lead.closed_at || lead.updated_at)}`;
+        return t("lead.closedLabel", { when: fmtDate(lead.closed_at || lead.updated_at) });
       case "blocked":
-        return `Bloklangan: ${fmtDate(lead.updated_at)}`;
+        return t("lead.blockedLabel", { when: fmtDate(lead.updated_at) });
       default:
         return null;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lead]);
 
   return (
@@ -589,7 +567,7 @@ function LeadCard({
         )}
         <div className="min-w-0 flex-1">
           <div className="text-[12.5px] font-semibold text-text-primary truncate">
-            {p?.name || "Noma'lum"}
+            {p?.name || t("common.unknown")}
           </div>
           <div className="text-[11px] text-text-muted font-mono truncate">
             {p?.phone || ""}
@@ -600,7 +578,7 @@ function LeadCard({
             href={`tel:${p.phone}`}
             onClick={(e) => e.stopPropagation()}
             className="text-text-muted hover:text-primary"
-            title="Qo'ng'iroq"
+            title={t("lead.actionCall")}
           >
             <Phone className="h-3.5 w-3.5" />
           </a>
@@ -613,12 +591,12 @@ function LeadCard({
           (childOK ? "text-emerald-600" : "text-red-500")
         }
       >
-        {childOK ? "Bolasi ulangan" : "Bolasi ulanmagan"}
+        {childOK ? t("lead.childConnected") : t("lead.childNotConnected")}
       </div>
       <div className="text-[11.5px] text-text-secondary">{premiumLabel}</div>
       {lead.operator && (
         <div className="text-[11.5px] text-text-secondary">
-          Operator: {lead.operator.name}
+          {t("lead.operatorLabel", { name: lead.operator.name })}
         </div>
       )}
       {contextLine && (
@@ -670,21 +648,21 @@ function AddLeadModal({
   const submit = async () => {
     setError(null);
     if (!parentId) {
-      setError("Foydalanuvchi tanlang");
+      setError(t("lead.selectUser"));
       return;
     }
     setBusy(true);
     try {
       await leadsApi.create({
         parent_id: parentId,
-        title: title.trim() || "Foydalanuvchi murojaati",
+        title: title.trim() || t("lead.userTitle"),
         description: description.trim(),
         priority,
         status: initialStatus,
       });
       onCreated();
     } catch (e) {
-      setError((e as { message?: string }).message || "Xato");
+      setError((e as { message?: string }).message || t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -701,7 +679,7 @@ function AddLeadModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[15px] font-semibold text-text-primary">
-            Yangi lead — {statusLabel(initialStatus)}
+            {t("lead.newLeadWith", { status: statusLabel(initialStatus) })}
           </h3>
           <button onClick={onClose} className="icon-btn h-7 w-7">
             <X className="h-4 w-4" />
@@ -710,18 +688,18 @@ function AddLeadModal({
         <div className="space-y-3">
           <div>
             <div className="text-[11.5px] font-medium text-text-secondary mb-1">
-              Foydalanuvchi
+              {t("lead.user")}
             </div>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Telefon yoki ism..."
+              placeholder={t("lead.searchByPhoneOrName")}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             />
             <div className="mt-1.5 max-h-40 overflow-y-auto scrollbar-thin rounded-lg border border-line">
               {parents.length === 0 && (
                 <div className="p-3 text-[12px] text-text-muted text-center">
-                  Topilmadi
+                  {t("common.notFoundShort")}
                 </div>
               )}
               {parents.map((u) => (
@@ -746,13 +724,13 @@ function AddLeadModal({
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Mavzu"
+            placeholder={t("lead.subject")}
             className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
           />
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Tavsif"
+            placeholder={t("lead.description")}
             rows={3}
             className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
           />
@@ -761,9 +739,9 @@ function AddLeadModal({
             onChange={(e) => setPriority(e.target.value)}
             className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
           >
-            <option value="low">Past prioritet</option>
-            <option value="normal">Oddiy</option>
-            <option value="high">Yuqori prioritet</option>
+            <option value="low">{t("lead.priorityLow")}</option>
+            <option value="normal">{t("lead.priorityNormal")}</option>
+            <option value="high">{t("lead.priorityHigh")}</option>
           </select>
           {error && (
             <div className="rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
@@ -773,14 +751,14 @@ function AddLeadModal({
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <button className="btn-secondary text-[12.5px]" onClick={onClose}>
-            Bekor
+            {t("lead.actionCancel")}
           </button>
           <button
             className="btn-primary text-[12.5px]"
             onClick={submit}
             disabled={busy}
           >
-            {busy ? "Yaratilmoqda..." : "Yaratish"}
+            {busy ? t("lead.creating") : t("lead.actionCreate")}
           </button>
         </div>
       </div>
@@ -882,23 +860,23 @@ function LeadDetailPanel({
 
   const blockUser = async () => {
     if (!lead.parent) return;
-    if (!confirm(`${lead.parent.name} ni bloklaysizmi?`)) return;
+    if (!confirm(t("lead.confirmBlockUser", { name: lead.parent.name }))) return;
     try {
       await usersApi.toggleActive(lead.parent.id);
       await updateStatus("blocked");
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     }
   };
 
   const deleteLead = async () => {
-    if (!confirm("Bu murojaatni butunlay o'chirishni xohlaysizmi?")) return;
+    if (!confirm(t("lead.confirmDeleteLead"))) return;
     try {
       await leadsApi.remove(leadId);
       onChanged();
       onClose();
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     }
   };
 
@@ -958,10 +936,10 @@ function LeadDetailPanel({
                 <Phone className="h-3 w-3" /> {p?.phone}
               </a>
               <div className="text-[10.5px] text-text-muted mt-0.5">
-                Ro'yxatdan o'tgan: {fmtDateTime(p?.registered_at)}
+                {t("lead.registeredAt")}: {fmtDateTime(p?.registered_at)}
               </div>
               <div className="text-[10.5px] text-text-muted">
-                ID: #USR-{String(p?.id || 0).padStart(8, "0")}
+                {t("lead.idLabel", { id: String(p?.id || 0).padStart(8, "0") })}
               </div>
             </div>
           </div>
@@ -973,25 +951,25 @@ function LeadDetailPanel({
         {/* Tabs */}
         <div className="flex border-b border-line px-5">
           {[
-            { k: "info" as Tab, label: "Umumiy ma'lumot" },
+            { k: "info" as Tab, label: t("lead.tabInfo") },
             {
               k: "children" as Tab,
-              label: `Bolalar (${full?.children.length ?? p?.child_count ?? 0})`,
+              label: t("lead.tabChildren", { count: full?.children.length ?? p?.child_count ?? 0 }),
             },
-            { k: "payments" as Tab, label: "To'lovlar tarixi" },
-            { k: "activity" as Tab, label: "Faollik tarixi" },
-          ].map((t) => (
+            { k: "payments" as Tab, label: t("lead.tabPayments") },
+            { k: "activity" as Tab, label: t("lead.tabActivity") },
+          ].map((tabDef) => (
             <button
-              key={t.k}
-              onClick={() => setTab(t.k)}
+              key={tabDef.k}
+              onClick={() => setTab(tabDef.k)}
               className={
                 "px-3 py-3 text-[12.5px] font-medium border-b-2 transition-colors " +
-                (tab === t.k
+                (tab === tabDef.k
                   ? "border-primary text-primary"
                   : "border-transparent text-text-secondary hover:text-text-primary")
               }
             >
-              {t.label}
+              {tabDef.label}
             </button>
           ))}
         </div>
@@ -1001,72 +979,72 @@ function LeadDetailPanel({
           {tab === "info" && (
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <InfoCard title="Asosiy ma'lumotlar">
-                  <InfoRow label="Ism familiya" value={p?.name} />
-                  <InfoRow label="Telefon raqami" value={p?.phone} mono />
-                  <InfoRow label="Email" value={p?.email || "—"} />
+                <InfoCard title={t("lead.basicInfo")}>
+                  <InfoRow label={t("lead.fullName")} value={p?.name} />
+                  <InfoRow label={t("lead.phoneNumber")} value={p?.phone} mono />
+                  <InfoRow label={t("user.email")} value={p?.email || "—"} />
                   <InfoRow
-                    label="Jinsi"
+                    label={t("lead.gender")}
                     value={
                       p?.gender === "male"
-                        ? "Erkak"
+                        ? t("lead.genderMale")
                         : p?.gender === "female"
-                          ? "Ayol"
+                          ? t("lead.genderFemale")
                           : "—"
                     }
                   />
                   <InfoRow
-                    label="Ro'yxatdan o'tgan"
+                    label={t("lead.registeredAt")}
                     value={fmtDateTime(p?.registered_at)}
                   />
                   <InfoRow
-                    label="Oxirgi faollik"
+                    label={t("lead.lastActivity")}
                     value={fmtDateTime(p?.last_activity)}
                   />
                 </InfoCard>
 
-                <InfoCard title="Hisob holati">
+                <InfoCard title={t("lead.accountStatus")}>
                   <InfoRow
-                    label="Bolasi ulangan"
+                    label={t("lead.childConnected")}
                     value={
                       p?.child_connected ? (
                         <span className="inline-flex items-center gap-1 text-emerald-600">
                           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                          Ha
+                          {t("common.yes")}
                         </span>
                       ) : (
-                        <span className="text-red-500">Yo'q</span>
+                        <span className="text-red-500">{t("common.no")}</span>
                       )
                     }
                   />
                   <InfoRow
-                    label="Premium holati"
+                    label={t("lead.premiumStatus")}
                     value={
                       p?.premium_active ? (
-                        <span className="text-emerald-600">Faol</span>
+                        <span className="text-emerald-600">{t("lead.activeShort")}</span>
                       ) : (
-                        <span className="text-text-secondary">Sotib olmagan</span>
+                        <span className="text-text-secondary">{t("lead.notPurchased")}</span>
                       )
                     }
                   />
                   <InfoRow
-                    label="Premium tugashi"
+                    label={t("lead.premiumExpires")}
                     value={
                       p?.premium_days_left != null
-                        ? `${p.premium_days_left} kun`
+                        ? t("premium.duration", { n: p.premium_days_left })
                         : fmtDate(p?.premium_expires_at)
                     }
                   />
                   <InfoRow
-                    label="Joriy operator"
+                    label={t("lead.currentOperator")}
                     value={lead.operator?.name || "—"}
                   />
                   <InfoRow
-                    label="Boshlangan vaqt"
+                    label={t("lead.startedTime")}
                     value={fmtDateTime(lead.created_at)}
                   />
                   <InfoRow
-                    label="Joriy status"
+                    label={t("lead.currentStatus")}
                     value={
                       <span
                         className={
@@ -1089,11 +1067,10 @@ function LeadDetailPanel({
               {/* Operator note */}
               <div>
                 <div className="text-[12px] font-semibold text-text-primary mb-2">
-                  Operator izohi
+                  {t("lead.operatorNote")}
                 </div>
                 <div className="rounded-xl bg-bg-input p-3 mb-2 text-[12.5px] text-text-secondary">
-                  {lead.description ||
-                    "Foydalanuvchi murojaati. Izoh qo'shilmagan."}
+                  {lead.description || t("lead.defaultDescriptionPlaceholder")}
                 </div>
                 <div className="flex gap-2">
                   <input
@@ -1105,7 +1082,7 @@ function LeadDetailPanel({
                         void submitComment(operatorNote);
                       }
                     }}
-                    placeholder="Izoh qo'shish..."
+                    placeholder={t("lead.addNotePlaceholder")}
                     className="flex-1 rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
                   />
                   <button
@@ -1113,7 +1090,7 @@ function LeadDetailPanel({
                     disabled={sending || !operatorNote.trim()}
                     className="btn-primary text-[12.5px] disabled:opacity-50"
                   >
-                    Saqlash
+                    {t("lead.actionSave")}
                   </button>
                 </div>
               </div>
@@ -1122,7 +1099,7 @@ function LeadDetailPanel({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-[12px] font-semibold text-text-primary">
-                    Izohlar tarixi
+                    {t("lead.commentsHistory")}
                   </div>
                   <select
                     value={commentFilter}
@@ -1131,10 +1108,10 @@ function LeadDetailPanel({
                     }
                     className="rounded-lg border border-line bg-bg-input px-2 py-1 text-[11.5px] outline-none"
                   >
-                    <option value="all">Barchasi</option>
+                    <option value="all">{t("lead.commentsAll")}</option>
                     {COLUMNS.map((c) => (
                       <option key={c.status} value={c.status}>
-                        {c.label}
+                        {statusLabel(c.status)}
                       </option>
                     ))}
                   </select>
@@ -1142,7 +1119,7 @@ function LeadDetailPanel({
                 <div className="space-y-2">
                   {filteredComments.length === 0 && (
                     <div className="rounded-lg bg-bg-input p-3 text-[12px] text-text-muted text-center">
-                      Izoh yo'q
+                      {t("lead.noComments")}
                     </div>
                   )}
                   {filteredComments.map((c) => {
@@ -1202,7 +1179,7 @@ function LeadDetailPanel({
                             rel="noreferrer"
                             className="inline-flex items-center gap-2 mt-1 rounded-lg border border-line bg-bg p-2 text-[12px] text-primary hover:bg-bg-hover"
                           >
-                            📎 {c.attachment_name || "Fayl"}
+                            📎 {c.attachment_name || t("lead.attachFile")}
                           </a>
                         )}
                       </div>
@@ -1217,11 +1194,11 @@ function LeadDetailPanel({
             <div className="p-5">
               {!full ? (
                 <div className="text-center py-10 text-[12px] text-text-muted">
-                  Yuklanmoqda...
+                  {t("common.loading")}
                 </div>
               ) : full.children.length === 0 ? (
                 <div className="text-center py-10 text-[12px] text-text-muted">
-                  Bolalar yo'q
+                  {t("lead.noChildren")}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -1244,8 +1221,8 @@ function LeadDetailPanel({
                           {c.name}
                         </div>
                         <div className="text-[11px] text-text-secondary">
-                          {c.age ? `${c.age} yosh` : ""}
-                          {c.gender ? ` • ${c.gender === "male" ? "O'g'il" : "Qiz"}` : ""}
+                          {c.age ? t("lead.ageYears", { n: c.age }) : ""}
+                          {c.gender ? ` • ${c.gender === "male" ? t("lead.boy") : t("lead.girl")}` : ""}
                         </div>
                       </div>
                       <span
@@ -1256,7 +1233,7 @@ function LeadDetailPanel({
                             : "bg-text-muted/15 text-text-muted")
                         }
                       >
-                        {c.status === "active" ? "Ulangan" : "Ulanmagan"}
+                        {c.status === "active" ? t("lead.connected") : t("lead.notConnected")}
                       </span>
                     </div>
                   ))}
@@ -1269,11 +1246,11 @@ function LeadDetailPanel({
             <div className="p-5">
               {!full ? (
                 <div className="text-center py-10 text-[12px] text-text-muted">
-                  Yuklanmoqda...
+                  {t("common.loading")}
                 </div>
               ) : full.payments.length === 0 ? (
                 <div className="text-center py-10 text-[12px] text-text-muted">
-                  To'lovlar yo'q
+                  {t("lead.noPayments")}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -1309,16 +1286,16 @@ function LeadDetailPanel({
             <div className="p-5">
               {!full ? (
                 <div className="text-center py-10 text-[12px] text-text-muted">
-                  Yuklanmoqda...
+                  {t("common.loading")}
                 </div>
               ) : full.activity.length === 0 ? (
                 <div className="text-center py-10 text-[12px] text-text-muted">
-                  Faollik yozuvlari yo'q
+                  {t("lead.noActivityRecords")}
                 </div>
               ) : (
                 <>
                   <div className="mb-3 text-[11px] text-text-muted">
-                    Jami: {full.activity.length} ta yozuv
+                    {t("lead.totalActivityRecords", { n: full.activity.length })}
                   </div>
                   <div className="space-y-2">
                     {full.activity.map((a, i) => (
@@ -1361,7 +1338,7 @@ function LeadDetailPanel({
                   void submitComment(newComment);
                 }
               }}
-              placeholder="Tezkor izoh..."
+              placeholder={t("lead.quickNotePlaceholder")}
               className="flex-1 rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             />
             <button
@@ -1378,7 +1355,7 @@ function LeadDetailPanel({
                 onClick={() => setShowStatusMenu((v) => !v)}
                 className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 text-[12.5px] font-medium"
               >
-                <Edit3 className="h-3.5 w-3.5" /> Statusni o'zgartirish
+                <Edit3 className="h-3.5 w-3.5" /> {t("lead.changeStatus")}
               </button>
               {showStatusMenu && (
                 <div
@@ -1399,7 +1376,7 @@ function LeadDetailPanel({
                       <span
                         className={"h-1.5 w-1.5 rounded-full " + c.dotClass}
                       />
-                      {c.label}
+                      {statusLabel(c.status)}
                     </button>
                   ))}
                 </div>
@@ -1409,27 +1386,27 @@ function LeadDetailPanel({
               onClick={() => setNotifOpen(true)}
               disabled={!lead.parent}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 text-[12.5px] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              title={lead.parent ? "Push xabar yuborish" : "Bu lead'da parent biriktirilmagan"}
+              title={lead.parent ? t("lead.pushNotification") : t("lead.noParentLinked")}
             >
-              <Bell className="h-3.5 w-3.5" /> Ogohlantirish
+              <Bell className="h-3.5 w-3.5" /> {t("lead.actionNotify")}
             </button>
             <button
               onClick={blockUser}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 text-[12.5px] font-medium"
             >
-              <Ban className="h-3.5 w-3.5" /> Bloklash
+              <Ban className="h-3.5 w-3.5" /> {t("lead.actionBlock")}
             </button>
             <button
               onClick={deleteLead}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white px-3 py-2 text-[12.5px] font-medium"
             >
-              <Trash2 className="h-3.5 w-3.5" /> O'chirish
+              <Trash2 className="h-3.5 w-3.5" /> {t("lead.actionDelete")}
             </button>
             <a
               href={p?.phone ? `tel:${p.phone}` : undefined}
               className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-text-primary/10 hover:bg-text-primary/20 text-text-primary px-3 py-2 text-[12.5px] font-medium"
             >
-              <PhoneCall className="h-3.5 w-3.5" /> Qo'ng'iroq
+              <PhoneCall className="h-3.5 w-3.5" /> {t("lead.actionCall")}
             </a>
           </div>
         </div>
@@ -1440,9 +1417,8 @@ function LeadDetailPanel({
           parentId={lead.parent.id}
           parentName={lead.parent.name}
           onClose={() => setNotifOpen(false)}
-          onSent={(count) => {
+          onSent={() => {
             setNotifOpen(false);
-            alert(`Yetkazildi: ${count} ta qurilmaga`);
           }}
         />
       )}
@@ -1461,6 +1437,7 @@ function SendNotifModal({
   onClose: () => void;
   onSent: (count: number) => void;
 }) {
+  const { t } = useT();
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [category, setCategory] = useState<string>("system");
@@ -1469,7 +1446,7 @@ function SendNotifModal({
 
   const send = async () => {
     if (!title.trim() || !body.trim()) {
-      alert("Sarlavha va matn majburiy");
+      alert(t("lead.titleAndBodyRequired"));
       return;
     }
     setSending(true);
@@ -1484,7 +1461,7 @@ function SendNotifModal({
       });
       onSent(r.sent ?? 0);
     } catch (e) {
-      alert((e as { message?: string }).message || "Yuborib bo'lmadi");
+      alert((e as { message?: string }).message || t("lead.failedToSend"));
     } finally {
       setSending(false);
     }
@@ -1501,54 +1478,55 @@ function SendNotifModal({
       >
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-[16px] font-semibold text-text-primary">
-            Push xabar yuborish
+            {t("lead.notifSendPush")}
           </h3>
           <button onClick={onClose} className="icon-btn h-7 w-7">
             <X className="h-4 w-4" />
           </button>
         </div>
         <p className="mb-4 text-[12px] text-text-secondary">
-          Qabul qiluvchi: <span className="font-medium text-text-primary">{parentName}</span>
+          {t("lead.notifRecipient", { name: "" })}
+          <span className="font-medium text-text-primary">{parentName}</span>
         </p>
         <div className="space-y-3">
           <div>
             <div className="text-[11.5px] font-medium text-text-secondary mb-1">
-              Sarlavha
+              {t("lead.notifTitle")}
             </div>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={150}
-              placeholder="Masalan: Ogohlantirish"
+              placeholder={t("lead.notifTitlePlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             />
           </div>
           <div>
             <div className="text-[11.5px] font-medium text-text-secondary mb-1">
-              Matn
+              {t("lead.notifBody")}
             </div>
             <textarea
               value={body}
               onChange={(e) => setBody(e.target.value)}
               rows={4}
-              placeholder="Xabar matnini kiriting..."
+              placeholder={t("lead.notifBodyPlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             />
           </div>
           <div>
             <div className="text-[11.5px] font-medium text-text-secondary mb-1">
-              Kategoriya
+              {t("lead.notifCategory")}
             </div>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             >
-              <option value="system">Tizim</option>
-              <option value="tip">Maslahat</option>
-              <option value="premium">Premium</option>
-              <option value="sos">SOS</option>
-              <option value="order">Buyurtma</option>
+              <option value="system">{t("lead.notifCatSystem")}</option>
+              <option value="tip">{t("lead.notifCatTip")}</option>
+              <option value="premium">{t("lead.notifCatPremium")}</option>
+              <option value="sos">{t("lead.notifCatSos")}</option>
+              <option value="order">{t("lead.notifCatOrder")}</option>
             </select>
           </div>
           <label className="flex items-center gap-2 cursor-pointer">
@@ -1559,13 +1537,13 @@ function SendNotifModal({
               className="h-4 w-4"
             />
             <span className="text-[12.5px] text-text-secondary">
-              SMS orqali ham yuborilsin
+              {t("lead.notifAlsoBySms")}
             </span>
           </label>
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onClose} className="btn-secondary text-[12.5px]">
-            Bekor
+            {t("lead.actionCancel")}
           </button>
           <button
             onClick={send}
@@ -1573,7 +1551,7 @@ function SendNotifModal({
             className="btn-primary text-[12.5px] disabled:opacity-50"
           >
             <Send className="h-3.5 w-3.5" />{" "}
-            {sending ? "Yuborilmoqda..." : "Yuborish"}
+            {sending ? t("lead.notifSending") : t("lead.actionSend")}
           </button>
         </div>
       </div>
