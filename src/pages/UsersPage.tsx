@@ -194,11 +194,7 @@ export function UsersPage() {
                             <span
                               title={
                                 u.premium_expires_at
-                                  ? `Premium · tugaydi: ${fmtExpiry(u.premium_expires_at)}${
-                                      u.premium_days_left != null
-                                        ? ` (${u.premium_days_left} kun qoldi)`
-                                        : ""
-                                    }`
+                                  ? `Premium · tugaydi: ${fmtExpiry(u.premium_expires_at)}`
                                   : "Premium · muddatsiz"
                               }
                               className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600"
@@ -207,6 +203,15 @@ export function UsersPage() {
                             </span>
                           ) : null}
                         </div>
+                        {u.premium_active && (
+                          <div className="text-[10.5px] text-amber-600/90 leading-tight">
+                            {u.premium_expires_at
+                              ? u.premium_days_left != null
+                                ? `${u.premium_days_left} kun qoldi · ${fmtExpiry(u.premium_expires_at)}`
+                                : fmtExpiry(u.premium_expires_at)
+                              : "Muddatsiz"}
+                          </div>
+                        )}
                         <div className="text-[11px] text-text-muted">#{u.id}</div>
                       </div>
                     </div>
@@ -242,11 +247,21 @@ export function UsersPage() {
                               ? `${u.last_device?.brand ?? ""} ${u.last_device?.model ?? ""}`.trim()
                               : (u.last_device?.type === "ios" ? "iPhone" : "Android")}
                           </span>
-                          <span className="text-[10.5px] text-text-muted">×{u.device_count}</span>
+                          {u.device_count > 1 && (
+                            <span className="text-[10.5px] text-text-muted">×{u.device_count}</span>
+                          )}
                         </div>
                         {u.last_device?.os_version && (
                           <span className="text-[10.5px] text-text-muted">
                             {u.last_device.type === "ios" ? "iOS" : "Android"} {u.last_device.os_version}
+                          </span>
+                        )}
+                        {u.last_device?.app_version && (
+                          <span
+                            className="inline-flex items-center gap-1 rounded bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-500 w-fit"
+                            title="Ilova versiyasi"
+                          >
+                            Jojo v{u.last_device.app_version}
                           </span>
                         )}
                       </div>
@@ -277,8 +292,27 @@ export function UsersPage() {
                       {u.is_active ? t("users.filter.active") : t("users.filter.blocked")}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-text-secondary">
-                    {new Date(u.date_joined).toLocaleDateString("uz-UZ")}
+                  <td className="px-4 py-3 text-text-secondary text-[12px]">
+                    {(() => {
+                      const d = new Date(u.date_joined);
+                      return (
+                        <div className="flex flex-col leading-tight">
+                          <span>
+                            {d.toLocaleDateString("uz-UZ", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            })}
+                          </span>
+                          <span className="text-[10.5px] text-text-muted">
+                            {d.toLocaleTimeString("uz-UZ", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="inline-flex items-center gap-1">
