@@ -14,7 +14,6 @@ import {
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
 import { useT } from "../lib/i18n";
-import { useAuth } from "../lib/auth";
 import {
   operatorsApi,
   adminRolesApi,
@@ -24,8 +23,6 @@ import {
 
 export function OperatorsPage() {
   const { t } = useT();
-  const { user: me } = useAuth();
-  const canManageSuperuser = !!me?.is_superuser;
   const [items, setItems] = useState<AdminOperatorWithRole[]>([]);
   const [roles, setRoles] = useState<AdminRole[]>([]);
   const [loading, setLoading] = useState(true);
@@ -166,7 +163,6 @@ export function OperatorsPage() {
         <EditOperatorModal
           op={editing}
           roles={roles}
-          canManageSuperuser={canManageSuperuser}
           onClose={() => setEditing(null)}
           onSaved={async () => {
             setEditing(null);
@@ -181,13 +177,11 @@ export function OperatorsPage() {
 function EditOperatorModal({
   op,
   roles,
-  canManageSuperuser,
   onClose,
   onSaved,
 }: {
   op: AdminOperatorWithRole;
   roles: AdminRole[];
-  canManageSuperuser: boolean;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -195,8 +189,8 @@ function EditOperatorModal({
   const [fullName, setFullName] = useState(op.first_name);
   const [phone, setPhone] = useState(op.phone);
   const [isActive, setIsActive] = useState(op.is_active);
-  const [isSuperuser, setIsSuperuser] = useState(!!op.is_superuser);
   const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [roleId, setRoleId] = useState<number | null>(op.role_id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -211,7 +205,6 @@ function EditOperatorModal({
         is_active: isActive,
         new_password: newPassword || undefined,
         role_id: roleId,
-        ...(canManageSuperuser ? { is_superuser: isSuperuser } : {}),
       });
       onSaved();
     } catch (e) {
@@ -271,12 +264,26 @@ function EditOperatorModal({
             <div className="relative">
               <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder={t("form.passwordKeepEmpty")}
-                className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] outline-none focus:border-primary"
+                className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-10 py-2 text-[13px] outline-none focus:border-primary"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 icon-btn h-7 w-7 text-text-muted hover:text-text-primary"
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
             </div>
           </div>
           <div>
@@ -304,22 +311,6 @@ function EditOperatorModal({
             />
             {t("form.activeNotBlocked")}
           </label>
-          {canManageSuperuser && (
-            <label className="flex items-start gap-2 text-[12.5px] text-text-secondary cursor-pointer">
-              <input
-                type="checkbox"
-                className="mt-0.5"
-                checked={isSuperuser}
-                onChange={(e) => setIsSuperuser(e.target.checked)}
-              />
-              <span>
-                <span className="font-medium text-amber-500">{t("form.superAdmin")}</span>
-                <span className="block text-[10.5px] text-text-muted">
-                  {t("form.superAdminHint")}
-                </span>
-              </span>
-            </label>
-          )}
           {error && (
             <div className="rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
               {error}

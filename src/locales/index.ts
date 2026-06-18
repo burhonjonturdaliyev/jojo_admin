@@ -847,7 +847,7 @@ const uz: Dict = {
 
   // ───── Operators sahifasi
   "operators.title": "Xodimlar",
-  "operators.subtitle": "{count} ta call operator",
+  "operators.subtitle": "{count} ta xodim",
   "operators.newButton": "Yangi xodim qo'shish",
   "operators.empty": "Xodimlar yo'q",
   "operators.added": "Qo'shilgan",
@@ -1978,7 +1978,7 @@ const ru: Dict = {
 
   // ───── Operators
   "operators.title": "Сотрудники",
-  "operators.subtitle": "{count} call-операторов",
+  "operators.subtitle": "{count} сотрудник(ов)",
   "operators.newButton": "Новый сотрудник",
   "operators.empty": "Сотрудников нет",
   "operators.added": "Добавлен",
@@ -3109,7 +3109,7 @@ const en: Dict = {
 
   // ───── Operators
   "operators.title": "Staff",
-  "operators.subtitle": "{count} call operators",
+  "operators.subtitle": "{count} employees",
   "operators.newButton": "New employee",
   "operators.empty": "No staff",
   "operators.added": "Added",
