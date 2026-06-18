@@ -1122,7 +1122,6 @@ function LeadDetailPanel({
                 <InfoCard title={t("lead.basicInfo")}>
                   <InfoRow label={t("lead.fullName")} value={p?.name} />
                   <InfoRow label={t("lead.phoneNumber")} value={p?.phone} mono />
-                  <InfoRow label={t("user.email")} value={p?.email || "—"} />
                   <InfoRow
                     label={t("lead.gender")}
                     value={

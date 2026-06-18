@@ -140,7 +140,6 @@ function UmumiyTab({
         <InfoCard title={t("userDetail.basicInfo")}>
           <Row label={t("userDetail.fullName")} value={user.name} />
           <Row label={t("userDetail.phone")} value={user.phone} />
-          <Row label={t("userDetail.email")} value={user.email} />
           <Row label={t("userDetail.address")} value={user.address} />
           <Row label={t("userDetail.gender")} value={user.gender} />
           <Row label={t("userDetail.birthDate")} value={user.birthDate} />

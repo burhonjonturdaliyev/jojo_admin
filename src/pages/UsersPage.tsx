@@ -14,7 +14,6 @@ import {
   Smartphone,
   CreditCard,
   Phone as PhoneIcon,
-  Mail,
   Calendar,
   Globe,
   Gift,
@@ -251,20 +250,40 @@ export function UsersPage() {
                   </td>
                   <td className="px-4 py-3">
                     {(() => {
-                      const lang = (u.language || "").toLowerCase();
-                      const map: Record<string, { flag: string; name: string }> = {
-                        uz: { flag: "🇺🇿", name: "O'zbek" },
-                        ru: { flag: "🇷🇺", name: "Русский" },
-                        en: { flag: "🇬🇧", name: "English" },
-                      };
-                      const info = map[lang];
-                      return info ? (
+                      const raw = (u.language || "").toLowerCase();
+                      let code = "";
+                      let flag = "";
+                      let name = "";
+                      let label = "";
+                      if (raw.startsWith("uz")) {
+                        flag = "🇺🇿";
+                        if (raw.includes("cyr")) {
+                          code = "uz_cyrl";
+                          name = "Ўзбек кирилл";
+                          label = "UZ-Cyr";
+                        } else {
+                          code = "uz_latn";
+                          name = "O'zbek lotin";
+                          label = "UZ";
+                        }
+                      } else if (raw.startsWith("ru")) {
+                        code = "ru";
+                        flag = "🇷🇺";
+                        name = "Русский";
+                        label = "RU";
+                      } else if (raw.startsWith("en")) {
+                        code = "en";
+                        flag = "🇬🇧";
+                        name = "English";
+                        label = "EN";
+                      }
+                      return code ? (
                         <span
                           className="inline-flex items-center gap-1 rounded-md bg-bg-input px-2 py-0.5 text-[11.5px] font-medium text-text-secondary"
-                          title={info.name}
+                          title={name}
                         >
-                          <span>{info.flag}</span>
-                          <span className="uppercase">{lang}</span>
+                          <span>{flag}</span>
+                          <span>{label}</span>
                         </span>
                       ) : (
                         <span className="text-[12px] text-text-muted">—</span>
@@ -651,10 +670,11 @@ function ParentInfoModal({
 
   const langName = (code?: string) => {
     const c = (code || "").toLowerCase();
-    if (c.startsWith("uz")) return "O'zbekcha";
+    if (c.includes("cyr")) return "Ўзбек кирилл";
+    if (c.startsWith("uz")) return "O'zbek lotin";
     if (c.startsWith("ru")) return "Русский";
     if (c.startsWith("en")) return "English";
-    return code || "—";
+    return "—";
   };
 
   const u = data?.user;
@@ -710,7 +730,6 @@ function ParentInfoModal({
               </div>
               <div className="grid grid-cols-2 gap-3 text-[12.5px]">
                 <InfoRow icon={<PhoneIcon className="h-3.5 w-3.5" />} label="Telefon" value={u.phone || "—"} mono />
-                <InfoRow icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={u.email || "—"} />
                 <InfoRow icon={<Globe className="h-3.5 w-3.5" />} label="Til" value={langName(u.language)} />
                 <InfoRow icon={<UsersIcon className="h-3.5 w-3.5" />} label="Jinsi" value={u.gender === "male" ? "Erkak" : u.gender === "female" ? "Ayol" : "—"} />
                 <InfoRow icon={<Calendar className="h-3.5 w-3.5" />} label="Qo'shilgan" value={fmtDate(u.date_joined)} />

@@ -296,7 +296,6 @@ export interface AdminUserFull {
     first_name: string;
     last_name: string;
     full_name?: string;
-    email?: string;
     gender?: string;
     age?: number | null;
     language?: string;
@@ -1424,7 +1423,6 @@ export interface AdminLeadParent {
   id: number;
   name: string;
   phone: string | null;
-  email?: string;
   gender?: string;
   avatar: string | null;
   child_count?: number;
