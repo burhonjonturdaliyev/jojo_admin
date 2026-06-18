@@ -16,6 +16,8 @@ import {
   Bell,
   Edit3,
   Trash2,
+  Check,
+  Search,
 } from "lucide-react";
 import { Avatar } from "../components/Avatar";
 import { useT } from "../lib/i18n";
@@ -685,12 +687,36 @@ function AddLeadModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [loadingParents, setLoadingParents] = useState(false);
 
+  // Tanlangan parent obyektini saqlab turamiz — search natijalarida bo'lmasa
+  // ham foydalanuvchi kimni tanlaganini ko'rib turishi uchun.
+  const selectedParent = useMemo(
+    () => parents.find((u) => u.id === parentId) ?? null,
+    [parents, parentId],
+  );
+
+  // Search bo'yicha debounce qilingan refetch — har bir harfda backend'ga
+  // bormaymiz, klikka oraliq qoldiramiz.
   useEffect(() => {
-    void (async () => {
-      const r = await usersApi.list({ role: "parent", q: search || undefined, page_size: 20 });
-      setParents(unwrapList(r));
-    })();
+    let cancelled = false;
+    setLoadingParents(true);
+    const handle = window.setTimeout(async () => {
+      try {
+        const r = await usersApi.list({
+          role: "parent",
+          q: search || undefined,
+          page_size: 30,
+        });
+        if (!cancelled) setParents(unwrapList(r));
+      } finally {
+        if (!cancelled) setLoadingParents(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
   }, [search]);
 
   const submit = async () => {
@@ -738,35 +764,96 @@ function AddLeadModal({
             <div className="text-[11.5px] font-medium text-text-secondary mb-1">
               {t("lead.user")}
             </div>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("lead.searchByPhoneOrName")}
-              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-            />
-            <div className="mt-1.5 max-h-40 overflow-y-auto scrollbar-thin rounded-lg border border-line">
-              {parents.length === 0 && (
+
+            {/* Tanlangan parent — alohida banner sifatida tepada */}
+            {selectedParent && (
+              <div className="mb-2 flex items-center justify-between gap-2 rounded-lg border-2 border-primary/40 bg-primary/8 px-3 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[12.5px] font-semibold text-text-primary truncate">
+                      {selectedParent.first_name ||
+                        selectedParent.full_name ||
+                        selectedParent.phone}
+                    </div>
+                    <div className="text-[11px] text-text-muted font-mono truncate">
+                      {selectedParent.phone}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setParentId(null)}
+                  className="icon-btn h-7 w-7 shrink-0"
+                  title={t("lead.actionCancel")}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t("lead.searchByPhoneOrName")}
+                className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] outline-none focus:border-primary"
+              />
+            </div>
+            <div className="mt-1.5 max-h-44 overflow-y-auto scrollbar-thin rounded-lg border border-line">
+              {loadingParents && parents.length === 0 ? (
+                <div className="p-3 text-[12px] text-text-muted text-center">
+                  {t("common.loading")}
+                </div>
+              ) : parents.length === 0 ? (
                 <div className="p-3 text-[12px] text-text-muted text-center">
                   {t("common.notFoundShort")}
                 </div>
+              ) : (
+                parents.map((u) => {
+                  const isSelected = parentId === u.id;
+                  return (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onClick={() => setParentId(u.id)}
+                      className={
+                        "w-full text-left px-3 py-2 text-[12.5px] transition-colors flex items-center gap-2 " +
+                        (isSelected
+                          ? "bg-primary/15 text-primary"
+                          : "hover:bg-bg-hover text-text-primary")
+                      }
+                    >
+                      <div
+                        className={
+                          "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors " +
+                          (isSelected
+                            ? "bg-primary border-primary text-white"
+                            : "border-line bg-bg")
+                        }
+                      >
+                        {isSelected && <Check className="h-3 w-3" strokeWidth={3} />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div
+                          className={
+                            "font-medium truncate " +
+                            (isSelected ? "text-primary" : "text-text-primary")
+                          }
+                        >
+                          {u.first_name || u.full_name || u.phone}
+                        </div>
+                        <div className="text-[11px] text-text-muted font-mono truncate">
+                          {u.phone}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
               )}
-              {parents.map((u) => (
-                <button
-                  key={u.id}
-                  onClick={() => setParentId(u.id)}
-                  className={
-                    "w-full text-left px-3 py-2 text-[12.5px] hover:bg-bg-hover " +
-                    (parentId === u.id ? "bg-primary/10" : "")
-                  }
-                >
-                  <div className="font-medium text-text-primary">
-                    {u.first_name || u.phone}
-                  </div>
-                  <div className="text-[11px] text-text-muted font-mono">
-                    {u.phone}
-                  </div>
-                </button>
-              ))}
             </div>
           </div>
           <input
@@ -798,13 +885,18 @@ function AddLeadModal({
           )}
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <button className="btn-secondary text-[12.5px]" onClick={onClose}>
+          <button
+            type="button"
+            className="btn-secondary text-[12.5px]"
+            onClick={onClose}
+          >
             {t("lead.actionCancel")}
           </button>
           <button
+            type="button"
             className="btn-primary text-[12.5px]"
             onClick={submit}
-            disabled={busy}
+            disabled={busy || !parentId}
           >
             {busy ? t("lead.creating") : t("lead.actionCreate")}
           </button>
