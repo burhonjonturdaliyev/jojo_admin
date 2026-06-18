@@ -10,6 +10,16 @@ import {
   Trash2,
   Save,
   Baby,
+  Eye,
+  Smartphone,
+  CreditCard,
+  Phone as PhoneIcon,
+  Mail,
+  Calendar,
+  Globe,
+  Gift,
+  Send,
+  Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
@@ -19,6 +29,7 @@ import {
   subscriptionGiveApi,
   usersApi,
   type AdminUserRow,
+  type AdminUserFull,
 } from "../lib/resources";
 
 /**
@@ -36,6 +47,7 @@ export function UsersPage() {
   );
   const [givingPremium, setGivingPremium] = useState<AdminUserRow | null>(null);
   const [editing, setEditing] = useState<AdminUserRow | null>(null);
+  const [viewing, setViewing] = useState<AdminUserRow | null>(null);
 
   const reload = async () => {
     setLoading(true);
@@ -156,6 +168,7 @@ export function UsersPage() {
                 <th className="px-4 py-3">{t("users.col.parent")}</th>
                 <th className="px-4 py-3">{t("users.col.children")}</th>
                 <th className="px-4 py-3">{t("users.col.phone")}</th>
+                <th className="px-4 py-3">Til</th>
                 <th className="px-4 py-3">{t("users.col.device")}</th>
                 <th className="px-4 py-3">{t("users.col.lastActivity")}</th>
                 <th className="px-4 py-3">{t("users.col.status")}</th>
@@ -166,14 +179,14 @@ export function UsersPage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-text-muted">
+                  <td colSpan={9} className="px-4 py-8 text-center text-text-muted">
                     {t("common.loading")}
                   </td>
                 </tr>
               )}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-text-muted">
+                  <td colSpan={9} className="px-4 py-8 text-center text-text-muted">
                     <UsersIcon className="mx-auto mb-2 h-8 w-8 opacity-40" />
                     {t("users.empty.parents")}
                   </td>
@@ -235,6 +248,28 @@ export function UsersPage() {
                   </td>
                   <td className="px-4 py-3 font-mono text-[12px] text-text-secondary">
                     {u.phone || "—"}
+                  </td>
+                  <td className="px-4 py-3">
+                    {(() => {
+                      const lang = (u.language || "").toLowerCase();
+                      const map: Record<string, { flag: string; name: string }> = {
+                        uz: { flag: "🇺🇿", name: "O'zbek" },
+                        ru: { flag: "🇷🇺", name: "Русский" },
+                        en: { flag: "🇬🇧", name: "English" },
+                      };
+                      const info = map[lang];
+                      return info ? (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-md bg-bg-input px-2 py-0.5 text-[11.5px] font-medium text-text-secondary"
+                          title={info.name}
+                        >
+                          <span>{info.flag}</span>
+                          <span className="uppercase">{lang}</span>
+                        </span>
+                      ) : (
+                        <span className="text-[12px] text-text-muted">—</span>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3">
                     {u.device_count != null && u.device_count > 0 ? (
@@ -316,6 +351,13 @@ export function UsersPage() {
                   <td className="px-4 py-3 text-right">
                     <div className="inline-flex items-center gap-1">
                       <button
+                        onClick={() => setViewing(u)}
+                        className="icon-btn h-7 w-7"
+                        title="Foydalanuvchi ma'lumotlari"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </button>
+                      <button
                         onClick={() => setGivingPremium(u)}
                         className={
                           "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11.5px] font-medium " +
@@ -392,6 +434,16 @@ export function UsersPage() {
               prev.map((u) => (u.id === saved.id ? { ...u, ...saved } : u)),
             );
             setEditing(null);
+          }}
+        />
+      )}
+      {viewing && (
+        <ParentInfoModal
+          userId={viewing.id}
+          onClose={() => setViewing(null)}
+          onGivePremium={() => {
+            setGivingPremium(viewing);
+            setViewing(null);
           }}
         />
       )}
@@ -543,6 +595,303 @@ function UserEditor({
   );
 }
 
+function ParentInfoModal({
+  userId,
+  onClose,
+  onGivePremium,
+}: {
+  userId: number;
+  onClose: () => void;
+  onGivePremium: () => void;
+}) {
+  const [data, setData] = useState<AdminUserFull | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    usersApi
+      .full(userId)
+      .then((r) => {
+        if (!cancelled) setData(r);
+      })
+      .catch((e) => {
+        if (!cancelled)
+          setError((e as { message?: string }).message || "Xato");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  const fmtDate = (iso?: string | null) => {
+    if (!iso) return "—";
+    try {
+      const d = new Date(iso);
+      return (
+        d.toLocaleDateString("uz-UZ", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }) +
+        " " +
+        d.toLocaleTimeString("uz-UZ", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+    } catch {
+      return iso;
+    }
+  };
+
+  const langName = (code?: string) => {
+    const c = (code || "").toLowerCase();
+    if (c.startsWith("uz")) return "O'zbekcha";
+    if (c.startsWith("ru")) return "Русский";
+    if (c.startsWith("en")) return "English";
+    return code || "—";
+  };
+
+  const u = data?.user;
+  const name =
+    u?.full_name?.trim() ||
+    [u?.first_name, u?.last_name].filter(Boolean).join(" ").trim() ||
+    u?.username ||
+    u?.phone ||
+    `#${userId}`;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/40 flex justify-end"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-xl bg-bg h-full overflow-y-auto scrollbar-thin shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg px-5 py-4">
+          <div className="flex items-center gap-3">
+            <Avatar name={name} size={36} />
+            <div>
+              <div className="text-[15px] font-semibold text-text-primary">
+                {name}
+              </div>
+              <div className="text-[11.5px] text-text-muted">
+                Foydalanuvchi · #{userId}
+              </div>
+            </div>
+          </div>
+          <button onClick={onClose} className="icon-btn h-8 w-8">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {loading && (
+          <div className="p-8 text-center text-text-muted text-[13px]">
+            Yuklanmoqda...
+          </div>
+        )}
+        {error && (
+          <div className="m-5 rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
+            {error}
+          </div>
+        )}
+
+        {data && u && (
+          <div className="space-y-4 p-5">
+            <div className="card p-4">
+              <div className="text-[12px] font-semibold text-text-secondary mb-3">
+                Profil
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-[12.5px]">
+                <InfoRow icon={<PhoneIcon className="h-3.5 w-3.5" />} label="Telefon" value={u.phone || "—"} mono />
+                <InfoRow icon={<Mail className="h-3.5 w-3.5" />} label="Email" value={u.email || "—"} />
+                <InfoRow icon={<Globe className="h-3.5 w-3.5" />} label="Til" value={langName(u.language)} />
+                <InfoRow icon={<UsersIcon className="h-3.5 w-3.5" />} label="Jinsi" value={u.gender === "male" ? "Erkak" : u.gender === "female" ? "Ayol" : "—"} />
+                <InfoRow icon={<Calendar className="h-3.5 w-3.5" />} label="Qo'shilgan" value={fmtDate(u.date_joined)} />
+                <InfoRow icon={<Calendar className="h-3.5 w-3.5" />} label="Oxirgi faollik" value={fmtDate(u.last_login)} />
+              </div>
+            </div>
+
+            <div className="card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-[12px] font-semibold text-text-secondary flex items-center gap-1.5">
+                  <Crown className="h-3.5 w-3.5 text-amber-500" /> Premium statusi
+                </div>
+                <button
+                  onClick={onGivePremium}
+                  className="inline-flex items-center gap-1 rounded-lg bg-amber-500/15 px-2.5 py-1 text-[11.5px] font-medium text-amber-600 hover:bg-amber-500/25"
+                >
+                  <Gift className="h-3 w-3" />
+                  {u.premium_active ? "Uzaytirish" : "Premium berish"}
+                </button>
+              </div>
+              {u.premium_active ? (
+                <div className="space-y-1 text-[12.5px]">
+                  <div className="flex items-center gap-1.5 text-amber-600 font-medium">
+                    <Sparkles className="h-3.5 w-3.5" /> Aktiv premium
+                  </div>
+                  <div className="text-text-secondary">
+                    Tugaydi: <span className="font-medium text-text-primary">{fmtDate(u.premium_expires_at)}</span>
+                  </div>
+                  {u.premium_days_left != null && (
+                    <div className="text-text-secondary">
+                      Qolgan kun: <span className="font-medium text-text-primary">{u.premium_days_left}</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-[12.5px] text-text-muted">Premium faol emas</div>
+              )}
+            </div>
+
+            <div className="card p-4">
+              <div className="text-[12px] font-semibold text-text-secondary mb-3 flex items-center gap-1.5">
+                <Baby className="h-3.5 w-3.5" /> Farzandlar ({data.children.length})
+              </div>
+              {data.children.length === 0 ? (
+                <div className="text-[12px] text-text-muted italic">Farzandlar yo'q</div>
+              ) : (
+                <div className="space-y-2">
+                  {data.children.map((c) => (
+                    <Link
+                      key={c.id}
+                      to={`/children?parent=${userId}`}
+                      className="flex items-center gap-3 rounded-lg bg-bg-input px-3 py-2 hover:bg-bg-hover"
+                    >
+                      <Avatar name={c.name} size={32} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-medium text-text-primary truncate">{c.name}</div>
+                        <div className="text-[11px] text-text-muted">
+                          {c.age != null ? `${c.age} yosh` : "—"}
+                          {c.gender === "male" ? " · Erkak" : c.gender === "female" ? " · Ayol" : ""}
+                          {c.status === "active" ? " · Faol" : ""}
+                        </div>
+                      </div>
+                      {c.phone && (
+                        <div className="text-[11px] text-text-muted font-mono">{c.phone}</div>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="card p-4">
+              <div className="text-[12px] font-semibold text-text-secondary mb-3 flex items-center gap-1.5">
+                <Smartphone className="h-3.5 w-3.5" /> Qurilmalar ({data.devices.length})
+              </div>
+              {data.devices.length === 0 ? (
+                <div className="text-[12px] text-text-muted italic">Qurilmalar yo'q</div>
+              ) : (
+                <div className="space-y-2">
+                  {data.devices.map((d) => (
+                    <div key={d.id} className="rounded-lg bg-bg-input px-3 py-2 text-[12px]">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium text-text-primary">
+                          {(d.brand || d.model)
+                            ? `${d.brand ?? ""} ${d.model ?? ""}`.trim()
+                            : d.type === "ios"
+                              ? "iPhone"
+                              : "Android"}
+                        </div>
+                        <span
+                          className={
+                            "rounded-full px-2 py-0.5 text-[10px] font-medium " +
+                            (d.is_active
+                              ? "bg-emerald-500/15 text-emerald-500"
+                              : "bg-text-muted/15 text-text-muted")
+                          }
+                        >
+                          {d.is_active ? "Faol" : "Nofaol"}
+                        </span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-text-muted">
+                        {d.os_version && (
+                          <span>
+                            {d.type === "ios" ? "iOS" : "Android"} {d.os_version}
+                          </span>
+                        )}
+                        {d.app_version && (
+                          <span className="text-blue-500 font-medium">Jojo v{d.app_version}</span>
+                        )}
+                        {d.last_login_at && <span>· Login: {fmtDate(d.last_login_at)}</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="card p-4">
+              <div className="text-[12px] font-semibold text-text-secondary mb-3 flex items-center gap-1.5">
+                <CreditCard className="h-3.5 w-3.5" /> To'lovlar ({data.payments.length})
+              </div>
+              {data.payments.length === 0 ? (
+                <div className="text-[12px] text-text-muted italic">To'lovlar yo'q</div>
+              ) : (
+                <div className="space-y-1.5">
+                  {data.payments.slice(0, 10).map((p) => (
+                    <div key={p.id} className="flex items-center justify-between rounded-lg bg-bg-input px-3 py-2 text-[12px]">
+                      <div>
+                        <div className="font-medium text-text-primary">
+                          {p.amount.toLocaleString("uz-UZ")} {p.currency}
+                        </div>
+                        <div className="text-[11px] text-text-muted">
+                          {p.plan_name || "—"} · {fmtDate(p.created_at)}
+                        </div>
+                      </div>
+                      <span
+                        className={
+                          "rounded-full px-2 py-0.5 text-[10px] font-medium " +
+                          (p.status === "paid"
+                            ? "bg-emerald-500/15 text-emerald-500"
+                            : p.status === "pending"
+                              ? "bg-amber-500/15 text-amber-500"
+                              : "bg-red-500/15 text-red-500")
+                        }
+                      >
+                        {p.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InfoRow({
+  icon,
+  label,
+  value,
+  mono,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <div className="flex items-center gap-1 text-[10.5px] text-text-muted">
+        {icon}
+        {label}
+      </div>
+      <div className={"text-text-primary truncate" + (mono ? " font-mono" : "")}>{value}</div>
+    </div>
+  );
+}
+
 const DAY_PRESETS = [
   { days: 7, label: "7 kun" },
   { days: 30, label: "1 oy" },
@@ -550,6 +899,8 @@ const DAY_PRESETS = [
   { days: 180, label: "6 oy" },
   { days: 365, label: "1 yil" },
 ];
+
+type PremiumMode = "auto" | "offer";
 
 function GivePremiumModal({
   user,
@@ -560,33 +911,93 @@ function GivePremiumModal({
   onClose: () => void;
   onDone: () => Promise<void>;
 }) {
+  const [mode, setMode] = useState<PremiumMode>("auto");
   const [days, setDays] = useState<number>(30);
+  const [notifEnabled, setNotifEnabled] = useState<boolean>(true);
+  const [notifTitle, setNotifTitle] = useState<string>("");
+  const [notifMessage, setNotifMessage] = useState<string>("");
+
+  // Offer rejimi uchun
+  const [discount, setDiscount] = useState<number>(30);
+  const [originalPrice, setOriginalPrice] = useState<number>(50000);
+  const [offerHours, setOfferHours] = useState<number>(72);
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
   const isAlreadyPremium = user.premium_active === true;
 
-  const give = async () => {
+  const finalPrice = Math.max(
+    0,
+    Math.round(originalPrice * (1 - Math.min(99, Math.max(0, discount)) / 100)),
+  );
+
+  // Default notification matnlarini rejimga qarab yangilash
+  useEffect(() => {
+    if (mode === "auto") {
+      if (!notifTitle) setNotifTitle("Premium aktivlashdi");
+      if (!notifMessage)
+        setNotifMessage(`Sizga ${days} kunlik premium obuna berildi.`);
+    } else {
+      if (!notifTitle) setNotifTitle("Premium taklif");
+      if (!notifMessage)
+        setNotifMessage(
+          `Sizga ${days} kunlik premium ${discount ? discount + "% chegirma bilan " : ""}taklif qilinmoqda.`,
+        );
+    }
+    // intentional: faqat mode/days/discount o'zgarsa default'larni
+    // qaytadan generatsiya qilish kerak emas — user yozgan matn ustun.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
+  const validate = (): string | null => {
+    if (!days || days < 1) return "Kun soni 1 dan kam bo'lmasligi kerak";
+    if (days > 3650) return "10 yildan ko'p bera olmaysiz";
+    if (mode === "offer") {
+      if (originalPrice < 0) return "Asl narx manfiy bo'la olmaydi";
+      if (offerHours < 1) return "Taklif amal qilish vaqti 1 soatdan kam bo'la olmaydi";
+    }
+    return null;
+  };
+
+  const submit = async () => {
     if (busy) return;
     setError(null);
     setSuccess(null);
-    if (!days || days < 1) {
-      setError("Kun soni 1 dan kam bo'lmasligi kerak");
-      return;
-    }
-    if (days > 3650) {
-      setError("10 yildan ko'p bera olmaysiz");
+    const v = validate();
+    if (v) {
+      setError(v);
       return;
     }
     setBusy(true);
     try {
-      const r = await subscriptionGiveApi.give({ user_id: user.id, days });
-      setSuccess(r.detail || `${days} kunlik premium berildi.`);
-      // 1.2s ko'rsatib, modal'ni yopamiz
+      if (mode === "auto") {
+        await subscriptionGiveApi.giveWithNotification({
+          user_id: user.id,
+          days,
+          title: notifEnabled ? notifTitle.trim() : undefined,
+          message: notifEnabled ? notifMessage.trim() : undefined,
+          send_notification: notifEnabled,
+        });
+        setSuccess(`${days} kunlik premium berildi.`);
+      } else {
+        await subscriptionGiveApi.sendOffer({
+          user_id: user.id,
+          days,
+          discount_percent: discount,
+          original_price: originalPrice,
+          final_price: finalPrice,
+          currency: "UZS",
+          title: notifTitle.trim() || "Premium taklif",
+          message: notifMessage.trim(),
+          expires_in_hours: offerHours,
+        });
+        setSuccess("Taklif yuborildi. Foydalanuvchi qabul qilganda premium aktivlanadi.");
+      }
       setTimeout(() => {
         void onDone();
-      }, 1200);
+      }, 1300);
     } catch (e) {
       setError((e as { message?: string }).message || "Xato yuz berdi");
     } finally {
@@ -605,7 +1016,7 @@ function GivePremiumModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-bg p-5"
+        className="w-full max-w-lg max-h-[92vh] overflow-y-auto scrollbar-thin rounded-2xl bg-bg p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
@@ -627,17 +1038,52 @@ function GivePremiumModal({
           </button>
         </div>
 
-        {isAlreadyPremium && (
+        {/* Rejim tanlash */}
+        <div className="mb-4 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setMode("auto")}
+            className={
+              "rounded-xl border p-3 text-left transition " +
+              (mode === "auto"
+                ? "border-amber-500 bg-amber-500/10"
+                : "border-line bg-bg-input hover:border-amber-500/40")
+            }
+          >
+            <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-text-primary">
+              <Sparkles className="h-3.5 w-3.5 text-amber-600" /> Avtomatik premium
+            </div>
+            <div className="mt-1 text-[10.5px] text-text-muted leading-tight">
+              Darhol aktivlanadi. Push xabar yuboriladi.
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("offer")}
+            className={
+              "rounded-xl border p-3 text-left transition " +
+              (mode === "offer"
+                ? "border-amber-500 bg-amber-500/10"
+                : "border-line bg-bg-input hover:border-amber-500/40")
+            }
+          >
+            <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-text-primary">
+              <Send className="h-3.5 w-3.5 text-amber-600" /> Taklif (chegirma)
+            </div>
+            <div className="mt-1 text-[10.5px] text-text-muted leading-tight">
+              Taklif yuboramiz, qabul qilsa aktivlashadi.
+            </div>
+          </button>
+        </div>
+
+        {isAlreadyPremium && mode === "auto" && (
           <div className="mb-3 rounded-lg bg-blue-500/10 px-3 py-2 text-[11.5px] text-blue-500">
-            Bu foydalanuvchida allaqachon aktiv premium bor. Yangi muddat
-            tugashidan keyin qo'shiladi (uzaytirish).
+            Bu foydalanuvchida allaqachon aktiv premium bor. Yangi muddat tugashidan keyin qo'shiladi.
           </div>
         )}
 
-        <div className="mb-2 text-[12px] font-medium text-text-secondary">
-          Muddat
-        </div>
-        <div className="mb-3 flex flex-wrap gap-1.5">
+        <div className="mb-2 text-[12px] font-medium text-text-secondary">Muddat</div>
+        <div className="mb-2 flex flex-wrap gap-1.5">
           {DAY_PRESETS.map((p) => (
             <button
               key={p.days}
@@ -653,18 +1099,100 @@ function GivePremiumModal({
             </button>
           ))}
         </div>
-
-        <div className="mb-2 text-[11.5px] text-text-muted">
-          Yoki o'zingiz kiriting (kun):
-        </div>
         <input
           type="number"
           min={1}
           max={3650}
           value={days}
           onChange={(e) => setDays(Number(e.target.value) || 0)}
+          placeholder="Kun soni"
           className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] outline-none focus:border-primary"
         />
+
+        {/* Offer rejimi maydonlari */}
+        {mode === "offer" && (
+          <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-3">
+            <div className="text-[11.5px] font-semibold text-amber-600 flex items-center gap-1">
+              <Gift className="h-3 w-3" /> Chegirma sozlamalari
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <div className="text-[10.5px] text-text-secondary mb-1">Asl narx (UZS)</div>
+                <input
+                  type="number"
+                  min={0}
+                  value={originalPrice}
+                  onChange={(e) => setOriginalPrice(Number(e.target.value) || 0)}
+                  className="w-full rounded-lg border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <div className="text-[10.5px] text-text-secondary mb-1">Chegirma %</div>
+                <input
+                  type="number"
+                  min={0}
+                  max={99}
+                  value={discount}
+                  onChange={(e) => setDiscount(Math.max(0, Math.min(99, Number(e.target.value) || 0)))}
+                  className="w-full rounded-lg border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <div className="text-[10.5px] text-text-secondary mb-1">Yakuniy</div>
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1.5 text-[12.5px] font-semibold text-amber-600">
+                  {finalPrice.toLocaleString("uz-UZ")}
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="text-[10.5px] text-text-secondary mb-1">Taklif amal qilish vaqti (soat)</div>
+              <input
+                type="number"
+                min={1}
+                max={720}
+                value={offerHours}
+                onChange={(e) => setOfferHours(Number(e.target.value) || 0)}
+                className="w-full rounded-lg border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] outline-none focus:border-primary"
+              />
+              <div className="mt-0.5 text-[10px] text-text-muted">
+                Bu vaqt davomida foydalanuvchi qabul qilmasa, taklif bekor bo'ladi.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notification matni */}
+        <div className="mt-4 rounded-xl border border-line bg-bg-input/30 p-3 space-y-2">
+          <label className="flex items-center gap-2 text-[12px] font-medium text-text-secondary cursor-pointer">
+            <input
+              type="checkbox"
+              checked={mode === "offer" ? true : notifEnabled}
+              disabled={mode === "offer"}
+              onChange={(e) => setNotifEnabled(e.target.checked)}
+            />
+            <Send className="h-3 w-3" />
+            {mode === "offer"
+              ? "Notification matni (majburiy — taklif xabarini foydalanuvchi shu yerda ko'radi)"
+              : "Notification yuborish"}
+          </label>
+          {(notifEnabled || mode === "offer") && (
+            <>
+              <input
+                value={notifTitle}
+                onChange={(e) => setNotifTitle(e.target.value)}
+                placeholder="Sarlavha"
+                className="w-full rounded-lg border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] outline-none focus:border-primary"
+              />
+              <textarea
+                value={notifMessage}
+                onChange={(e) => setNotifMessage(e.target.value)}
+                placeholder="Xabar matni"
+                rows={2}
+                className="w-full rounded-lg border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] outline-none focus:border-primary resize-none"
+              />
+            </>
+          )}
+        </div>
 
         {error && (
           <div className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
@@ -678,20 +1206,22 @@ function GivePremiumModal({
         )}
 
         <div className="mt-5 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="btn-secondary text-[12.5px]"
-            disabled={busy}
-          >
+          <button onClick={onClose} className="btn-secondary text-[12.5px]" disabled={busy}>
             Bekor
           </button>
           <button
-            onClick={give}
+            onClick={submit}
             disabled={busy}
             className="btn-primary text-[12.5px] disabled:opacity-50"
           >
-            <Crown className="h-3.5 w-3.5" />
-            {busy ? "Berilmoqda..." : "Premium berish"}
+            {mode === "auto" ? <Crown className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
+            {busy
+              ? mode === "auto"
+                ? "Berilmoqda..."
+                : "Yuborilmoqda..."
+              : mode === "auto"
+                ? "Premium berish"
+                : "Taklif yuborish"}
           </button>
         </div>
       </div>

@@ -288,6 +288,68 @@ export interface AdminUserRow {
   children?: { id: number; name: string }[];
 }
 
+export interface AdminUserFull {
+  user: {
+    id: number;
+    phone: string;
+    username: string;
+    first_name: string;
+    last_name: string;
+    full_name?: string;
+    email?: string;
+    gender?: string;
+    age?: number | null;
+    language?: string;
+    avatar?: string | null;
+    role: string;
+    is_active: boolean;
+    date_joined: string | null;
+    last_login?: string | null;
+    is_premium: boolean;
+    premium_active: boolean;
+    premium_expires_at?: string | null;
+    premium_days_left?: number | null;
+  };
+  children: {
+    id: number;
+    name: string;
+    age?: number | null;
+    gender?: string;
+    status?: string | null;
+    avatar?: string | null;
+    phone?: string;
+    language?: string;
+    device?: {
+      type: string;
+      brand?: string;
+      model?: string;
+      os_version?: string;
+      app_version?: string;
+    } | null;
+    linked_at?: string | null;
+  }[];
+  devices: {
+    id: number;
+    type: string;
+    device_id: string;
+    brand?: string;
+    model?: string;
+    os_version?: string;
+    app_version?: string;
+    is_active: boolean;
+    last_login_at?: string | null;
+    created_at?: string | null;
+  }[];
+  payments: {
+    id: number;
+    amount: number;
+    currency: string;
+    status: string;
+    plan_name?: string | null;
+    created_at?: string | null;
+  }[];
+}
+
 export const usersApi = {
   list: (query?: {
     role?: string;
@@ -327,6 +389,8 @@ export const usersApi = {
     api<AdminUserRow>(`/admin/users/${id}/`, { method: "PATCH", body: data }),
   remove: (id: number) =>
     api<void>(`/admin/users/${id}/`, { method: "DELETE" }),
+  full: (id: number) =>
+    api<AdminUserFull>(`/admin/users/${id}/full/`),
 };
 
 // ============================================================================
@@ -777,6 +841,46 @@ export const subscriptionGiveApi = {
       subscription?: { id: number; expires_at: string };
       user?: { id: number; is_premium: boolean; premium_expires_at: string };
     }>("/admin/subscription/give/", { method: "POST", body: data }),
+  giveWithNotification: (data: {
+    user_id: number;
+    days: number;
+    title?: string;
+    message?: string;
+    send_notification?: boolean;
+  }) =>
+    api<{
+      status: boolean;
+      user_id: number;
+      days: number;
+      expires_at: string | null;
+    }>("/admin/subscription/give-with-notification/", {
+      method: "POST",
+      body: data,
+    }),
+  sendOffer: (data: {
+    user_id: number;
+    days: number;
+    discount_percent?: number;
+    original_price?: number;
+    final_price?: number;
+    currency?: string;
+    title?: string;
+    message?: string;
+    expires_in_hours?: number;
+  }) =>
+    api<{
+      id: number;
+      status: string;
+      days: number;
+      discount_percent: number;
+      original_price: number;
+      final_price: number;
+      currency: string;
+      title: string;
+      message: string;
+      expires_at: string | null;
+      created_at: string;
+    }>("/admin/subscription/offer/", { method: "POST", body: data }),
 };
 
 export interface AdminPayment {
