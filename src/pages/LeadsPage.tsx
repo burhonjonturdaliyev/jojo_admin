@@ -33,7 +33,11 @@ import {
   type AdminDashboardStats,
   type AdminUserRow,
 } from "../lib/resources";
-import { subscribe, reconnect as reconnectSocket } from "../lib/leadsSocket";
+import {
+  subscribe,
+  reconnect as reconnectSocket,
+  isConnected as isSocketConnected,
+} from "../lib/leadsSocket";
 
 interface ColumnDef {
   status: LeadStatus;
@@ -143,7 +147,10 @@ export function LeadsPage() {
   const [draggedId, setDraggedId] = useState<number | null>(null);
   const [dragOverCol, setDragOverCol] = useState<LeadStatus | null>(null);
   const [selectedLead, setSelectedLead] = useState<AdminLead | null>(null);
-  const [socketUp, setSocketUp] = useState(false);
+  // Boshlanish holatini darrov socket'dan o'qiymiz — agar boshqa
+  // bo'limdan qaytib kelgan bo'lsak, socket allaqachon ulangan bo'lishi
+  // mumkin va "connect" event boshqa qaytatdan otmaydi.
+  const [socketUp, setSocketUp] = useState<boolean>(() => isSocketConnected());
   const [toast, setToast] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
   const [addingInCol, setAddingInCol] = useState<LeadStatus | null>(null);
@@ -175,8 +182,20 @@ export function LeadsPage() {
 
   // Socket.IO
   useEffect(() => {
+    // Avval listener'larni ulab olamiz — keyin reconnect() chaqirilganda
+    // yangi socket'ning birinchi "connect" event'i ham bizga yetadi.
     const offConn = subscribe("connect", () => setSocketUp(true));
     const offDisc = subscribe("disconnect", () => setSocketUp(false));
+
+    // Komponent qaytib mount bo'lganda holatni socket bilan
+    // sinxronlashtiramiz. Agar ulanmagan bo'lsa — avtomatik qayta
+    // ulanishni boshlaymiz, foydalanuvchi "Reconnect" bosishi shart emas.
+    if (isSocketConnected()) {
+      setSocketUp(true);
+    } else {
+      setSocketUp(false);
+      reconnectSocket();
+    }
     const offChanged = subscribe("lead_changed", (raw) => {
       const ev = raw as {
         type: string;
