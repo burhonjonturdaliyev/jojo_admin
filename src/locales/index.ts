@@ -1073,6 +1073,17 @@ const uz: Dict = {
   "lead.notifCatOrder": "Buyurtma",
   "lead.notifAlsoBySms": "SMS orqali ham yuborilsin",
   "lead.notifSending": "Yuborilmoqda...",
+  "lead.language": "Til",
+  "lead.device": "Qurilma",
+  "lead.deviceUnknown": "Noma'lum",
+
+  // ───── User language enum (uz_latn/uz_cyrl/ru/en/none)
+  "userLang.uz_latn": "O'zbekcha (Lotin)",
+  "userLang.uz_cyrl": "O'zbekcha (Kirill)",
+  "userLang.uz": "O'zbekcha",
+  "userLang.ru": "Русский",
+  "userLang.en": "English",
+  "userLang.none": "Belgilanmagan",
 
   // ───── SMS journal page
   "smsLog.title": "SMS jurnali",
@@ -2193,6 +2204,17 @@ const ru: Dict = {
   "lead.notifCatOrder": "Заказ",
   "lead.notifAlsoBySms": "Также отправить SMS",
   "lead.notifSending": "Отправляется...",
+  "lead.language": "Язык",
+  "lead.device": "Устройство",
+  "lead.deviceUnknown": "Неизвестно",
+
+  // ───── User language
+  "userLang.uz_latn": "Узбекский (латиница)",
+  "userLang.uz_cyrl": "Узбекский (кириллица)",
+  "userLang.uz": "Узбекский",
+  "userLang.ru": "Русский",
+  "userLang.en": "Английский",
+  "userLang.none": "Не указан",
 
   // ───── SMS journal
   "smsLog.title": "Журнал SMS",
@@ -3313,6 +3335,17 @@ const en: Dict = {
   "lead.notifCatOrder": "Order",
   "lead.notifAlsoBySms": "Also send as SMS",
   "lead.notifSending": "Sending...",
+  "lead.language": "Language",
+  "lead.device": "Device",
+  "lead.deviceUnknown": "Unknown",
+
+  // ───── User language
+  "userLang.uz_latn": "Uzbek (Latin)",
+  "userLang.uz_cyrl": "Uzbek (Cyrillic)",
+  "userLang.uz": "Uzbek",
+  "userLang.ru": "Russian",
+  "userLang.en": "English",
+  "userLang.none": "Not set",
 
   // ───── SMS journal
   "smsLog.title": "SMS log",

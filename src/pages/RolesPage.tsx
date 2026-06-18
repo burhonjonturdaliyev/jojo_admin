@@ -26,7 +26,6 @@ const PERMISSION_GROUPS: { key: string; label: string; items: { k: string; l: st
       { k: "premium", l: "Premium" },
       { k: "payments", l: "To'lovlar" },
       { k: "requests", l: "So'rovlar" },
-      { k: "blocked", l: "Bloklangan" },
     ],
   },
   {

@@ -21,7 +21,6 @@ const operatorPermissions: Permissions = {
   ads: "none",
   settings: "none",
   operators: "view",
-  blocked: "view",
   roles: "none",
 };
 
@@ -41,7 +40,6 @@ const contentEditorPermissions: Permissions = {
   ads: "edit",
   settings: "none",
   operators: "none",
-  blocked: "none",
   roles: "none",
 };
 
@@ -61,7 +59,6 @@ const financePermissions: Permissions = {
   ads: "view",
   settings: "view",
   operators: "view",
-  blocked: "view",
   roles: "none",
 };
 

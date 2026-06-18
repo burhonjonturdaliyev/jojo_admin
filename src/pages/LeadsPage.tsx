@@ -112,6 +112,35 @@ function fmtDateTime(iso: string | null | undefined): string {
   });
 }
 
+/** Backend'dan kelgan `language` qiymatini i18n key'iga aylantirib qaytaradi.
+ *  Mavjud qiymatlar: "uz_latn" | "uz_cyrl" | "uz" | "ru" | "en" | "". */
+function userLanguageLabel(
+  raw: string | undefined | null,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): string {
+  const v = (raw || "").toLowerCase().trim();
+  if (!v) return t("userLang.none");
+  // Backend "uz_latn"/"uz_cyrl"/"uz"/"ru"/"en" qaytaradi
+  const key = `userLang.${v}`;
+  const out = t(key);
+  // t() topa olmasa key'ning o'zini qaytaradi — fallback
+  return out === key ? v : out;
+}
+
+/** Qurilma brendi + modeli + OS versiyasi — bir qatorda. */
+function deviceLabel(
+  d: { type?: string; brand?: string; model?: string; os_version?: string } | null | undefined,
+): string {
+  if (!d) return "—";
+  const bm = [d.brand, d.model].filter(Boolean).join(" ").trim();
+  const head = bm || (d.type?.toLowerCase() === "ios" ? "iPhone" : "Android");
+  if (d.os_version) {
+    const osName = d.type?.toLowerCase() === "ios" ? "iOS" : "Android";
+    return `${head} · ${osName} ${d.os_version}`;
+  }
+  return head;
+}
+
 function makeRelativeFormatter(
   t: (key: string, vars?: Record<string, string | number>) => string,
 ) {
@@ -1020,6 +1049,14 @@ function LeadDetailPanel({
                     label={t("lead.lastActivity")}
                     value={fmtDateTime(p?.last_activity)}
                   />
+                  <InfoRow
+                    label={t("lead.language")}
+                    value={userLanguageLabel(p?.language, t)}
+                  />
+                  <InfoRow
+                    label={t("lead.device")}
+                    value={deviceLabel(p?.device)}
+                  />
                 </InfoCard>
 
                 <InfoCard title={t("lead.accountStatus")}>
@@ -1243,10 +1280,22 @@ function LeadDetailPanel({
                           {c.age ? t("lead.ageYears", { n: c.age }) : ""}
                           {c.gender ? ` • ${c.gender === "male" ? t("lead.boy") : t("lead.girl")}` : ""}
                         </div>
+                        <div className="mt-0.5 flex flex-wrap gap-x-2 text-[10.5px] text-text-muted">
+                          {c.language && (
+                            <span>
+                              {t("lead.language")}: {userLanguageLabel(c.language, t)}
+                            </span>
+                          )}
+                          {c.device && (
+                            <span>
+                              {t("lead.device")}: {deviceLabel(c.device)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <span
                         className={
-                          "rounded-full px-2 py-0.5 text-[10.5px] font-medium " +
+                          "shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-medium " +
                           (c.status === "active"
                             ? "bg-emerald-500/15 text-emerald-600"
                             : "bg-text-muted/15 text-text-muted")

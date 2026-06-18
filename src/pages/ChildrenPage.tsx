@@ -52,6 +52,7 @@ export function ChildrenPage() {
                 <th className="px-4 py-3">{t("users.col.age")}</th>
                 <th className="px-4 py-3">{t("users.col.gender")}</th>
                 <th className="px-4 py-3">{t("users.col.language")}</th>
+                <th className="px-4 py-3">{t("users.col.device")}</th>
                 <th className="px-4 py-3">{t("users.col.status")}</th>
                 <th className="px-4 py-3">{t("user.connected")}</th>
                 <th className="px-4 py-3 text-right">{t("common.actions")}</th>
@@ -60,14 +61,14 @@ export function ChildrenPage() {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-text-muted">
+                  <td colSpan={9} className="px-4 py-8 text-center text-text-muted">
                     {t("common.loading")}
                   </td>
                 </tr>
               )}
               {!loading && items.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-text-muted">
+                  <td colSpan={9} className="px-4 py-12 text-center text-text-muted">
                     <Baby className="mx-auto mb-2 h-8 w-8 opacity-40" />
                     {t("users.empty.children")}
                   </td>
@@ -115,6 +116,23 @@ export function ChildrenPage() {
                   <td className="px-4 py-3 text-text-secondary">{c.age ?? "—"}</td>
                   <td className="px-4 py-3 text-text-secondary">{c.gender || "—"}</td>
                   <td className="px-4 py-3 text-text-secondary">{c.language || "—"}</td>
+                  <td className="px-4 py-3">
+                    {c.device ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[12.5px] text-text-secondary">
+                          {[c.device.brand, c.device.model].filter(Boolean).join(" ").trim() ||
+                            (c.device.type?.toLowerCase() === "ios" ? "iPhone" : "Android")}
+                        </span>
+                        {c.device.os_version && (
+                          <span className="text-[10.5px] text-text-muted">
+                            {c.device.type?.toLowerCase() === "ios" ? "iOS" : "Android"} {c.device.os_version}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[12px] text-text-muted">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <span className="rounded-full bg-status-resolved/15 px-2.5 py-1 text-[11px] font-medium text-status-resolved">
                       {c.child_status || (c.is_active ? "active" : "inactive")}

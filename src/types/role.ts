@@ -24,7 +24,6 @@ export const MENU_KEYS = [
   "ads",
   "settings",
   "operators",
-  "blocked",
   "roles",
 ] as const;
 
@@ -81,7 +80,6 @@ export const MENU_SECTIONS: { key: string; menus: MenuKey[] }[] = [
       "ads",
       "settings",
       "operators",
-      "blocked",
       "roles",
     ],
   },

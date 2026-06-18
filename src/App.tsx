@@ -15,7 +15,6 @@ import { BulkSmsPage } from "./pages/BulkSmsPage";
 import { AdsPage } from "./pages/AdsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { OperatorsPage } from "./pages/OperatorsPage";
-import { BlockedPage } from "./pages/BlockedPage";
 import { ProductsPage } from "./pages/ProductsPage";
 import { PromoBannersPage } from "./pages/PromoBannersPage";
 import { OrdersPage } from "./pages/OrdersPage";
@@ -46,7 +45,9 @@ export default function App() {
           <Route path="/ads" element={<AdsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/operators" element={<OperatorsPage />} />
-          <Route path="/blocked" element={<BlockedPage />} />
+          {/* "/blocked" eski sahifa olib tashlandi — bloklanganlar UsersPage
+              filterida ko'rinadi. Eski URL'lar ham UsersPage'ga yo'naltiradi. */}
+          <Route path="/blocked" element={<Navigate to="/users" replace />} />
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/banners" element={<PromoBannersPage />} />
           <Route path="/orders" element={<OrdersPage />} />

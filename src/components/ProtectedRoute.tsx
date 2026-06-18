@@ -26,7 +26,6 @@ const PATH_PERMISSION: Record<string, string> = {
   "/settings": "settings",
   "/operators": "operators",
   "/roles": "roles",
-  "/blocked": "blocked",
 };
 
 /** Foydalanuvchi uchun birinchi ruxsat etilgan sahifani topadi. */

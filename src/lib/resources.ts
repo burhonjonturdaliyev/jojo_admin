@@ -1240,6 +1240,7 @@ export interface AdminChild {
   is_active: boolean;
   date_joined: string;
   parent?: AdminChildParent | null;
+  device?: AdminDeviceBrief | null;
 }
 
 export const childrenApi = {
@@ -1302,6 +1303,16 @@ export type LeadStatus =
   | "closed"
   | "blocked";
 
+export interface AdminDeviceBrief {
+  type: string;
+  brand?: string;
+  model?: string;
+  os_version?: string;
+  app_version?: string;
+  last_login_at?: string | null;
+  is_active?: boolean;
+}
+
 export interface AdminLeadParent {
   id: number;
   name: string;
@@ -1318,6 +1329,7 @@ export interface AdminLeadParent {
   registered_at?: string | null;
   last_activity?: string | null;
   language?: string;
+  device?: AdminDeviceBrief | null;
 }
 
 export type SupportLanguage = "uz_latn" | "uz_cyrl" | "ru" | "en";
@@ -1371,6 +1383,8 @@ export interface AdminLeadFull {
     status: string;
     avatar: string | null;
     phone: string | null;
+    language?: string;
+    device?: AdminDeviceBrief | null;
     linked_at: string | null;
   }>;
   payments: Array<{

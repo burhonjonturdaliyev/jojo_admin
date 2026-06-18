@@ -17,7 +17,6 @@ import {
   Image as ImageIcon,
   ShoppingBag,
   Lightbulb,
-  Ban,
   FolderTree,
   Shield,
   Kanban,
@@ -119,7 +118,6 @@ export function Sidebar() {
         { to: "/settings", perm: "settings", label: t("nav.settings"), icon: Settings },
         { to: "/operators", perm: "operators", label: t("nav.operators"), icon: Headphones },
         { to: "/roles", perm: "roles", label: t("nav.roles"), icon: Shield },
-        { to: "/blocked", perm: "blocked", label: t("nav.blocked"), icon: Ban },
       ],
     },
   ];
