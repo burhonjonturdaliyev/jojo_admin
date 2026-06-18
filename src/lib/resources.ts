@@ -267,6 +267,9 @@ export interface AdminUserRow {
   is_active: boolean;
   is_staff: boolean;
   is_premium?: boolean;
+  premium_active?: boolean;
+  premium_expires_at?: string | null;
+  premium_days_left?: number | null;
   date_joined: string;
   last_login?: string | null;
   age?: number | null;

@@ -96,12 +96,26 @@ export function UsersPage() {
   };
 
   const totalActive = users.filter((u) => u.is_active).length;
+  const totalPremium = users.filter((u) => u.premium_active).length;
+
+  const fmtExpiry = (iso?: string | null): string => {
+    if (!iso) return "";
+    try {
+      return new Date(iso).toLocaleDateString("uz-UZ", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch {
+      return "";
+    }
+  };
 
   return (
     <div className="flex h-full flex-col">
       <PageHeader
         title={t("nav.users")}
-        subtitle={`${users.length} ta foydalanuvchi (${totalActive} faol)`}
+        subtitle={`${users.length} ta foydalanuvchi · ${totalActive} faol · ${totalPremium} premium`}
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
@@ -173,9 +187,25 @@ export function UsersPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <Avatar name={displayName(u)} size={32} />
-                      <div>
-                        <div className="font-medium text-text-primary">
-                          {displayName(u)}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 font-medium text-text-primary">
+                          <span className="truncate">{displayName(u)}</span>
+                          {u.premium_active ? (
+                            <span
+                              title={
+                                u.premium_expires_at
+                                  ? `Premium · tugaydi: ${fmtExpiry(u.premium_expires_at)}${
+                                      u.premium_days_left != null
+                                        ? ` (${u.premium_days_left} kun qoldi)`
+                                        : ""
+                                    }`
+                                  : "Premium · muddatsiz"
+                              }
+                              className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600"
+                            >
+                              <Crown className="h-3 w-3" /> Premium
+                            </span>
+                          ) : null}
                         </div>
                         <div className="text-[11px] text-text-muted">#{u.id}</div>
                       </div>
@@ -254,10 +284,20 @@ export function UsersPage() {
                     <div className="inline-flex items-center gap-1">
                       <button
                         onClick={() => setGivingPremium(u)}
-                        className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/15 px-2.5 py-1.5 text-[11.5px] font-medium text-amber-600 hover:bg-amber-500/25"
-                        title="Premium obuna berish"
+                        className={
+                          "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11.5px] font-medium " +
+                          (u.premium_active
+                            ? "border border-amber-500/40 bg-amber-500/5 text-amber-600 hover:bg-amber-500/15"
+                            : "bg-amber-500/15 text-amber-600 hover:bg-amber-500/25")
+                        }
+                        title={
+                          u.premium_active
+                            ? "Premium muddatini uzaytirish"
+                            : "Premium obuna berish"
+                        }
                       >
-                        <Crown className="h-3.5 w-3.5" /> Premium
+                        <Crown className="h-3.5 w-3.5" />
+                        {u.premium_active ? "Uzaytirish" : "Premium"}
                       </button>
                       <button
                         onClick={() => toggleActive(u.id)}
@@ -492,7 +532,7 @@ function GivePremiumModal({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const isAlreadyPremium = user.is_premium === true;
+  const isAlreadyPremium = user.premium_active === true;
 
   const give = async () => {
     if (busy) return;
