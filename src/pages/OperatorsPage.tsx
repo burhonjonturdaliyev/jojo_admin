@@ -8,6 +8,8 @@ import {
   KeyRound,
   Shield,
   Crown,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
@@ -153,7 +155,6 @@ export function OperatorsPage() {
       {adding && (
         <CreateOperatorModal
           roles={roles}
-          canManageSuperuser={canManageSuperuser}
           onClose={() => setAdding(false)}
           onCreated={async () => {
             setAdding(false);
@@ -344,21 +345,19 @@ function EditOperatorModal({
 
 function CreateOperatorModal({
   roles,
-  canManageSuperuser,
   onClose,
   onCreated,
 }: {
   roles: AdminRole[];
-  canManageSuperuser: boolean;
   onClose: () => void;
   onCreated: () => void;
 }) {
   const { t } = useT();
   const [phone, setPhone] = useState("+998");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [roleId, setRoleId] = useState<number | null>(null);
-  const [isSuperuser, setIsSuperuser] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -375,7 +374,6 @@ function CreateOperatorModal({
         password,
         full_name: fullName.trim() || undefined,
         role_id: roleId,
-        ...(canManageSuperuser && isSuperuser ? { is_superuser: true } : {}),
       });
       onCreated();
     } catch (e) {
@@ -391,12 +389,17 @@ function CreateOperatorModal({
         <h3 className="text-[16px] font-semibold text-text-primary mb-4">
           {t("form.addEmployee")}
         </h3>
-        <div className="space-y-3">
+        <form autoComplete="off" onSubmit={(e) => e.preventDefault()} className="space-y-3">
+          <input type="text" name="prevent-autofill" autoComplete="off" className="hidden" />
+          <input type="password" name="prevent-autofill-pw" autoComplete="new-password" className="hidden" />
           <div>
             <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
               {t("form.phone")} <span className="text-red-500">*</span>
             </label>
             <input
+              type="tel"
+              name="operator-phone"
+              autoComplete="off"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder={t("form.phonePlaceholder")}
@@ -411,6 +414,9 @@ function CreateOperatorModal({
               {t("form.fullName")}
             </label>
             <input
+              type="text"
+              name="operator-fullname"
+              autoComplete="off"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder={t("form.namePlaceholder")}
@@ -421,13 +427,30 @@ function CreateOperatorModal({
             <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
               {t("form.password")} <span className="text-red-500">*</span>
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={t("form.passwordPlaceholder")}
-              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="operator-password"
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={t("form.passwordPlaceholder")}
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 pr-10 text-[13px] text-text-primary outline-none focus:border-primary"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 icon-btn h-7 w-7 text-text-muted hover:text-text-primary"
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
           <div>
             <div className="text-[11.5px] font-medium text-text-secondary mb-1">
@@ -446,28 +469,12 @@ function CreateOperatorModal({
               ))}
             </select>
           </div>
-          {canManageSuperuser && (
-            <label className="flex items-start gap-2 text-[12.5px] text-text-secondary cursor-pointer rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-              <input
-                type="checkbox"
-                className="mt-0.5"
-                checked={isSuperuser}
-                onChange={(e) => setIsSuperuser(e.target.checked)}
-              />
-              <span>
-                <span className="font-semibold text-amber-500">{t("form.superAdminCreate")}</span>
-                <span className="block text-[10.5px] text-text-muted">
-                  {t("form.superAdminHint")}
-                </span>
-              </span>
-            </label>
-          )}
           {error && (
             <div className="rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
               {error}
             </div>
           )}
-        </div>
+        </form>
         <div className="mt-5 flex justify-end gap-2">
           <button className="btn-secondary text-[12.5px]" onClick={onClose}>
             {t("form.cancel")}
