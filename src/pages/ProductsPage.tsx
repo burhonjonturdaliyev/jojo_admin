@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
-import { Plus, Package, Pencil, Trash2, Search, Sparkles, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Plus, Package, Pencil, Trash2, Search, Sparkles, Loader2, X, ImagePlus, Youtube } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
 import { MultilangInput } from "../components/MultilangInput";
 import { TagsInput } from "../components/TagsInput";
 import { useT } from "../lib/i18n";
+import { uploadMedia } from "../lib/api";
 import {
   storeProductsApi,
   storeCategoriesApi,
@@ -81,8 +82,9 @@ export function ProductsPage() {
     oldPriceUzs: null,
     categoryId: categories[0] ? String(categories[0].id) : null,
     image: null,
+    images: [],
     brand: "",
-    videoUrl: "",
+    videoUrls: [],
     ageLabel: "",
     isActive: true,
     isFeatured: false,
@@ -160,6 +162,9 @@ export function ProductsPage() {
           categories={categories}
           onClose={() => setEditing(null)}
           onSave={save}
+          onCategoryCreated={async (c) => {
+            setCategories((prev) => [...prev, c]);
+          }}
         />
       )}
     </div>
@@ -259,6 +264,7 @@ function ProductEditor({
   categories,
   onClose,
   onSave,
+  onCategoryCreated,
 }: {
   product: UiProduct;
   categories: AdminStoreCategory[];
@@ -267,13 +273,57 @@ function ProductEditor({
     p: UiProduct,
     opts: { autoTranslate?: boolean; translateSource?: TranslateLang },
   ) => void | Promise<void>;
+  onCategoryCreated: (c: AdminStoreCategory) => void;
 }) {
   const { t } = useT();
   const [draft, setDraft] = useState(product);
   const [translating, setTranslating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [translateSource, setTranslateSource] = useState<TranslateLang>("uz");
-  const youtubeId = useMemo(() => parseYouTubeId(draft.videoUrl), [draft.videoUrl]);
+  const [showCategoryAdd, setShowCategoryAdd] = useState(false);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const [galleryUploading, setGalleryUploading] = useState(false);
+
+  // Number input helper: 0/empty → bo'sh placeholder, raqamni butunlay
+  // o'chirib bo'ladigan qilish uchun.
+  const numVal = (n: number | null | undefined): string =>
+    n === null || n === undefined || n === 0 ? "" : String(n);
+  const parseNum = (s: string): number => (s.trim() === "" ? 0 : Number(s) || 0);
+
+  const addVideo = () =>
+    setDraft({ ...draft, videoUrls: [...draft.videoUrls, ""] });
+  const removeVideo = (i: number) =>
+    setDraft({ ...draft, videoUrls: draft.videoUrls.filter((_, x) => x !== i) });
+  const setVideo = (i: number, v: string) =>
+    setDraft({
+      ...draft,
+      videoUrls: draft.videoUrls.map((u, x) => (x === i ? v : u)),
+    });
+
+  const onGalleryFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setGalleryUploading(true);
+    try {
+      const uploaded: string[] = [];
+      for (const file of Array.from(files)) {
+        try {
+          const r = await uploadMedia(file, "products");
+          if (r.url) uploaded.push(r.url);
+        } catch (e) {
+          console.error("gallery upload failed", e);
+        }
+      }
+      if (uploaded.length > 0) {
+        setDraft({ ...draft, images: [...draft.images, ...uploaded] });
+      }
+    } finally {
+      setGalleryUploading(false);
+      if (galleryInputRef.current) galleryInputRef.current.value = "";
+    }
+  };
+
+  const removeGalleryImage = (i: number) =>
+    setDraft({ ...draft, images: draft.images.filter((_, x) => x !== i) });
 
   const filled = (v: string) => v && v.trim().length > 0;
 
@@ -366,32 +416,122 @@ function ProductEditor({
               value={draft.image}
               onChange={(url) => setDraft({ ...draft, image: url })}
               folder="products"
-              label="Mahsulot rasmi"
+              label={t("products.gallery.cover")}
             />
+
+            {/* Qo'shimcha rasmlar gallery */}
             <div>
-              <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
-                YouTube video URL
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="text-[12px] font-semibold text-text-secondary">
+                  {t("products.gallery.title")} ({draft.images.length})
+                </div>
+                <button
+                  type="button"
+                  onClick={() => galleryInputRef.current?.click()}
+                  disabled={galleryUploading}
+                  className="inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary text-[11px] font-medium px-2 py-1 hover:bg-primary/20 disabled:opacity-50"
+                >
+                  {galleryUploading ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <ImagePlus className="h-3 w-3" />
+                  )}
+                  {t("products.gallery.add")}
+                </button>
               </div>
               <input
-                value={draft.videoUrl}
-                onChange={(e) => setDraft({ ...draft, videoUrl: e.target.value })}
-                placeholder="https://youtube.com/watch?v=..."
-                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] font-mono text-text-primary outline-none focus:border-primary"
+                ref={galleryInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => onGalleryFiles(e.target.files)}
+                className="hidden"
               />
-              {youtubeId && (
-                <div className="mt-2 rounded-xl overflow-hidden border border-line bg-black">
-                  <iframe
-                    width="100%"
-                    height="180"
-                    src={`https://www.youtube.com/embed/${youtubeId}`}
-                    title="Video preview"
-                    allowFullScreen
-                  />
+              {draft.images.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-line bg-bg-input/50 px-3 py-4 text-center text-[11.5px] text-text-muted">
+                  {t("products.gallery.empty")}
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 gap-2">
+                  {draft.images.map((url, i) => (
+                    <div
+                      key={i}
+                      className="relative group rounded-lg overflow-hidden border border-line bg-bg-input aspect-square"
+                    >
+                      <img src={url} alt="" className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeGalleryImage(i)}
+                        className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                        title={t("common.delete")}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
-              {!youtubeId && draft.videoUrl && (
-                <div className="mt-1 text-[11px] text-amber-600">
-                  YouTube havolasi noto'g'ri
+            </div>
+
+            {/* Bir nechta YouTube video URL */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="text-[12px] font-semibold text-text-secondary flex items-center gap-1.5">
+                  <Youtube className="h-3.5 w-3.5 text-red-500" />
+                  {t("products.videos.title")} ({draft.videoUrls.length})
+                </div>
+                <button
+                  type="button"
+                  onClick={addVideo}
+                  className="inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary text-[11px] font-medium px-2 py-1 hover:bg-primary/20"
+                >
+                  <Plus className="h-3 w-3" /> {t("products.videos.add")}
+                </button>
+              </div>
+              {draft.videoUrls.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-line bg-bg-input/50 px-3 py-3 text-center text-[11.5px] text-text-muted">
+                  {t("products.videos.empty")}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {draft.videoUrls.map((url, i) => {
+                    const id = parseYouTubeId(url);
+                    return (
+                      <div key={i} className="rounded-lg border border-line bg-bg-input p-2 space-y-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            value={url}
+                            onChange={(e) => setVideo(i, e.target.value)}
+                            placeholder={t("products.videos.placeholder")}
+                            className="flex-1 rounded-md border border-line bg-bg px-2 py-1.5 text-[11.5px] font-mono outline-none focus:border-primary"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeVideo(i)}
+                            className="icon-btn h-7 w-7 hover:bg-status-blocked/15 hover:text-status-blocked"
+                            title={t("common.delete")}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        {id ? (
+                          <div className="rounded-md overflow-hidden border border-line bg-black">
+                            <iframe
+                              width="100%"
+                              height="140"
+                              src={`https://www.youtube.com/embed/${id}`}
+                              title={`Video ${i + 1}`}
+                              allowFullScreen
+                            />
+                          </div>
+                        ) : url ? (
+                          <div className="text-[10.5px] text-amber-600">
+                            {t("products.videos.invalid")}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -475,38 +615,51 @@ function ProductEditor({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
-                  Narx (so'm)
+                  {t("products.field.priceLabel")}
                 </div>
                 <input
                   type="number"
-                  value={draft.priceUzs}
+                  min={0}
+                  value={numVal(draft.priceUzs)}
                   onChange={(e) =>
-                    setDraft({ ...draft, priceUzs: Number(e.target.value) })
+                    setDraft({ ...draft, priceUzs: parseNum(e.target.value) })
                   }
+                  placeholder="50000"
                   className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] font-semibold text-text-primary outline-none focus:border-primary"
                 />
               </div>
               <div>
                 <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
-                  Eski narx (ixtiyoriy)
+                  {t("products.field.oldPriceLabel")}
                 </div>
                 <input
                   type="number"
-                  value={draft.oldPriceUzs ?? ""}
+                  min={0}
+                  value={draft.oldPriceUzs == null || draft.oldPriceUzs === 0 ? "" : String(draft.oldPriceUzs)}
                   onChange={(e) =>
                     setDraft({
                       ...draft,
-                      oldPriceUzs: e.target.value ? Number(e.target.value) : null,
+                      oldPriceUzs: e.target.value.trim() === "" ? null : Number(e.target.value) || null,
                     })
                   }
+                  placeholder="—"
                   className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
-                  Kategoriya
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="text-[12px] font-semibold text-text-secondary">
+                    Kategoriya
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryAdd(true)}
+                    className="inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary text-[10.5px] font-medium px-1.5 py-0.5 hover:bg-primary/20"
+                  >
+                    <Plus className="h-2.5 w-2.5" /> {t("products.category.addNew")}
+                  </button>
                 </div>
                 <select
                   value={draft.categoryId ?? ""}
@@ -515,7 +668,11 @@ function ProductEditor({
                   }
                   className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
                 >
-                  <option value="">— tanlang —</option>
+                  <option value="">
+                    {categories.length === 0
+                      ? t("products.category.empty")
+                      : "— tanlang —"}
+                  </option>
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -550,14 +707,16 @@ function ProductEditor({
               </div>
               <div>
                 <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
-                  Stok soni
+                  {t("products.field.stockLabel")}
                 </div>
                 <input
                   type="number"
-                  value={draft.stock}
+                  min={0}
+                  value={numVal(draft.stock)}
                   onChange={(e) =>
-                    setDraft({ ...draft, stock: Number(e.target.value) })
+                    setDraft({ ...draft, stock: parseNum(e.target.value) })
                   }
+                  placeholder="0"
                   className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
                 />
               </div>
@@ -610,6 +769,120 @@ function ProductEditor({
             disabled={!canSave || saving}
           >
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Saqlash"}
+          </button>
+        </div>
+      </div>
+
+      {showCategoryAdd && (
+        <CategoryQuickAddModal
+          onClose={() => setShowCategoryAdd(false)}
+          onCreated={(c) => {
+            onCategoryCreated(c);
+            setDraft({ ...draft, categoryId: String(c.id) });
+            setShowCategoryAdd(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function CategoryQuickAddModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: (c: AdminStoreCategory) => void;
+}) {
+  const { t } = useT();
+  const [name, setName] = useState({ uz: "", ru: "", en: "" });
+  const [activeLang, setActiveLang] = useState<"uz" | "ru" | "en">("uz");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async () => {
+    if (!name.uz.trim()) {
+      setError(t("products.category.nameRequired"));
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    try {
+      const created = await storeCategoriesApi.create({
+        name: name.uz.trim(),
+        name_ru: name.ru.trim() || undefined,
+        name_en: name.en.trim() || undefined,
+        is_active: true,
+      });
+      onCreated(created);
+    } catch (e) {
+      setError((e as { message?: string }).message || "Error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl bg-bg p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-[15.5px] font-semibold text-text-primary">
+            {t("products.category.quickAdd")}
+          </h3>
+          <button onClick={onClose} className="icon-btn h-7 w-7">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mb-3 flex items-center gap-1 rounded-lg border border-line bg-bg-input p-1">
+          {(["uz", "ru", "en"] as const).map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setActiveLang(l)}
+              className={
+                "flex-1 rounded-md px-2 py-1.5 text-[11.5px] font-medium transition-colors " +
+                (activeLang === l
+                  ? "bg-primary/15 text-primary"
+                  : "text-text-secondary hover:text-text-primary")
+              }
+            >
+              {t(`products.category.langTab.${l}`)}
+            </button>
+          ))}
+        </div>
+
+        <input
+          value={name[activeLang]}
+          onChange={(e) =>
+            setName({ ...name, [activeLang]: e.target.value })
+          }
+          placeholder={t("products.category.namePlaceholder")}
+          className="w-full rounded-lg border border-line bg-bg-input px-3 py-2.5 text-[13.5px] text-text-primary outline-none focus:border-primary"
+        />
+
+        {error && (
+          <div className="mt-3 rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-4 flex justify-end gap-2">
+          <button onClick={onClose} className="btn-secondary text-[12.5px]" disabled={busy}>
+            {t("premium.cancel")}
+          </button>
+          <button
+            onClick={submit}
+            disabled={busy}
+            className="btn-primary text-[12.5px] disabled:opacity-50"
+          >
+            {busy ? t("products.category.creating") : t("products.category.create")}
           </button>
         </div>
       </div>

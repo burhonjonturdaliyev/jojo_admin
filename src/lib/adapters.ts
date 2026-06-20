@@ -107,9 +107,13 @@ export interface UiProduct {
   priceUzs: number;
   oldPriceUzs: number | null;
   categoryId: string | null;
+  /** Asosiy (cover) rasm — birinchi yoki yagona rasm. */
   image: string | null;
+  /** Qo'shimcha gallery rasmlari (cover'dan tashqari). */
+  images: string[];
   brand: string;
-  videoUrl: string;  // YouTube URL
+  /** YouTube havolalari ro'yxati. Birinchi element backendning `video_url`'iga ham yoziladi (backward-compat). */
+  videoUrls: string[];
   ageLabel: string;
   isActive: boolean;
   isFeatured: boolean;
@@ -129,6 +133,8 @@ type StoreProductRaw = AdminStoreProduct & {
   category_label_ru?: string;
   category_label_en?: string;
   video_url?: string;
+  video_urls?: string[];
+  gallery_images?: string[];
   age_label?: string;
   tags?: UiProductTag[];
 };
@@ -166,8 +172,13 @@ export function productToUi(p: AdminStoreProduct): UiProduct {
     oldPriceUzs: p.old_price ?? null,
     categoryId: p.category != null ? String(p.category) : null,
     image: p.cover_image ?? null,
+    images: Array.isArray(raw.gallery_images) ? raw.gallery_images : [],
     brand: p.brand || "",
-    videoUrl: raw.video_url || "",
+    videoUrls: Array.isArray(raw.video_urls) && raw.video_urls.length > 0
+      ? raw.video_urls
+      : raw.video_url
+        ? [raw.video_url]
+        : [],
     ageLabel: raw.age_label || "",
     isActive: p.is_active ?? true,
     isFeatured: p.is_featured ?? false,
@@ -204,9 +215,11 @@ export function productToApi(
     old_price: u.oldPriceUzs,
     category: u.categoryId != null ? Number(u.categoryId) : null,
     cover_image: u.image,
+    gallery_images: u.images.filter((x) => x && x.trim().length > 0),
     product_type: u.categoryLabel.uz,
     brand: u.brand,
-    video_url: u.videoUrl,
+    video_url: u.videoUrls[0] || "",
+    video_urls: u.videoUrls.filter((x) => x && x.trim().length > 0),
     age_label: u.ageLabel,
     is_active: u.isActive,
     is_featured: u.isFeatured,

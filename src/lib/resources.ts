@@ -128,6 +128,8 @@ export interface AdminStoreProduct {
   deal_ends_at?: string | null;
   stock_count?: number;
   video_url?: string;
+  video_urls?: string[];
+  gallery_images?: string[];
   age_label?: string;
 }
 
