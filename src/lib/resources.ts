@@ -1350,6 +1350,44 @@ export interface AdminChild {
   device?: AdminDeviceBrief | null;
 }
 
+export interface AdminChildFull {
+  child: {
+    id: number;
+    phone?: string;
+    username: string;
+    first_name?: string;
+    last_name?: string;
+    full_name?: string;
+    gender?: string;
+    age?: number | null;
+    language?: string;
+    avatar?: string | null;
+    child_status?: string;
+    is_active: boolean;
+    date_joined: string | null;
+    last_login?: string | null;
+  };
+  parents: Array<{
+    id: number;
+    name: string;
+    phone?: string;
+    linked_at?: string | null;
+  }>;
+  devices: Array<{
+    id: number;
+    type: string;
+    device_id: string;
+    brand?: string;
+    model?: string;
+    os_version?: string;
+    app_version?: string;
+    is_active: boolean;
+    last_login_at?: string | null;
+    created_at?: string | null;
+  }>;
+  activity: ActivityEvent[];
+}
+
 export const childrenApi = {
   list: (query?: { offset?: number; page_size?: number }) =>
     api<{
@@ -1373,6 +1411,8 @@ export const childrenApi = {
     api<AdminChild>(`/admin/children/${id}/`, { method: "PATCH", body: data }),
   remove: (id: number) =>
     api<void>(`/admin/children/${id}/`, { method: "DELETE" }),
+  full: (id: number) =>
+    api<AdminChildFull>(`/admin/children/${id}/full/`),
 };
 
 // ============================================================================
