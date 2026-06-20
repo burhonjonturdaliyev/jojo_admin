@@ -37,6 +37,7 @@ export interface AdminBanner {
   is_active: boolean;
   link_category_type?: string | null;
   link_product?: number | null;
+  link_external_url?: string | null;
   placeholder_label?: string;
   placeholder_tint?: string;
   gift_icon?: string | null;

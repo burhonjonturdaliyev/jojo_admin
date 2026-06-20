@@ -1,7 +1,7 @@
 import type { Localized } from "../types/locale";
 
 export type BannerTheme = "cream" | "sky" | "green";
-export type BannerActionType = "openProduct" | "filterByType" | "none";
+export type BannerActionType = "openProduct" | "filterByType" | "externalUrl" | "none";
 
 export interface PromoBanner {
   id: string;

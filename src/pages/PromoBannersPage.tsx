@@ -7,6 +7,12 @@ import {
   X,
   Eye,
   ChevronRight,
+  Ban,
+  Link as LinkIcon,
+  Package,
+  Filter,
+  Search,
+  ExternalLink,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { LocalizedField } from "../components/LocalizedField";
@@ -18,7 +24,12 @@ import {
   type BannerTheme,
   type PromoBanner,
 } from "../data/banners";
-import { bannersApi, unwrapList } from "../lib/resources";
+import {
+  bannersApi,
+  storeProductsApi,
+  unwrapList,
+  type AdminStoreProduct,
+} from "../lib/resources";
 import { bannerToApi, bannerToUi } from "../lib/adapters";
 import { cn } from "../lib/utils";
 import { useT, type Lang } from "../lib/i18n";
@@ -396,6 +407,10 @@ function actionLabel(
     return value
       ? t("banners.action.filterLabel", { value })
       : t("banners.action.filterByType");
+  if (type === "externalUrl")
+    return value
+      ? t("banners.action.externalLabel", { value })
+      : t("banners.action.externalUrl");
   return t("banners.action.none");
 }
 
@@ -470,8 +485,49 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
   const { t, lang } = useT();
   const [draft, setDraft] = useState<DraftBanner>(() => normalizeDraft(banner));
   const [previewLang, setPreviewLang] = useState<Lang>(lang);
+  const [products, setProducts] = useState<AdminStoreProduct[]>([]);
+  const [productSearch, setProductSearch] = useState("");
   const set = <K extends keyof DraftBanner>(key: K, value: DraftBanner[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
+
+  // Action picker uchun mahsulotlarni faqat "openProduct" rejimi tanlangach yuklaymiz —
+  // foydalanuvchi boshqa rejimni tanlasa, keraksiz so'rov ketmaydi.
+  useEffect(() => {
+    if (draft.actionType !== "openProduct" || products.length > 0) return;
+    storeProductsApi
+      .list()
+      .then((r) => setProducts(unwrapList(r)))
+      .catch((e) => console.error("products load", e));
+  }, [draft.actionType, products.length]);
+
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.toLowerCase().trim();
+    if (!q) return products.slice(0, 50);
+    return products
+      .filter((p) =>
+        ((p.name || "") + " " + (p.product_type || ""))
+          .toLowerCase()
+          .includes(q),
+      )
+      .slice(0, 50);
+  }, [products, productSearch]);
+
+  const selectedProduct =
+    draft.actionType === "openProduct" && draft.actionValue
+      ? products.find((p) => String(p.id) === draft.actionValue)
+      : null;
+
+  // URL validatsiya: http(s):// + xost bo'lishi shart.
+  const urlInvalid =
+    draft.actionType === "externalUrl" &&
+    draft.actionValue.trim() !== "" &&
+    !/^https?:\/\/[^\s]+\.[^\s]+/i.test(draft.actionValue.trim());
+
+  const setAction = (type: BannerActionType) => {
+    // Rejim almashganda actionValue'ni tozalab beramiz — eski qiymat
+    // boshqa rejim uchun mantiqsiz bo'ladi.
+    setDraft((d) => ({ ...d, actionType: type, actionValue: "" }));
+  };
 
   const hasContent = !!(
     draft.kicker.uz ||
@@ -578,49 +634,184 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
             label={t("banners.field.imageUrl")}
           />
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                {t("banners.field.actionType")}
-              </label>
-              <select
-                className="input"
-                value={draft.actionType}
-                onChange={(e) =>
-                  set("actionType", e.target.value as BannerActionType)
-                }
-              >
-                <option value="none">{t("common.none")}</option>
-                <option value="openProduct">
-                  {t("banners.action.openProduct")}
-                </option>
-                <option value="filterByType">
-                  {t("banners.action.filterByType")}
-                </option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-                {draft.actionType === "openProduct"
-                  ? t("banners.field.productId")
-                  : draft.actionType === "filterByType"
-                    ? t("banners.field.typeValue")
-                    : t("banners.field.actionValue")}
-              </label>
-              <input
-                className="input"
-                disabled={draft.actionType === "none"}
-                placeholder={
-                  draft.actionType === "openProduct"
-                    ? "codybot"
-                    : draft.actionType === "filterByType"
-                      ? "stem"
-                      : ""
-                }
-                value={draft.actionValue}
-                onChange={(e) => set("actionValue", e.target.value)}
+          {/* Action picker — 3 ta vizual karta */}
+          <div>
+            <label className="mb-2 block text-[12px] font-medium text-text-secondary">
+              {t("banners.field.actionType")}
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <ActionCard
+                active={draft.actionType === "none"}
+                onClick={() => setAction("none")}
+                icon={<Ban className="h-4 w-4" />}
+                title={t("banners.actionCard.none.title")}
+                hint={t("banners.actionCard.none.hint")}
+              />
+              <ActionCard
+                active={draft.actionType === "externalUrl"}
+                onClick={() => setAction("externalUrl")}
+                icon={<LinkIcon className="h-4 w-4" />}
+                title={t("banners.actionCard.externalUrl.title")}
+                hint={t("banners.actionCard.externalUrl.hint")}
+              />
+              <ActionCard
+                active={draft.actionType === "openProduct"}
+                onClick={() => setAction("openProduct")}
+                icon={<Package className="h-4 w-4" />}
+                title={t("banners.actionCard.openProduct.title")}
+                hint={t("banners.actionCard.openProduct.hint")}
               />
             </div>
+
+            {/* Filter rejimi — eski yozuvlar uchun saqlanadi (yashirin opt-in) */}
+            {draft.actionType === "filterByType" && (
+              <div className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5 text-[11.5px] text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                <Filter className="h-3.5 w-3.5" />
+                <span>
+                  {t("banners.actionCard.filter.legacyHint", {
+                    value: draft.actionValue || "—",
+                  })}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAction("none")}
+                  className="ml-auto rounded-md bg-amber-500/15 px-2 py-0.5 text-[10.5px] font-medium hover:bg-amber-500/25"
+                >
+                  {t("banners.actionCard.filter.clear")}
+                </button>
+              </div>
+            )}
+
+            {/* External URL inputi */}
+            {draft.actionType === "externalUrl" && (
+              <div className="mt-3 rounded-xl border border-line bg-bg-input p-3">
+                <label className="mb-1.5 block text-[11.5px] font-medium text-text-secondary">
+                  {t("banners.field.externalUrl")}
+                </label>
+                <div className="relative">
+                  <ExternalLink className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+                  <input
+                    type="url"
+                    inputMode="url"
+                    autoComplete="off"
+                    spellCheck={false}
+                    value={draft.actionValue}
+                    onChange={(e) => set("actionValue", e.target.value)}
+                    placeholder={t("banners.field.externalUrlPh")}
+                    className={cn(
+                      "w-full rounded-lg border bg-bg pl-9 pr-3 py-2 text-[12.5px] font-mono outline-none focus:border-primary",
+                      urlInvalid ? "border-red-500/50" : "border-line",
+                    )}
+                  />
+                </div>
+                {urlInvalid ? (
+                  <div className="mt-1 text-[10.5px] text-red-500">
+                    {t("banners.field.externalUrlInvalid")}
+                  </div>
+                ) : (
+                  <div className="mt-1 text-[10.5px] text-text-muted">
+                    {t("banners.field.externalUrlHint")}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mahsulot tanlash */}
+            {draft.actionType === "openProduct" && (
+              <div className="mt-3 rounded-xl border border-line bg-bg-input p-3 space-y-2">
+                <label className="block text-[11.5px] font-medium text-text-secondary">
+                  {t("banners.field.product")}
+                </label>
+                {selectedProduct && (
+                  <div className="flex items-center gap-2.5 rounded-lg bg-primary/10 px-3 py-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 text-primary overflow-hidden">
+                      {selectedProduct.cover_image ? (
+                        <img
+                          src={selectedProduct.cover_image}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <Package className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[12.5px] font-medium text-text-primary truncate">
+                        {selectedProduct.name}
+                      </div>
+                      <div className="text-[10.5px] text-text-muted truncate">
+                        #{selectedProduct.id}
+                        {selectedProduct.price
+                          ? ` · ${selectedProduct.price.toLocaleString("uz-UZ").replace(/,/g, " ")} so'm`
+                          : ""}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => set("actionValue", "")}
+                      className="icon-btn h-7 w-7"
+                      title={t("common.clear")}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+                {!selectedProduct && (
+                  <>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted" />
+                      <input
+                        value={productSearch}
+                        onChange={(e) => setProductSearch(e.target.value)}
+                        placeholder={t("banners.field.productSearchPh")}
+                        className="w-full rounded-lg border border-line bg-bg pl-9 pr-3 py-2 text-[12.5px] outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div className="max-h-56 overflow-y-auto scrollbar-thin rounded-lg border border-line bg-bg">
+                      {filteredProducts.length === 0 ? (
+                        <div className="px-3 py-6 text-center text-[11.5px] text-text-muted">
+                          {products.length === 0
+                            ? t("common.loading")
+                            : t("banners.field.productEmpty")}
+                        </div>
+                      ) : (
+                        filteredProducts.map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => set("actionValue", String(p.id))}
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-bg-hover transition-colors border-b border-line/50 last:border-b-0"
+                          >
+                            <div className="flex h-7 w-7 items-center justify-center rounded bg-bg-input overflow-hidden">
+                              {p.cover_image ? (
+                                <img
+                                  src={p.cover_image}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <Package className="h-3.5 w-3.5 text-text-muted" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[12px] font-medium text-text-primary truncate">
+                                {p.name}
+                              </div>
+                              {(p.price ?? 0) > 0 && (
+                                <div className="text-[10.5px] text-text-muted">
+                                  {(p.price ?? 0).toLocaleString("uz-UZ").replace(/,/g, " ")} so'm
+                                </div>
+                              )}
+                            </div>
+                            <ChevronRight className="h-3.5 w-3.5 text-text-muted" />
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -673,6 +864,46 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+function ActionCard({
+  active,
+  onClick,
+  icon,
+  title,
+  hint,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  title: string;
+  hint: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex flex-col items-start gap-1 rounded-xl border-2 p-3 text-left transition-all",
+        active
+          ? "border-primary bg-primary/5 shadow-sm"
+          : "border-line bg-bg-input hover:border-primary/40",
+      )}
+    >
+      <div
+        className={cn(
+          "flex h-7 w-7 items-center justify-center rounded-lg",
+          active
+            ? "bg-primary/15 text-primary"
+            : "bg-bg text-text-secondary",
+        )}
+      >
+        {icon}
+      </div>
+      <div className="text-[12px] font-semibold text-text-primary">{title}</div>
+      <div className="text-[10.5px] text-text-muted leading-snug">{hint}</div>
+    </button>
   );
 }
 

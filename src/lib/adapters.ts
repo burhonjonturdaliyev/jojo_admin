@@ -22,6 +22,21 @@ import { type Localized, emptyLocalized, toLocalized } from "../types/locale";
 // ============================================================================
 
 export function bannerToUi(b: AdminBanner): PromoBanner {
+  // Action prioriteti: product → category → external URL → none.
+  // Backendda bir vaqtda bir nechtasi to'lgan bo'lishi mumkin (eski yozuvlar);
+  // UI faqat bittasini tanlaydi.
+  let actionType: PromoBanner["actionType"] = "none";
+  let actionValue = "";
+  if (b.link_product != null) {
+    actionType = "openProduct";
+    actionValue = String(b.link_product);
+  } else if (b.link_category_type) {
+    actionType = "filterByType";
+    actionValue = b.link_category_type;
+  } else if (b.link_external_url) {
+    actionType = "externalUrl";
+    actionValue = b.link_external_url;
+  }
   return {
     id: String(b.id),
     kicker: toLocalized(b.kicker || ""),
@@ -29,16 +44,8 @@ export function bannerToUi(b: AdminBanner): PromoBanner {
     subtitle: toLocalized(b.subtitle || ""),
     theme: (b.theme as PromoBanner["theme"]) || "sky",
     imageUrl: b.image ?? null,
-    actionType:
-      b.link_product != null
-        ? "openProduct"
-        : b.link_category_type
-          ? "filterByType"
-          : "none",
-    actionValue:
-      b.link_product != null
-        ? String(b.link_product)
-        : b.link_category_type || "",
+    actionType,
+    actionValue,
     sortOrder: b.order ?? 0,
     isActive: b.is_active ?? true,
   };
@@ -58,12 +65,33 @@ function pickLocale(
 }
 
 export function bannerToApi(b: PromoBanner): Partial<AdminBanner> {
+  // Faqat bitta action rejimi yoqilgan bo'ladi — boshqalarini tozalab,
+  // backendga aniq holatda jo'natamiz. Aks holda eski yozuvlardan qoldiq
+  // sabab UI'da noto'g'ri rejim tanlanishi mumkin.
   const action =
     b.actionType === "openProduct"
-      ? { link_product: Number(b.actionValue) || null }
+      ? {
+          link_product: Number(b.actionValue) || null,
+          link_category_type: "",
+          link_external_url: "",
+        }
       : b.actionType === "filterByType"
-        ? { link_category_type: b.actionValue || null, link_product: null }
-        : { link_product: null, link_category_type: null };
+        ? {
+            link_product: null,
+            link_category_type: b.actionValue || "",
+            link_external_url: "",
+          }
+        : b.actionType === "externalUrl"
+          ? {
+              link_product: null,
+              link_category_type: "",
+              link_external_url: b.actionValue || "",
+            }
+          : {
+              link_product: null,
+              link_category_type: "",
+              link_external_url: "",
+            };
   return {
     title: pickFirstFromLocalized(b.title),
     title_uz_cyrl: pickLocale(b.title, "uz_cyrl"),
