@@ -19,6 +19,7 @@ import {
   Gift,
   Send,
   Sparkles,
+  Activity as ActivityIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
@@ -614,6 +615,23 @@ function UserEditor({
   );
 }
 
+const ACTIVITY_DOT_USER: Record<string, string> = {
+  registered: "bg-primary",
+  last_login: "bg-emerald-500",
+  child_linked: "bg-purple-500",
+  order: "bg-indigo-500",
+  payment: "bg-amber-500",
+  subscription: "bg-amber-500",
+  subscription_cancelled: "bg-text-muted",
+  premium_offer_sent: "bg-amber-400",
+  premium_offer_accepted: "bg-emerald-500",
+  premium_offer_rejected: "bg-red-400",
+  premium_offer_expired: "bg-text-muted",
+  notification: "bg-blue-500",
+  support_ticket: "bg-cyan-500",
+  sos: "bg-red-500",
+};
+
 function ParentInfoModal({
   userId,
   onClose,
@@ -623,6 +641,7 @@ function ParentInfoModal({
   onClose: () => void;
   onGivePremium: () => void;
 }) {
+  const { t } = useT();
   const [data, setData] = useState<AdminUserFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -877,6 +896,39 @@ function ParentInfoModal({
                       >
                         {p.status}
                       </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="card p-4">
+              <div className="text-[12px] font-semibold text-text-secondary mb-3 flex items-center gap-1.5">
+                <ActivityIcon className="h-3.5 w-3.5" /> {t("lead.activity") || "Faollik tarixi"} ({data.activity.length})
+              </div>
+              {data.activity.length === 0 ? (
+                <div className="text-[12px] text-text-muted italic">{t("lead.noActivityRecords")}</div>
+              ) : (
+                <div className="space-y-2">
+                  {data.activity.map((a, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-3 rounded-lg bg-bg-input px-3 py-2"
+                    >
+                      <div
+                        className={
+                          "h-2 w-2 rounded-full mt-1.5 shrink-0 " +
+                          (ACTIVITY_DOT_USER[a.type] || "bg-text-muted")
+                        }
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[12.5px] text-text-primary">
+                          {t(a.i18n_key, a.params)}
+                        </div>
+                        <div className="text-[10.5px] text-text-muted">
+                          {fmtDate(a.at)}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>

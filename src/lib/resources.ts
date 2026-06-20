@@ -347,6 +347,7 @@ export interface AdminUserFull {
     plan_name?: string | null;
     created_at?: string | null;
   }[];
+  activity: ActivityEvent[];
 }
 
 export const usersApi = {
@@ -1500,11 +1501,14 @@ export interface AdminLeadFull {
     plan_name: string | null;
     created_at: string;
   }>;
-  activity: Array<{
-    type: string;
-    label: string;
-    at: string | null;
-  }>;
+  activity: ActivityEvent[];
+}
+
+export interface ActivityEvent {
+  type: string;
+  at: string | null;
+  i18n_key: string;
+  params: Record<string, string | number>;
 }
 
 export interface LeadBoardResponse {

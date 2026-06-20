@@ -75,15 +75,21 @@ const STATUS_DOT: Record<LeadStatus, string> = {
 };
 
 const ACTIVITY_DOT: Record<string, string> = {
+  registered: "bg-primary",
+  last_login: "bg-emerald-500",
   login: "bg-emerald-500",
   sos: "bg-red-500",
   child_linked: "bg-purple-500",
   order: "bg-indigo-500",
   payment: "bg-amber-500",
+  subscription: "bg-amber-500",
+  subscription_cancelled: "bg-text-muted",
+  premium_offer_sent: "bg-amber-400",
+  premium_offer_accepted: "bg-emerald-500",
+  premium_offer_rejected: "bg-red-400",
+  premium_offer_expired: "bg-text-muted",
   notification: "bg-blue-500",
-  status: "bg-cyan-500",
-  comment: "bg-text-muted",
-  lead_created: "bg-primary",
+  support_ticket: "bg-cyan-500",
 };
 
 function fmtNumber(n: number | undefined | null): string {
@@ -1470,7 +1476,7 @@ function LeadDetailPanel({
                         />
                         <div className="min-w-0 flex-1">
                           <div className="text-[12.5px] text-text-primary">
-                            {a.label}
+                            {t(a.i18n_key, a.params)}
                           </div>
                           <div className="text-[10.5px] text-text-muted">
                             {fmtDateTime(a.at)}
