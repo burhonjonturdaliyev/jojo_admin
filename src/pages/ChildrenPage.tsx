@@ -1,9 +1,23 @@
 import { useCallback, useEffect, useState } from "react";
-import { Baby, CircleUser, User as UserIcon, Pencil, Trash2, X, Save } from "lucide-react";
+import { Baby, CircleUser, User as UserIcon, Pencil, Trash2, X, Save, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
 import { useT } from "../lib/i18n";
 import { childrenApi, type AdminChild } from "../lib/resources";
+
+type LangInfo = { code: string; flag: string; label: string; name: string };
+function langInfo(raw?: string): LangInfo | null {
+  const r = (raw || "").toLowerCase();
+  if (!r) return null;
+  if (r.startsWith("uz")) {
+    if (r.includes("cyr"))
+      return { code: "uz_cyrl", flag: "🇺🇿", label: "UZ-Cyr", name: "Ўзбек кирилл" };
+    return { code: "uz_latn", flag: "🇺🇿", label: "UZ", name: "O'zbek lotin" };
+  }
+  if (r.startsWith("ru")) return { code: "ru", flag: "🇷🇺", label: "RU", name: "Русский" };
+  if (r.startsWith("en")) return { code: "en", flag: "🇬🇧", label: "EN", name: "English" };
+  return null;
+}
 
 export function ChildrenPage() {
   const { t } = useT();
@@ -74,15 +88,56 @@ export function ChildrenPage() {
                   </td>
                 </tr>
               )}
-              {items.map((c) => (
-                <tr key={c.id} className="border-b border-line/50 hover:bg-bg-hover">
+              {items.map((c) => {
+                const status = c.child_status || (c.is_active ? "active" : "non_active");
+                const isInactive = status !== "active";
+                const lang = langInfo(c.language);
+                const genderLabel =
+                  c.gender === "male"
+                    ? t("lead.genderMale")
+                    : c.gender === "female"
+                      ? t("lead.genderFemale")
+                      : t("child.gender.unknown");
+                const statusKey =
+                  status === "active"
+                    ? "child.status.active"
+                    : status === "non_active"
+                      ? "child.status.non_active"
+                      : "child.status.unknown";
+                return (
+                <tr
+                  key={c.id}
+                  className={
+                    "border-b border-line/50 transition-colors " +
+                    (isInactive
+                      ? "bg-red-500/[0.03] hover:bg-red-500/[0.06]"
+                      : "hover:bg-bg-hover")
+                  }
+                >
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500/15 text-orange-500">
+                      <div
+                        className={
+                          "relative flex h-9 w-9 items-center justify-center rounded-lg " +
+                          (isInactive
+                            ? "bg-red-500/15 text-red-500"
+                            : "bg-orange-500/15 text-orange-500")
+                        }
+                      >
                         <CircleUser className="h-5 w-5" />
+                        {isInactive && (
+                          <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-bg ring-2 ring-bg">
+                            <AlertCircle className="h-3 w-3 text-red-500" />
+                          </span>
+                        )}
                       </div>
                       <div>
-                        <div className="font-medium text-text-primary">
+                        <div
+                          className={
+                            "font-medium " +
+                            (isInactive ? "text-text-secondary" : "text-text-primary")
+                          }
+                        >
                           {c.first_name || c.username || "—"}
                         </div>
                         <div className="text-[11px] text-text-muted">#{c.id}</div>
@@ -114,8 +169,20 @@ export function ChildrenPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-text-secondary">{c.age ?? "—"}</td>
-                  <td className="px-4 py-3 text-text-secondary">{c.gender || "—"}</td>
-                  <td className="px-4 py-3 text-text-secondary">{c.language || "—"}</td>
+                  <td className="px-4 py-3 text-text-secondary">{genderLabel}</td>
+                  <td className="px-4 py-3">
+                    {lang ? (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-md bg-bg-input px-2 py-0.5 text-[11.5px] font-medium text-text-secondary"
+                        title={lang.name}
+                      >
+                        <span>{lang.flag}</span>
+                        <span>{lang.label}</span>
+                      </span>
+                    ) : (
+                      <span className="text-[12px] text-text-muted">{t("child.lang.unknown")}</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     {c.device ? (
                       <div className="flex flex-col gap-0.5">
@@ -134,8 +201,20 @@ export function ChildrenPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="rounded-full bg-status-resolved/15 px-2.5 py-1 text-[11px] font-medium text-status-resolved">
-                      {c.child_status || (c.is_active ? "active" : "inactive")}
+                    <span
+                      className={
+                        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold " +
+                        (isInactive
+                          ? "bg-red-500/15 text-red-500 ring-1 ring-red-500/30"
+                          : "bg-emerald-500/15 text-emerald-500")
+                      }
+                    >
+                      {isInactive ? (
+                        <AlertCircle className="h-3 w-3" />
+                      ) : (
+                        <CheckCircle2 className="h-3 w-3" />
+                      )}
+                      {t(statusKey)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-text-secondary">
@@ -160,7 +239,8 @@ export function ChildrenPage() {
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
