@@ -809,13 +809,24 @@ export const orderStatusesApi = {
 // Subscription plans (Premium)
 // ============================================================================
 
+export type PlanDurationType = "days" | "months" | "years";
+
 export interface AdminPlan {
   id: number;
   name: string;
+  name_ru?: string;
+  name_en?: string;
   description?: string;
-  price_uzs?: number;
-  duration_days?: number;
+  description_ru?: string;
+  description_en?: string;
+  price?: number;
+  currency?: string;
+  duration_value?: number;
+  duration_type?: PlanDurationType;
+  is_trial?: boolean;
+  trial_days?: number;
   is_active?: boolean;
+  is_featured?: boolean;
   order?: number;
 }
 

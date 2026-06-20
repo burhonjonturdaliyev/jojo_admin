@@ -12,10 +12,17 @@ import {
   CalendarRange,
   Hash,
   ToggleRight,
+  Sparkles,
+  Star,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { useT } from "../lib/i18n";
-import { plansApi, unwrapList, type AdminPlan } from "../lib/resources";
+import {
+  plansApi,
+  unwrapList,
+  type AdminPlan,
+  type PlanDurationType,
+} from "../lib/resources";
 
 export function PremiumPage() {
   const { t } = useT();
@@ -65,10 +72,20 @@ export function PremiumPage() {
               setEditing({
                 id: 0,
                 name: "",
+                name_ru: "",
+                name_en: "",
                 description: "",
-                price_uzs: 0,
-                duration_days: 30,
+                description_ru: "",
+                description_en: "",
+                price: 0,
+                currency: "UZS",
+                duration_value: 1,
+                duration_type: "months",
+                is_trial: false,
+                trial_days: 0,
                 is_active: true,
+                is_featured: false,
+                order: 0,
               })
             }
           >
@@ -109,21 +126,41 @@ export function PremiumPage() {
                   </button>
                 </div>
               </div>
-              <h3 className="mt-3 text-[16px] font-semibold text-text-primary">
+              <h3 className="mt-3 flex items-center gap-1.5 text-[16px] font-semibold text-text-primary">
                 {p.name}
+                {p.is_featured && (
+                  <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />
+                )}
               </h3>
               <p className="mt-1 text-[12.5px] text-text-secondary line-clamp-2">
                 {p.description || "—"}
               </p>
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-[24px] font-bold text-text-primary">
-                  {(p.price_uzs ?? 0).toLocaleString("uz-UZ").replace(/,/g, " ")}
-                </span>
-                <span className="text-[12.5px] text-text-muted">{t("premium.priceCurrency")}</span>
-              </div>
-              <div className="mt-1 text-[11.5px] text-text-muted">
-                {t("premium.duration", { n: p.duration_days ?? 0 })}
-              </div>
+              {p.is_trial ? (
+                <div className="mt-4 flex items-baseline gap-1">
+                  <Sparkles className="h-4 w-4 text-emerald-500 self-center" />
+                  <span className="text-[20px] font-bold text-emerald-500">
+                    Trial
+                  </span>
+                  <span className="text-[12.5px] text-text-muted">
+                    · {p.trial_days ?? 0} {t("premium.period.days").toLowerCase()}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="mt-4 flex items-baseline gap-1">
+                    <span className="text-[24px] font-bold text-text-primary">
+                      {(p.price ?? 0).toLocaleString("uz-UZ").replace(/,/g, " ")}
+                    </span>
+                    <span className="text-[12.5px] text-text-muted">
+                      {p.currency || t("premium.priceCurrency")}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-[11.5px] text-text-muted">
+                    {p.duration_value ?? 0}{" "}
+                    {t(`premium.period.${p.duration_type || "months"}`).toLowerCase()}
+                  </div>
+                </>
+              )}
               <span
                 className={
                   "mt-3 inline-block rounded-full px-2.5 py-1 text-[10.5px] font-medium " +
@@ -150,6 +187,8 @@ export function PremiumPage() {
   );
 }
 
+type LangCode = "uz" | "ru" | "en";
+
 function PlanEditor({
   plan,
   onClose,
@@ -159,33 +198,39 @@ function PlanEditor({
   onClose: () => void;
   onSave: (p: AdminPlan) => void;
 }) {
-  const [draft, setDraft] = useState(plan);
+  const { t } = useT();
+  const [draft, setDraft] = useState<AdminPlan>(plan);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeLang, setActiveLang] = useState<LangCode>("uz");
 
   const formatPrice = (n: number) =>
     (n || 0).toLocaleString("uz-UZ").replace(/,/g, " ");
 
-  const presetDurations = [
-    { d: 7, label: "1 hafta" },
-    { d: 30, label: "1 oy" },
-    { d: 90, label: "3 oy" },
-    { d: 180, label: "6 oy" },
-    { d: 365, label: "1 yil" },
+  const presets: Array<{ value: number; type: PlanDurationType; label: string }> = [
+    { value: 7, type: "days", label: "7 " + t("premium.period.days").toLowerCase() },
+    { value: 1, type: "months", label: "1 " + t("premium.period.months").toLowerCase() },
+    { value: 3, type: "months", label: "3 " + t("premium.period.months").toLowerCase() },
+    { value: 6, type: "months", label: "6 " + t("premium.period.months").toLowerCase() },
+    { value: 1, type: "years", label: "1 " + t("premium.period.years").toLowerCase() },
   ];
 
   const handleSave = async () => {
     setError(null);
-    if (!draft.name.trim()) {
-      setError("Tarif nomini kiriting");
+    if (!(draft.name || "").trim()) {
+      setError(t("premium.editor.nameRequired"));
       return;
     }
-    if ((draft.price_uzs ?? 0) < 0) {
-      setError("Narx manfiy bo'lishi mumkin emas");
+    if ((draft.price ?? 0) < 0) {
+      setError(t("premium.editor.priceNeg"));
       return;
     }
-    if ((draft.duration_days ?? 0) < 1) {
-      setError("Davomiyligi 1 kundan kam bo'lmasligi kerak");
+    if (!draft.is_trial && (draft.duration_value ?? 0) < 1) {
+      setError(t("premium.editor.durationMin"));
+      return;
+    }
+    if (draft.is_trial && (draft.trial_days ?? 0) < 1) {
+      setError(t("premium.editor.trialDaysMin"));
       return;
     }
     setBusy(true);
@@ -196,13 +241,20 @@ function PlanEditor({
     }
   };
 
+  // Multilang field getter/setter
+  const nameKey = activeLang === "uz" ? "name" : `name_${activeLang}` as keyof AdminPlan;
+  const descKey =
+    activeLang === "uz" ? "description" : (`description_${activeLang}` as keyof AdminPlan);
+  const nameValue = (draft[nameKey] as string | undefined) || "";
+  const descValue = (draft[descKey] as string | undefined) || "";
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl bg-bg p-5"
+        className="w-full max-w-lg max-h-[92vh] overflow-y-auto scrollbar-thin rounded-2xl bg-bg p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-5 flex items-start justify-between">
@@ -212,10 +264,10 @@ function PlanEditor({
             </div>
             <div>
               <h3 className="text-[16.5px] font-bold text-text-primary">
-                {plan.id ? "Tarifni tahrirlash" : "Yangi Premium tarif"}
+                {plan.id ? t("premium.editPlan") : t("premium.newPlanTitle")}
               </h3>
               <div className="text-[11.5px] text-text-muted">
-                Foydalanuvchilar shu tariflardan birini tanlaydi
+                {t("premium.editor.subtitle")}
               </div>
             </div>
           </div>
@@ -225,108 +277,222 @@ function PlanEditor({
         </div>
 
         <div className="space-y-4">
-          {/* Nomi */}
+          {/* Multilang tab tanlash */}
+          <div className="flex items-center gap-1 rounded-lg border border-line bg-bg-input p-1">
+            {(["uz", "ru", "en"] as LangCode[]).map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => setActiveLang(l)}
+                className={
+                  "flex-1 rounded-md px-2 py-1.5 text-[11.5px] font-medium transition-colors " +
+                  (activeLang === l
+                    ? "bg-primary/15 text-primary"
+                    : "text-text-secondary hover:text-text-primary")
+                }
+              >
+                {t(`premium.field.langTab.${l}`)}
+              </button>
+            ))}
+          </div>
+          <div className="text-[10.5px] text-text-muted -mt-2">
+            {t("premium.field.multilangHint")}
+          </div>
+
+          {/* Nomi (active langga qarab) */}
           <Field
             icon={<Tag className="h-3.5 w-3.5" />}
-            label="Tarif nomi"
-            hint="Foydalanuvchiga ko'rsatiladigan asosiy nom"
-            required
+            label={t("premium.field.name")}
+            required={activeLang === "uz"}
           >
             <input
-              value={draft.name}
-              onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-              placeholder="Masalan: Premium Pro"
+              value={nameValue}
+              onChange={(e) =>
+                setDraft({ ...draft, [nameKey]: e.target.value } as AdminPlan)
+              }
+              placeholder={t("premium.field.namePlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2.5 text-[13.5px] font-medium text-text-primary outline-none focus:border-primary"
             />
           </Field>
 
-          {/* Tavsif */}
+          {/* Tavsif (active langga qarab) */}
           <Field
             icon={<FileText className="h-3.5 w-3.5" />}
-            label="Qisqacha tavsif"
-            hint="Tarif ichidagi imkoniyatlar haqida bir-ikki gap"
+            label={t("premium.field.description")}
           >
             <textarea
-              value={draft.description || ""}
+              value={descValue}
               onChange={(e) =>
-                setDraft({ ...draft, description: e.target.value })
+                setDraft({ ...draft, [descKey]: e.target.value } as AdminPlan)
               }
-              placeholder="Hudud bloklash, ilova nazorati, cheksiz farzandlar..."
+              placeholder={t("premium.field.descPlaceholder")}
               rows={3}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2.5 text-[13px] text-text-primary outline-none focus:border-primary resize-none"
             />
           </Field>
 
-          {/* Narx + Davomiyligi */}
-          <div className="grid grid-cols-2 gap-3">
-            <Field
-              icon={<CircleDollarSign className="h-3.5 w-3.5" />}
-              label="Narxi (so'm)"
-              hint={
-                draft.price_uzs
-                  ? `${formatPrice(draft.price_uzs)} so'm`
-                  : "Bepul tarif uchun 0"
+          {/* Trial toggle */}
+          <label className="flex items-center justify-between gap-2 rounded-lg border border-line bg-bg-input px-3 py-2.5 cursor-pointer">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-500">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="leading-tight">
+                <div className="text-[13px] font-medium text-text-primary">
+                  {t("premium.field.isTrial")}
+                </div>
+                <div className="text-[11px] text-text-muted">
+                  {t("premium.field.isTrialHint")}
+                </div>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={draft.is_trial ?? false}
+              onChange={(e) =>
+                setDraft({ ...draft, is_trial: e.target.checked })
               }
-              required
-            >
-              <input
-                type="number"
-                min={0}
-                value={draft.price_uzs ?? 0}
-                onChange={(e) =>
-                  setDraft({ ...draft, price_uzs: Number(e.target.value) })
-                }
-                placeholder="50000"
-                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2.5 text-[14px] font-semibold text-text-primary outline-none focus:border-primary"
-              />
-            </Field>
+              className="h-4 w-4"
+            />
+          </label>
 
+          {draft.is_trial ? (
             <Field
               icon={<CalendarRange className="h-3.5 w-3.5" />}
-              label="Davomiyligi (kun)"
-              hint={`Bir martalik to'lov ${draft.duration_days ?? 30} kunga`}
+              label={t("premium.field.trialDays")}
               required
             >
               <input
                 type="number"
                 min={1}
-                value={draft.duration_days ?? 30}
+                value={draft.trial_days ?? 0}
                 onChange={(e) =>
-                  setDraft({
-                    ...draft,
-                    duration_days: Number(e.target.value),
-                  })
+                  setDraft({ ...draft, trial_days: Number(e.target.value) })
                 }
-                placeholder="30"
+                placeholder="7"
                 className="w-full rounded-lg border border-line bg-bg-input px-3 py-2.5 text-[14px] font-semibold text-text-primary outline-none focus:border-primary"
               />
             </Field>
-          </div>
+          ) : (
+            <>
+              {/* Narx + Valyuta */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <Field
+                    icon={<CircleDollarSign className="h-3.5 w-3.5" />}
+                    label={t("premium.field.price")}
+                    hint={
+                      draft.price
+                        ? `${formatPrice(draft.price)} ${draft.currency || "UZS"}`
+                        : "0"
+                    }
+                    required
+                  >
+                    <input
+                      type="number"
+                      min={0}
+                      value={draft.price ?? 0}
+                      onChange={(e) =>
+                        setDraft({ ...draft, price: Number(e.target.value) })
+                      }
+                      placeholder="50000"
+                      className="w-full rounded-lg border border-line bg-bg-input px-3 py-2.5 text-[14px] font-semibold text-text-primary outline-none focus:border-primary"
+                    />
+                  </Field>
+                </div>
+                <Field label={t("premium.field.currency")}>
+                  <select
+                    value={draft.currency || "UZS"}
+                    onChange={(e) =>
+                      setDraft({ ...draft, currency: e.target.value })
+                    }
+                    className="w-full rounded-lg border border-line bg-bg-input px-2.5 py-2.5 text-[13.5px] outline-none focus:border-primary"
+                  >
+                    <option value="UZS">UZS</option>
+                    <option value="USD">USD</option>
+                    <option value="RUB">RUB</option>
+                    <option value="EUR">EUR</option>
+                  </select>
+                </Field>
+              </div>
 
-          {/* Tezkor muddat presetlari */}
-          <div className="flex flex-wrap gap-1.5">
-            {presetDurations.map((p) => (
-              <button
-                key={p.d}
-                type="button"
-                onClick={() => setDraft({ ...draft, duration_days: p.d })}
-                className={
-                  "rounded-md border px-2.5 py-1 text-[11.5px] font-medium transition-colors " +
-                  (draft.duration_days === p.d
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-line bg-bg-input text-text-secondary hover:text-text-primary")
-                }
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+              {/* Davomiyligi + Birlik */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <Field
+                    icon={<CalendarRange className="h-3.5 w-3.5" />}
+                    label={t("premium.field.durationValue")}
+                    required
+                  >
+                    <input
+                      type="number"
+                      min={1}
+                      value={draft.duration_value ?? 1}
+                      onChange={(e) =>
+                        setDraft({
+                          ...draft,
+                          duration_value: Number(e.target.value),
+                        })
+                      }
+                      placeholder="1"
+                      className="w-full rounded-lg border border-line bg-bg-input px-3 py-2.5 text-[14px] font-semibold text-text-primary outline-none focus:border-primary"
+                    />
+                  </Field>
+                </div>
+                <Field label={t("premium.field.durationType")}>
+                  <select
+                    value={draft.duration_type || "months"}
+                    onChange={(e) =>
+                      setDraft({
+                        ...draft,
+                        duration_type: e.target.value as PlanDurationType,
+                      })
+                    }
+                    className="w-full rounded-lg border border-line bg-bg-input px-2.5 py-2.5 text-[13.5px] outline-none focus:border-primary"
+                  >
+                    <option value="days">{t("premium.period.days")}</option>
+                    <option value="months">{t("premium.period.months")}</option>
+                    <option value="years">{t("premium.period.years")}</option>
+                  </select>
+                </Field>
+              </div>
+
+              {/* Tezkor presetlar */}
+              <div className="flex flex-wrap gap-1.5">
+                {presets.map((p) => {
+                  const active =
+                    draft.duration_value === p.value && draft.duration_type === p.type;
+                  return (
+                    <button
+                      key={`${p.value}-${p.type}`}
+                      type="button"
+                      onClick={() =>
+                        setDraft({
+                          ...draft,
+                          duration_value: p.value,
+                          duration_type: p.type,
+                        })
+                      }
+                      className={
+                        "rounded-md border px-2.5 py-1 text-[11.5px] font-medium transition-colors " +
+                        (active
+                          ? "border-primary bg-primary/10 text-primary"
+                          : "border-line bg-bg-input text-text-secondary hover:text-text-primary")
+                      }
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           {/* Tartib */}
           <Field
             icon={<Hash className="h-3.5 w-3.5" />}
-            label="Tartib raqami"
-            hint="Kichik raqam ro'yxat tepasida ko'rinadi (0 — birinchi)"
+            label={t("premium.field.order")}
+            hint={t("premium.field.orderHint")}
           >
             <input
               type="number"
@@ -340,6 +506,31 @@ function PlanEditor({
             />
           </Field>
 
+          {/* Featured */}
+          <label className="flex items-center justify-between gap-2 rounded-lg border border-line bg-bg-input px-3 py-2.5 cursor-pointer">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-amber-500/15 text-amber-500">
+                <Star className="h-4 w-4" />
+              </div>
+              <div className="leading-tight">
+                <div className="text-[13px] font-medium text-text-primary">
+                  {t("premium.field.isFeatured")}
+                </div>
+                <div className="text-[11px] text-text-muted">
+                  {t("premium.field.isFeaturedHint")}
+                </div>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={draft.is_featured ?? false}
+              onChange={(e) =>
+                setDraft({ ...draft, is_featured: e.target.checked })
+              }
+              className="h-4 w-4"
+            />
+          </label>
+
           {/* Faollik */}
           <label className="flex items-center justify-between gap-2 rounded-lg border border-line bg-bg-input px-3 py-2.5 cursor-pointer">
             <div className="flex items-center gap-2.5">
@@ -348,10 +539,10 @@ function PlanEditor({
               </div>
               <div className="leading-tight">
                 <div className="text-[13px] font-medium text-text-primary">
-                  Tarif faol
+                  {t("premium.field.isActive")}
                 </div>
                 <div className="text-[11px] text-text-muted">
-                  Foydalanuvchilarga ko'rsatilsinmi
+                  {t("premium.field.isActiveHint")}
                 </div>
               </div>
             </div>
@@ -378,7 +569,7 @@ function PlanEditor({
             onClick={onClose}
             disabled={busy}
           >
-            Bekor
+            {t("premium.cancel")}
           </button>
           <button
             className="btn-primary text-[12.5px] disabled:opacity-50"
@@ -386,7 +577,7 @@ function PlanEditor({
             disabled={busy}
           >
             <Save className="h-3.5 w-3.5" />
-            {busy ? "Saqlanmoqda..." : "Saqlash"}
+            {busy ? t("premium.saving") : t("premium.save")}
           </button>
         </div>
       </div>
