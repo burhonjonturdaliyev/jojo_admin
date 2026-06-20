@@ -241,6 +241,13 @@ function PlanEditor({
     }
   };
 
+  // Number input helper: 0/undefined → empty placeholder, foydalanuvchi
+  // raqamni butunlay o'chira oladi. Bo'sh string saqlashda 0 deb qabul qilamiz
+  // (validatsiya o'zi pastroq qiymatlarni ushlaydi).
+  const numVal = (n: number | undefined | null): string =>
+    n === undefined || n === null || n === 0 ? "" : String(n);
+  const parseNum = (s: string): number => (s.trim() === "" ? 0 : Number(s) || 0);
+
   // Multilang field getter/setter
   const nameKey = activeLang === "uz" ? "name" : `name_${activeLang}` as keyof AdminPlan;
   const descKey =
@@ -365,9 +372,9 @@ function PlanEditor({
               <input
                 type="number"
                 min={1}
-                value={draft.trial_days ?? 0}
+                value={numVal(draft.trial_days)}
                 onChange={(e) =>
-                  setDraft({ ...draft, trial_days: Number(e.target.value) })
+                  setDraft({ ...draft, trial_days: parseNum(e.target.value) })
                 }
                 placeholder="7"
                 className="w-full rounded-lg border border-line bg-bg-input px-3 py-2.5 text-[14px] font-semibold text-text-primary outline-none focus:border-primary"
@@ -391,9 +398,9 @@ function PlanEditor({
                     <input
                       type="number"
                       min={0}
-                      value={draft.price ?? 0}
+                      value={numVal(draft.price)}
                       onChange={(e) =>
-                        setDraft({ ...draft, price: Number(e.target.value) })
+                        setDraft({ ...draft, price: parseNum(e.target.value) })
                       }
                       placeholder="50000"
                       className="w-full rounded-lg border border-line bg-bg-input px-3 py-2.5 text-[14px] font-semibold text-text-primary outline-none focus:border-primary"
@@ -427,11 +434,11 @@ function PlanEditor({
                     <input
                       type="number"
                       min={1}
-                      value={draft.duration_value ?? 1}
+                      value={numVal(draft.duration_value)}
                       onChange={(e) =>
                         setDraft({
                           ...draft,
-                          duration_value: Number(e.target.value),
+                          duration_value: parseNum(e.target.value),
                         })
                       }
                       placeholder="1"
@@ -497,9 +504,9 @@ function PlanEditor({
             <input
               type="number"
               min={0}
-              value={draft.order ?? 0}
+              value={numVal(draft.order)}
               onChange={(e) =>
-                setDraft({ ...draft, order: Number(e.target.value) })
+                setDraft({ ...draft, order: parseNum(e.target.value) })
               }
               placeholder="0"
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2.5 text-[13px] text-text-primary outline-none focus:border-primary"

@@ -999,6 +999,12 @@ function GivePremiumModal({
 
   const isAlreadyPremium = user.premium_active === true;
 
+  // Number input helper: 0 → bo'sh placeholder. Foydalanuvchi raqamni
+  // butunlay o'chira oladi; bo'sh string saqlashda 0 deb qabul qilamiz.
+  const numVal = (n: number | undefined | null): string =>
+    n === undefined || n === null || n === 0 ? "" : String(n);
+  const parseNum = (s: string): number => (s.trim() === "" ? 0 : Number(s) || 0);
+
   const finalPrice = Math.max(
     0,
     Math.round(originalPrice * (1 - Math.min(99, Math.max(0, discount)) / 100)),
@@ -1174,8 +1180,8 @@ function GivePremiumModal({
           type="number"
           min={1}
           max={3650}
-          value={days}
-          onChange={(e) => setDays(Number(e.target.value) || 0)}
+          value={numVal(days)}
+          onChange={(e) => setDays(parseNum(e.target.value))}
           placeholder="Kun soni"
           className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] outline-none focus:border-primary"
         />
@@ -1192,8 +1198,9 @@ function GivePremiumModal({
                 <input
                   type="number"
                   min={0}
-                  value={originalPrice}
-                  onChange={(e) => setOriginalPrice(Number(e.target.value) || 0)}
+                  value={numVal(originalPrice)}
+                  onChange={(e) => setOriginalPrice(parseNum(e.target.value))}
+                  placeholder="50000"
                   className="w-full rounded-lg border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] outline-none focus:border-primary"
                 />
               </div>
@@ -1203,8 +1210,11 @@ function GivePremiumModal({
                   type="number"
                   min={0}
                   max={99}
-                  value={discount}
-                  onChange={(e) => setDiscount(Math.max(0, Math.min(99, Number(e.target.value) || 0)))}
+                  value={numVal(discount)}
+                  onChange={(e) =>
+                    setDiscount(Math.max(0, Math.min(99, parseNum(e.target.value))))
+                  }
+                  placeholder="0"
                   className="w-full rounded-lg border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] outline-none focus:border-primary"
                 />
               </div>
@@ -1221,8 +1231,9 @@ function GivePremiumModal({
                 type="number"
                 min={1}
                 max={720}
-                value={offerHours}
-                onChange={(e) => setOfferHours(Number(e.target.value) || 0)}
+                value={numVal(offerHours)}
+                onChange={(e) => setOfferHours(parseNum(e.target.value))}
+                placeholder="72"
                 className="w-full rounded-lg border border-line bg-bg-input px-2.5 py-1.5 text-[12.5px] outline-none focus:border-primary"
               />
               <div className="mt-0.5 text-[10px] text-text-muted">
