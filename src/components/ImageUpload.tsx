@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Upload, X, Loader2 } from "lucide-react";
 import { uploadMedia } from "../lib/api";
+import { useT } from "../lib/i18n";
 
 interface Props {
   value: string | null;
@@ -21,9 +22,10 @@ export function ImageUpload({
   value,
   onChange,
   folder = "uploads",
-  label = "Rasm",
+  label,
   className = "",
 }: Props) {
+  const { t } = useT();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,15 +37,17 @@ export function ImageUpload({
       const r = await uploadMedia(file, folder);
       onChange(r.url);
     } catch (e) {
-      setError((e as { message?: string }).message || "Yuklash xato");
+      setError((e as { message?: string }).message || t("imageUpload.uploadError"));
     } finally {
       setBusy(false);
     }
   };
 
+  const displayLabel = label ?? t("imageUpload.defaultLabel");
+
   return (
     <div className={"space-y-2 " + className}>
-      <div className="text-[12px] font-medium text-text-secondary">{label}</div>
+      <div className="text-[12px] font-medium text-text-secondary">{displayLabel}</div>
       <div className="flex items-start gap-3">
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-line bg-bg-input">
           {value ? (
@@ -60,7 +64,7 @@ export function ImageUpload({
                 type="button"
                 onClick={() => onChange(null)}
                 className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
-                title="O'chirish"
+                title={t("imageUpload.removeTitle")}
               >
                 <X className="h-3 w-3" />
               </button>
@@ -95,12 +99,12 @@ export function ImageUpload({
             className="inline-flex items-center gap-2 rounded-lg border border-line bg-bg-input px-3 py-1.5 text-[12px] font-medium text-text-primary hover:bg-bg-hover disabled:opacity-60"
           >
             <Upload className="h-3.5 w-3.5" />
-            {busy ? "Yuklanmoqda..." : value ? "Almashtirish" : "Yuklash"}
+            {busy ? t("imageUpload.uploading") : value ? t("imageUpload.replace") : t("imageUpload.upload")}
           </button>
           <input
             value={value ?? ""}
             onChange={(e) => onChange(e.target.value || null)}
-            placeholder="yoki URL kiritib qo'ying"
+            placeholder={t("imageUpload.urlPlaceholder")}
             className="w-full rounded-lg border border-line bg-bg-input px-3 py-1.5 text-[11.5px] font-mono text-text-secondary outline-none focus:border-primary"
           />
           {error && (

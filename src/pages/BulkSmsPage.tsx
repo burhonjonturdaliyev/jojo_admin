@@ -37,6 +37,7 @@ import {
   Hash,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { useT } from "../lib/i18n";
 import {
   bulkSmsApi,
   type BulkSmsCampaign,
@@ -47,24 +48,36 @@ import {
 
 type Tab = "compose" | "history" | "groups";
 
-const STATUS_META: Record<
-  BulkSmsCampaign["status"],
-  { label: string; chip: string }
-> = {
-  queued: { label: "Navbatda", chip: "bg-text-muted/15 text-text-muted" },
-  sending: { label: "Yuborilmoqda", chip: "bg-status-progress/15 text-status-progress" },
-  done: { label: "Yakunlangan", chip: "bg-status-resolved/15 text-status-resolved" },
+type TFn = (key: string, vars?: Record<string, string | number>) => string;
+
+type StatusKey = BulkSmsCampaign["status"];
+type SourceKey = BulkSmsCampaign["source"];
+
+const STATUS_CHIPS: Record<StatusKey, string> = {
+  queued: "bg-text-muted/15 text-text-muted",
+  sending: "bg-status-progress/15 text-status-progress",
+  done: "bg-status-resolved/15 text-status-resolved",
 };
 
-const SOURCE_META: Record<
-  BulkSmsCampaign["source"],
-  { label: string; icon: string }
-> = {
-  manual: { label: "Qo'lda", icon: "✍️" },
-  group: { label: "Guruh", icon: "📋" },
-  csv: { label: "CSV/XLSX", icon: "📄" },
-  mixed: { label: "Aralash", icon: "🔀" },
+const SOURCE_ICONS: Record<SourceKey, string> = {
+  manual: "✍️",
+  group: "📋",
+  csv: "📄",
+  mixed: "🔀",
 };
+
+const getStatusMeta = (t: TFn): Record<StatusKey, { label: string; chip: string }> => ({
+  queued: { label: t("bulkSms.status.queued"), chip: STATUS_CHIPS.queued },
+  sending: { label: t("bulkSms.status.sending"), chip: STATUS_CHIPS.sending },
+  done: { label: t("bulkSms.status.done"), chip: STATUS_CHIPS.done },
+});
+
+const getSourceMeta = (t: TFn): Record<SourceKey, { label: string; icon: string }> => ({
+  manual: { label: t("bulkSms.source.manual"), icon: SOURCE_ICONS.manual },
+  group: { label: t("bulkSms.source.group"), icon: SOURCE_ICONS.group },
+  csv: { label: t("bulkSms.source.csv"), icon: SOURCE_ICONS.csv },
+  mixed: { label: t("bulkSms.source.mixed"), icon: SOURCE_ICONS.mixed },
+});
 
 function fmtTime(iso: string | null) {
   if (!iso) return "—";
@@ -78,6 +91,7 @@ function fmtTime(iso: string | null) {
 }
 
 export function BulkSmsPage() {
+  const { t } = useT();
   const [tab, setTab] = useState<Tab>("compose");
   const [groups, setGroups] = useState<SmsContactGroup[]>([]);
   const [campaigns, setCampaigns] = useState<BulkSmsCampaign[]>([]);
@@ -109,20 +123,20 @@ export function BulkSmsPage() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Bulk SMS"
-        subtitle="Bir nechta raqamga bir martada SMS yuborish — qo'lda, guruhdan yoki CSV/XLSX dan"
+        title={t("bulkSms.pageTitle")}
+        subtitle={t("bulkSms.pageSubtitle")}
         actions={
           <div className="flex gap-1.5">
             {[
-              { v: "compose" as Tab, label: "Yangi yuborish", icon: Send },
-              { v: "history" as Tab, label: "Tarix", icon: History },
-              { v: "groups" as Tab, label: "Guruhlar", icon: Layers },
-            ].map((t) => {
-              const active = tab === t.v;
+              { v: "compose" as Tab, label: t("bulkSms.tab.compose"), icon: Send },
+              { v: "history" as Tab, label: t("bulkSms.tab.history"), icon: History },
+              { v: "groups" as Tab, label: t("bulkSms.tab.groups"), icon: Layers },
+            ].map((tt) => {
+              const active = tab === tt.v;
               return (
                 <button
-                  key={t.v}
-                  onClick={() => setTab(t.v)}
+                  key={tt.v}
+                  onClick={() => setTab(tt.v)}
                   className={
                     "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-medium transition " +
                     (active
@@ -130,8 +144,8 @@ export function BulkSmsPage() {
                       : "border border-line bg-bg-input text-text-secondary hover:text-text-primary")
                   }
                 >
-                  <t.icon className="h-3.5 w-3.5" />
-                  {t.label}
+                  <tt.icon className="h-3.5 w-3.5" />
+                  {tt.label}
                 </button>
               );
             })}
@@ -182,6 +196,7 @@ function ComposeTab({
   groups: SmsContactGroup[];
   onSent: () => void;
 }) {
+  const { t } = useT();
   type Mode = "manual" | "group" | "csv";
   const [mode, setMode] = useState<Mode>("manual");
 
@@ -309,7 +324,7 @@ function ComposeTab({
       // Refresh list
       onSent();
     } catch (e) {
-      setError((e as { message?: string }).message || "Xato yuz berdi");
+      setError((e as { message?: string }).message || t("bulkSms.compose.errorDefault"));
     } finally {
       setSending(false);
     }
@@ -324,11 +339,10 @@ function ComposeTab({
           </div>
           <div>
             <h3 className="text-[15px] font-semibold text-text-primary">
-              Yangi bulk SMS yuborish
+              {t("bulkSms.compose.headerTitle")}
             </h3>
             <p className="text-[12px] text-text-secondary">
-              Raqamlarni tanlang, matnni yozing va yuboring. Har bir raqamga
-              alohida yuboriladi va natija jurnalga yoziladi.
+              {t("bulkSms.compose.headerSubtitle")}
             </p>
           </div>
         </div>
@@ -336,9 +350,9 @@ function ComposeTab({
         {/* Mode toggle */}
         <div className="mb-4 grid grid-cols-3 gap-2">
           {[
-            { v: "manual" as Mode, label: "Qo'lda kiritish", icon: Phone },
-            { v: "group" as Mode, label: "Guruhdan", icon: Layers },
-            { v: "csv" as Mode, label: "CSV / XLSX", icon: FileText },
+            { v: "manual" as Mode, label: t("bulkSms.mode.manual"), icon: Phone },
+            { v: "group" as Mode, label: t("bulkSms.mode.group"), icon: Layers },
+            { v: "csv" as Mode, label: t("bulkSms.mode.csv"), icon: FileText },
           ].map((m) => {
             const active = mode === m.v;
             return (
@@ -364,7 +378,7 @@ function ComposeTab({
         {mode === "manual" && (
           <div className="mb-4">
             <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              Telefon raqamlar
+              {t("bulkSms.field.phones")}
             </label>
             <textarea
               value={manualText}
@@ -376,8 +390,7 @@ function ComposeTab({
               className="w-full resize-none rounded-lg border border-line bg-bg-input px-3 py-2 font-mono text-[13px] text-text-primary outline-none focus:border-brand"
             />
             <p className="mt-1 text-[11px] text-text-muted">
-              Har qatordan bittadan, yoki probel/vergul bilan ajratib yozish
-              mumkin. Yangi qatorni bossangiz avto-parse qilinadi.
+              {t("bulkSms.field.phonesHint")}
             </p>
           </div>
         )}
@@ -385,23 +398,23 @@ function ComposeTab({
         {mode === "group" && (
           <div className="mb-4">
             <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              Kontakt guruh
+              {t("bulkSms.field.group")}
             </label>
             <select
               value={groupId ?? ""}
               onChange={(e) => setGroupId(e.target.value ? Number(e.target.value) : null)}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-brand"
             >
-              <option value="">— guruhni tanlang —</option>
+              <option value="">{t("bulkSms.field.groupSelectDash")}</option>
               {groups.map((g) => (
                 <option key={g.id} value={g.id}>
-                  {g.name} ({g.contacts_count || 0} ta kontakt)
+                  {t("bulkSms.field.groupOption", { name: g.name, count: g.contacts_count || 0 })}
                 </option>
               ))}
             </select>
             {groups.length === 0 && (
               <p className="mt-1 text-[11px] text-text-muted">
-                Hozircha guruhlar yo'q. "Guruhlar" tabidan yangi yarating.
+                {t("bulkSms.field.noGroupsHint")}
               </p>
             )}
           </div>
@@ -410,7 +423,7 @@ function ComposeTab({
         {mode === "csv" && (
           <div className="mb-4">
             <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              CSV / XLSX fayl
+              {t("bulkSms.field.csvFile")}
             </label>
             <label
               htmlFor="csv-upload"
@@ -418,11 +431,10 @@ function ComposeTab({
             >
               <Upload className="mb-2 h-6 w-6 text-text-muted" />
               <div className="text-[13px] font-medium text-text-primary">
-                {csvFile ? csvFile.name : "Faylni tanlang yoki shu yerga tashlang"}
+                {csvFile ? csvFile.name : t("bulkSms.field.csvDrop")}
               </div>
               <div className="mt-0.5 text-[11px] text-text-muted">
-                CSV, TSV yoki Excel-CSV (UTF-8). Birinchi ustun yoki `phone`
-                ustuni avtomatik aniqlanadi.
+                {t("bulkSms.field.csvHint")}
               </div>
             </label>
             <input
@@ -438,12 +450,12 @@ function ComposeTab({
         {/* Title (optional) */}
         <div className="mb-3">
           <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-            Kampaniya nomi (ixtiyoriy)
+            {t("bulkSms.field.campaignTitle")}
           </label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Masalan: Premium foydalanuvchilarga 50% chegirma"
+            placeholder={t("bulkSms.field.campaignTitlePlaceholder")}
             className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-brand"
           />
         </div>
@@ -452,16 +464,16 @@ function ComposeTab({
         <div className="mb-4">
           <div className="mb-1.5 flex items-center justify-between">
             <label className="text-[12px] font-medium text-text-secondary">
-              Xabar matni *
+              {t("bulkSms.field.message")}
             </label>
             <span className="text-[10.5px] text-text-muted">
-              {message.length} / 500 belgi · {smsCount} ta SMS
+              {t("bulkSms.field.messageStats", { chars: message.length, sms: smsCount })}
             </span>
           </div>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value.slice(0, 500))}
-            placeholder="Salom! Bizning yangi aksiyamizdan foydalaning..."
+            placeholder={t("bulkSms.field.messagePlaceholder")}
             rows={4}
             className="w-full resize-none rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-brand"
             required
@@ -479,17 +491,20 @@ function ComposeTab({
           <div className="mb-3 space-y-2 rounded-lg border border-status-resolved/30 bg-status-resolved/5 p-3">
             <div className="flex items-center gap-2 text-[13px] font-semibold text-status-resolved">
               <CheckCircle2 className="h-4 w-4" />
-              Yuborildi: {result.sent} / {result.total} muvaffaqiyatli
+              {t("bulkSms.result.success", { sent: result.sent, total: result.total })}
               {result.failed > 0 && (
                 <span className="ml-2 text-status-blocked">
-                  ({result.failed} xato)
+                  {t("bulkSms.result.failedSuffix", { failed: result.failed })}
                 </span>
               )}
             </div>
             {result.failedSample.length > 0 && (
               <details className="text-[11.5px] text-text-secondary">
                 <summary className="cursor-pointer hover:text-text-primary">
-                  Xato raqamlar ({result.failedSample.length}{result.failed > result.failedSample.length ? "+" : ""}) — tafsilot
+                  {t("bulkSms.result.failedSummary", {
+                    count: result.failedSample.length,
+                    plus: result.failed > result.failedSample.length ? "+" : "",
+                  })}
                 </summary>
                 <ul className="mt-1 space-y-0.5 font-mono">
                   {result.failedSample.map((f, i) => (
@@ -511,12 +526,12 @@ function ComposeTab({
           {sending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Yuborilmoqda...
+              {t("common.sending")}
             </>
           ) : (
             <>
               <Send className="h-4 w-4" />
-              {recipientCount} ta raqamga yuborish
+              {t("bulkSms.sendButton", { count: recipientCount })}
             </>
           )}
         </button>
@@ -526,33 +541,33 @@ function ComposeTab({
       <aside className="card p-5">
         <div className="mb-4 flex items-center gap-2 text-[12.5px] font-semibold text-text-secondary">
           <Sparkles className="h-3.5 w-3.5" />
-          Yuborish ko'rinishi
+          {t("bulkSms.preview.title")}
         </div>
 
         <div className="space-y-3">
           <PreviewStat
-            label="Qabul qiluvchilar"
+            label={t("bulkSms.preview.recipients")}
             value={recipientCount.toString()}
-            suffix="ta yaroqli raqam"
+            suffix={t("bulkSms.preview.recipientsSuffix")}
             highlight={recipientCount > 0}
           />
           {invalidCount > 0 && (
             <PreviewStat
-              label="Rad etilgan"
+              label={t("bulkSms.preview.rejected")}
               value={invalidCount.toString()}
-              suffix="ta noto'g'ri format"
+              suffix={t("bulkSms.preview.rejectedSuffix")}
               tone="warn"
             />
           )}
           <PreviewStat
-            label="Xabar uzunligi"
-            value={`${message.length} belgi`}
-            suffix={`${smsCount} ta SMS / qabul qiluvchi`}
+            label={t("bulkSms.preview.messageLength")}
+            value={t("bulkSms.preview.charsValue", { chars: message.length })}
+            suffix={t("bulkSms.preview.messageSmsCount", { sms: smsCount })}
           />
           {parsing && (
             <div className="flex items-center gap-2 rounded-lg bg-bg-input px-3 py-2 text-[11.5px] text-text-secondary">
               <Loader2 className="h-3 w-3 animate-spin" />
-              Raqamlar tahlil qilinmoqda...
+              {t("bulkSms.preview.parsing")}
             </div>
           )}
         </div>
@@ -560,7 +575,7 @@ function ComposeTab({
         {(parsedNumbers.length > 0 || parsedFromFile.length > 0) && (
           <div className="mt-4">
             <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-muted">
-              Birinchi 10 ta raqam
+              {t("bulkSms.preview.firstTen")}
             </div>
             <div className="max-h-60 overflow-y-auto rounded-lg border border-line bg-bg-input p-2 font-mono text-[11.5px] scrollbar-thin">
               {(mode === "manual" ? parsedNumbers : parsedFromFile)
@@ -639,39 +654,42 @@ function HistoryTab({
   onOpen: (c: BulkSmsCampaign) => void;
   onReload: () => void;
 }) {
+  const { t } = useT();
+  const statusMeta = useMemo(() => getStatusMeta(t), [t]);
+  const sourceMeta = useMemo(() => getSourceMeta(t), [t]);
   return (
     <div className="card overflow-hidden">
       <div className="flex items-center justify-between border-b border-line px-4 py-3">
         <div className="text-[13px] font-semibold text-text-primary">
-          Yuborilgan kampaniyalar ({campaigns.length})
+          {t("bulkSms.history.headerTitle", { count: campaigns.length })}
         </div>
         <button
           onClick={onReload}
           className="text-[12px] text-text-secondary hover:text-text-primary"
         >
-          Yangilash
+          {t("bulkSms.history.refresh")}
         </button>
       </div>
       {campaigns.length === 0 ? (
         <div className="px-4 py-12 text-center text-text-muted">
           <History className="mx-auto mb-2 h-8 w-8 opacity-40" />
-          <div className="text-[13px]">Hozircha hech qanday kampaniya yo'q</div>
+          <div className="text-[13px]">{t("bulkSms.history.empty")}</div>
         </div>
       ) : (
         <table className="min-w-full text-[13px]">
           <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
             <tr>
-              <th className="px-4 py-3 w-32">Vaqt</th>
-              <th className="px-4 py-3">Nomi / matn</th>
-              <th className="px-4 py-3 w-24">Manba</th>
-              <th className="px-4 py-3 w-24">Holat</th>
-              <th className="px-4 py-3 w-40">Natija</th>
+              <th className="px-4 py-3 w-32">{t("bulkSms.history.col.time")}</th>
+              <th className="px-4 py-3">{t("bulkSms.history.col.titleMessage")}</th>
+              <th className="px-4 py-3 w-24">{t("bulkSms.history.col.source")}</th>
+              <th className="px-4 py-3 w-24">{t("bulkSms.history.col.status")}</th>
+              <th className="px-4 py-3 w-40">{t("bulkSms.history.col.result")}</th>
             </tr>
           </thead>
           <tbody>
             {campaigns.map((c) => {
-              const status = STATUS_META[c.status];
-              const source = SOURCE_META[c.source];
+              const status = statusMeta[c.status];
+              const source = sourceMeta[c.source];
               const successRate = c.total
                 ? Math.round((c.sent_count / c.total) * 100)
                 : 0;
@@ -725,7 +743,7 @@ function HistoryTab({
                       <span className="text-[12px] text-text-primary">{c.total}</span>
                       {c.failed_count > 0 && (
                         <span className="ml-2 text-[11.5px] text-status-blocked">
-                          {c.failed_count} xato
+                          {t("bulkSms.history.errorCount", { count: c.failed_count })}
                         </span>
                       )}
                     </div>
@@ -764,6 +782,8 @@ function CampaignDetailModal({
   campaign: BulkSmsCampaign;
   onClose: () => void;
 }) {
+  const { t } = useT();
+  const statusMeta = useMemo(() => getStatusMeta(t), [t]);
   const [full, setFull] = useState<BulkSmsCampaign | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | "success" | "fail">("all");
@@ -795,11 +815,13 @@ function CampaignDetailModal({
         <header className="flex items-start justify-between gap-4 border-b border-line px-5 py-3">
           <div className="min-w-0 flex-1">
             <h2 className="text-[15px] font-bold text-text-primary">
-              Kampaniya #{campaign.id} {campaign.title && `— ${campaign.title}`}
+              {campaign.title
+                ? t("bulkSms.detail.titleWithName", { id: campaign.id, title: campaign.title })
+                : t("bulkSms.detail.title", { id: campaign.id })}
             </h2>
             <p className="mt-0.5 text-[12px] text-text-secondary">
               {fmtTime(campaign.created_at)} ·{" "}
-              {campaign.created_by_name || "system"} · {STATUS_META[campaign.status].label}
+              {campaign.created_by_name || t("bulkSms.detail.systemUser")} · {statusMeta[campaign.status].label}
             </p>
           </div>
           <button
@@ -812,14 +834,14 @@ function CampaignDetailModal({
 
         <div className="border-b border-line px-5 py-4">
           <div className="mb-3 grid grid-cols-3 gap-2">
-            <StatChip label="Jami" value={campaign.total} />
+            <StatChip label={t("bulkSms.detail.statTotal")} value={campaign.total} />
             <StatChip
-              label="Yetkazildi"
+              label={t("bulkSms.detail.statDelivered")}
               value={campaign.sent_count}
               tone="success"
             />
             <StatChip
-              label="Xato"
+              label={t("bulkSms.detail.statFailed")}
               value={campaign.failed_count}
               tone="error"
             />
@@ -841,32 +863,36 @@ function CampaignDetailModal({
                   : "border border-line bg-bg-input text-text-secondary hover:text-text-primary")
               }
             >
-              {f === "all" ? "Hammasi" : f === "success" ? "Yetkazildi" : "Xato"}
+              {f === "all"
+                ? t("bulkSms.detail.filterAll")
+                : f === "success"
+                  ? t("bulkSms.detail.filterSuccess")
+                  : t("bulkSms.detail.filterFail")}
             </button>
           ))}
           <div className="ml-auto text-[11.5px] text-text-muted">
-            {filtered.length} ta yozuv
+            {t("bulkSms.detail.recordCount", { count: filtered.length })}
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar-thin">
           {loading ? (
             <div className="px-4 py-12 text-center text-text-muted">
-              Yuklanmoqda...
+              {t("common.loading")}
             </div>
           ) : filtered.length === 0 ? (
             <div className="px-4 py-12 text-center text-text-muted">
-              Yozuvlar yo'q
+              {t("bulkSms.detail.empty")}
             </div>
           ) : (
             <table className="min-w-full text-[12.5px]">
               <thead className="sticky top-0 border-b border-line bg-bg-input text-left text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">
                 <tr>
                   <th className="px-4 py-2 w-12 text-center">#</th>
-                  <th className="px-4 py-2 w-36">Telefon</th>
-                  <th className="px-4 py-2 w-16 text-center">Holat</th>
-                  <th className="px-4 py-2">Sabab</th>
-                  <th className="px-4 py-2 w-16 text-center">Retry</th>
+                  <th className="px-4 py-2 w-36">{t("bulkSms.detail.col.phone")}</th>
+                  <th className="px-4 py-2 w-16 text-center">{t("bulkSms.detail.col.status")}</th>
+                  <th className="px-4 py-2">{t("bulkSms.detail.col.reason")}</th>
+                  <th className="px-4 py-2 w-16 text-center">{t("bulkSms.detail.col.retry")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -886,7 +912,7 @@ function CampaignDetailModal({
                       )}
                     </td>
                     <td className="px-4 py-1.5 text-text-secondary">
-                      {l.success ? "OK" : l.reason}
+                      {l.success ? t("bulkSms.detail.ok") : l.reason}
                       {l.result_code !== -1 && l.result_code !== 0 && (
                         <span className="ml-2 inline-flex items-center gap-0.5 rounded bg-bg-input px-1.5 py-0.5 font-mono text-[10px] text-text-muted">
                           <Hash className="h-2.5 w-2.5" />
@@ -947,6 +973,7 @@ function GroupsTab({
   groups: SmsContactGroup[];
   onChange: () => void;
 }) {
+  const { t } = useT();
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [creating, setCreating] = useState(false);
@@ -969,7 +996,7 @@ function GroupsTab({
   };
 
   const removeGroup = async (id: number) => {
-    if (!confirm("Guruh o'chirilsinmi? Ichidagi kontaktlar ham yo'qoladi.")) return;
+    if (!confirm(t("bulkSms.groups.confirmDeleteGroup"))) return;
     await bulkSmsApi.groupRemove(id);
     onChange();
   };
@@ -978,21 +1005,21 @@ function GroupsTab({
     <div className="grid grid-cols-[1fr_360px] gap-5">
       <div className="card overflow-hidden">
         <div className="border-b border-line px-4 py-3 text-[13px] font-semibold text-text-primary">
-          Kontakt guruhlar ({groups.length})
+          {t("bulkSms.groups.headerTitle", { count: groups.length })}
         </div>
         {groups.length === 0 ? (
           <div className="px-4 py-12 text-center text-text-muted">
             <Layers className="mx-auto mb-2 h-8 w-8 opacity-40" />
-            <div className="text-[13px]">Hozircha guruhlar yo'q</div>
+            <div className="text-[13px]">{t("bulkSms.groups.empty")}</div>
           </div>
         ) : (
           <table className="min-w-full text-[13px]">
             <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
               <tr>
-                <th className="px-4 py-3">Nomi</th>
-                <th className="px-4 py-3 w-32">Kontaktlar</th>
-                <th className="px-4 py-3 w-32">Yangilangan</th>
-                <th className="px-4 py-3 w-20 text-right">Amal</th>
+                <th className="px-4 py-3">{t("bulkSms.groups.col.name")}</th>
+                <th className="px-4 py-3 w-32">{t("bulkSms.groups.col.contacts")}</th>
+                <th className="px-4 py-3 w-32">{t("bulkSms.groups.col.updated")}</th>
+                <th className="px-4 py-3 w-20 text-right">{t("bulkSms.groups.col.action")}</th>
               </tr>
             </thead>
             <tbody>
@@ -1024,7 +1051,7 @@ function GroupsTab({
                     <button
                       onClick={() => removeGroup(g.id)}
                       className="rounded-lg p-1.5 text-text-secondary hover:bg-status-blocked/15 hover:text-status-blocked"
-                      title="O'chirish"
+                      title={t("bulkSms.groups.deleteTitle")}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -1039,19 +1066,19 @@ function GroupsTab({
       <aside className="card p-5">
         <div className="mb-3 flex items-center gap-2 text-[13px] font-semibold text-text-primary">
           <PlusCircle className="h-4 w-4 text-brand" />
-          Yangi guruh
+          {t("bulkSms.groups.newTitle")}
         </div>
         <div className="space-y-2">
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Guruh nomi (masalan: STEM mijozlar)"
+            placeholder={t("bulkSms.groups.newNamePlaceholder")}
             className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-brand"
           />
           <textarea
             value={newDesc}
             onChange={(e) => setNewDesc(e.target.value)}
-            placeholder="Eslatma (ixtiyoriy)"
+            placeholder={t("bulkSms.groups.newDescPlaceholder")}
             rows={2}
             className="w-full resize-none rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] text-text-primary outline-none focus:border-brand"
           />
@@ -1065,7 +1092,7 @@ function GroupsTab({
             ) : (
               <PlusCircle className="h-3.5 w-3.5" />
             )}
-            Guruh yaratish
+            {t("bulkSms.groups.createBtn")}
           </button>
         </div>
       </aside>
@@ -1094,6 +1121,7 @@ function GroupDetailModal({
   group: SmsContactGroup;
   onClose: () => void;
 }) {
+  const { t } = useT();
   const [contacts, setContacts] = useState<SmsContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [addPhone, setAddPhone] = useState("");
@@ -1145,7 +1173,7 @@ function GroupDetailModal({
       const r = await bulkSmsApi.contactAdd(group.id, {
         contacts: lines.map((p) => ({ phone: p })),
       });
-      alert(`${r.added} ta qo'shildi, ${r.skipped} ta o'tkazib yuborildi (takror/noto'g'ri)`);
+      alert(t("bulkSms.groupDetail.addResult", { added: r.added, skipped: r.skipped }));
       setBulkText("");
       void reload();
     } finally {
@@ -1159,7 +1187,7 @@ function GroupDetailModal({
     setBusy(true);
     try {
       const r = await bulkSmsApi.groupImportCsv(group.id, f);
-      alert(`${r.added} ta qo'shildi, ${r.skipped} ta o'tkazib yuborildi (${r.total_parsed} ta parse qilindi)`);
+      alert(t("bulkSms.groupDetail.csvImportResult", { added: r.added, skipped: r.skipped, total: r.total_parsed }));
       void reload();
     } finally {
       setBusy(false);
@@ -1168,7 +1196,7 @@ function GroupDetailModal({
   };
 
   const removeContact = async (id: number) => {
-    if (!confirm("Kontaktni o'chirasizmi?")) return;
+    if (!confirm(t("bulkSms.groupDetail.confirmDeleteContact"))) return;
     await bulkSmsApi.contactRemove(group.id, id);
     void reload();
   };
@@ -1192,7 +1220,7 @@ function GroupDetailModal({
               {group.name}
             </h2>
             <p className="mt-0.5 text-[12px] text-text-secondary">
-              {contacts.length} ta kontakt
+              {t("bulkSms.groupDetail.contactCount", { count: contacts.length })}
             </p>
           </div>
           <button
@@ -1218,7 +1246,11 @@ function GroupDetailModal({
                       : "text-text-secondary hover:text-text-primary")
                   }
                 >
-                  {m === "single" ? "Bitta" : m === "bulk" ? "Ko'p" : "CSV"}
+                  {m === "single"
+                    ? t("bulkSms.groupDetail.modeSingle")
+                    : m === "bulk"
+                      ? t("bulkSms.groupDetail.modeBulk")
+                      : t("bulkSms.groupDetail.modeCsv")}
                 </button>
               ))}
             </div>
@@ -1234,7 +1266,7 @@ function GroupDetailModal({
                 <input
                   value={addName}
                   onChange={(e) => setAddName(e.target.value)}
-                  placeholder="Ism (ixtiyoriy)"
+                  placeholder={t("bulkSms.groupDetail.namePlaceholder")}
                   className="w-full rounded-lg border border-line bg-bg-input px-2.5 py-2 text-[12.5px] text-text-primary outline-none focus:border-brand"
                 />
                 <button
@@ -1243,7 +1275,7 @@ function GroupDetailModal({
                   className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand py-2 text-[12px] font-semibold text-white disabled:opacity-50 hover:bg-brand-hover"
                 >
                   <PlusCircle className="h-3.5 w-3.5" />
-                  Qo'shish
+                  {t("bulkSms.groupDetail.addBtn")}
                 </button>
               </div>
             )}
@@ -1263,7 +1295,7 @@ function GroupDetailModal({
                   className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-brand py-2 text-[12px] font-semibold text-white disabled:opacity-50 hover:bg-brand-hover"
                 >
                   <PlusCircle className="h-3.5 w-3.5" />
-                  Hammasini qo'shish
+                  {t("bulkSms.groupDetail.addAllBtn")}
                 </button>
               </div>
             )}
@@ -1276,10 +1308,10 @@ function GroupDetailModal({
                 >
                   <Upload className="mb-1 h-5 w-5 text-text-muted" />
                   <div className="text-[12px] font-medium text-text-primary">
-                    Faylni tanlang
+                    {t("bulkSms.groupDetail.csvSelect")}
                   </div>
                   <div className="mt-0.5 text-[10.5px] text-text-muted">
-                    CSV / TSV / Excel-CSV
+                    {t("bulkSms.groupDetail.csvFormatHint")}
                   </div>
                 </label>
                 <input
@@ -1302,7 +1334,7 @@ function GroupDetailModal({
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Qidirish..."
+                  placeholder={t("bulkSms.groupDetail.searchPlaceholder")}
                   className="w-full rounded-lg border border-line bg-bg-input pl-8 pr-3 py-1.5 text-[12.5px] text-text-primary outline-none focus:border-brand"
                 />
               </div>
@@ -1310,15 +1342,15 @@ function GroupDetailModal({
             <div className="flex-1 overflow-y-auto scrollbar-thin">
               {loading ? (
                 <div className="px-4 py-12 text-center text-text-muted">
-                  Yuklanmoqda...
+                  {t("common.loading")}
                 </div>
               ) : filtered.length === 0 ? (
                 <div className="px-4 py-12 text-center text-text-muted">
                   <UsersIcon className="mx-auto mb-2 h-6 w-6 opacity-40" />
                   <div className="text-[12.5px]">
                     {contacts.length === 0
-                      ? "Kontakt yo'q — chap tomondan qo'shing"
-                      : "Topilmadi"}
+                      ? t("bulkSms.groupDetail.emptyAddLeft")
+                      : t("bulkSms.groupDetail.emptyNotFound")}
                   </div>
                 </div>
               ) : (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Plus,
   Pencil,
@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { MultilangInput, type LangValue } from "../components/MultilangInput";
+import { useT } from "../lib/i18n";
 import {
   notifRulesApi,
   type AdminNotifRule,
@@ -24,13 +25,15 @@ import {
   type NotifAudience,
 } from "../lib/resources";
 
-const TRIGGER_LABELS: Record<NotifTriggerType, string> = {
-  premium_expiry: "Premium tugashidan oldin",
-  daily: "Har kuni",
-  weekly: "Har hafta",
-  monthly: "Har oy",
-  one_off: "Bir martalik",
-};
+type TFn = (key: string, vars?: Record<string, string | number>) => string;
+
+const getTriggerLabels = (t: TFn): Record<NotifTriggerType, string> => ({
+  premium_expiry: t("notifRules.trigger.premiumExpiry"),
+  daily: t("notifRules.trigger.daily"),
+  weekly: t("notifRules.trigger.weekly"),
+  monthly: t("notifRules.trigger.monthly"),
+  one_off: t("notifRules.trigger.oneOff"),
+});
 
 const TRIGGER_ICONS: Record<NotifTriggerType, typeof Clock> = {
   premium_expiry: AlarmClock,
@@ -40,15 +43,23 @@ const TRIGGER_ICONS: Record<NotifTriggerType, typeof Clock> = {
   one_off: CalendarCheck,
 };
 
-const AUDIENCE_LABELS: Record<NotifAudience, string> = {
-  all_parents: "Hamma ota-onalar",
-  premium_active: "Premium aktiv",
-  premium_expiring: "Premium tugashga yaqin",
-  free_users: "Bepul foydalanuvchilar",
-  no_active_child: "Bolasi ulanmagan",
-};
+const getAudienceLabels = (t: TFn): Record<NotifAudience, string> => ({
+  all_parents: t("notifRules.audience.allParents"),
+  premium_active: t("notifRules.audience.premiumActive"),
+  premium_expiring: t("notifRules.audience.premiumExpiring"),
+  free_users: t("notifRules.audience.freeUsers"),
+  no_active_child: t("notifRules.audience.noActiveChild"),
+});
 
-const WEEKDAYS = ["Dushanba", "Seshanba", "Chorshanba", "Payshanba", "Juma", "Shanba", "Yakshanba"];
+const getWeekdays = (t: TFn): string[] => [
+  t("notifRules.weekday.mon"),
+  t("notifRules.weekday.tue"),
+  t("notifRules.weekday.wed"),
+  t("notifRules.weekday.thu"),
+  t("notifRules.weekday.fri"),
+  t("notifRules.weekday.sat"),
+  t("notifRules.weekday.sun"),
+];
 
 function fmtDateTime(iso?: string | null): string {
   if (!iso) return "—";
@@ -64,9 +75,14 @@ function fmtDateTime(iso?: string | null): string {
 }
 
 export function NotificationRulesPage() {
+  const { t } = useT();
   const [rules, setRules] = useState<AdminNotifRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<AdminNotifRule | null>(null);
+
+  const triggerLabels = useMemo(() => getTriggerLabels(t), [t]);
+  const audienceLabels = useMemo(() => getAudienceLabels(t), [t]);
+  const weekdays = useMemo(() => getWeekdays(t), [t]);
 
   const reload = useCallback(() => {
     setLoading(true);
@@ -82,26 +98,28 @@ export function NotificationRulesPage() {
   }, [reload]);
 
   const remove = async (rule: AdminNotifRule) => {
-    if (!confirm(`"${rule.name}" qoidasini o'chirasizmi?`)) return;
+    if (!confirm(t("notifRules.confirmDelete", { name: rule.name }))) return;
     try {
       await notifRulesApi.remove(rule.id);
       setRules((prev) => prev.filter((r) => r.id !== rule.id));
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     }
   };
 
   const runNow = async (rule: AdminNotifRule) => {
-    if (!confirm(`Endi "${rule.name}" ni darrov yuborishni xohlaysizmi?`)) return;
+    if (!confirm(t("notifRules.confirmRunNow", { name: rule.name }))) return;
     try {
       const r = await notifRulesApi.runNow(rule.id);
-      alert(
-        `Yuborildi.\nQabul qiluvchilar: ${r.recipients_count}\nPush: ${r.push_sent}\nSMS: ${r.sms_sent}` +
-          (r.success ? "" : `\n\nXato: ${r.detail}`),
-      );
+      const base = t("notifRules.runNowResult", {
+        recipients: r.recipients_count,
+        push: r.push_sent,
+        sms: r.sms_sent,
+      });
+      alert(base + (r.success ? "" : t("notifRules.runNowError", { detail: r.detail })));
       reload();
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     }
   };
 
@@ -113,7 +131,7 @@ export function NotificationRulesPage() {
         prev.map((r) => (r.id === rule.id ? { ...r, is_active: next } : r)),
       );
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     }
   };
 
@@ -142,29 +160,29 @@ export function NotificationRulesPage() {
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Bildirishnoma qoidalari"
-        subtitle={`${rules.length} ta avtomatik reja`}
+        title={t("notifRules.pageTitle")}
+        subtitle={t("notifRules.pageSubtitle", { count: rules.length })}
         actions={
           <button
             onClick={() => setEditing(emptyRule())}
             className="btn-primary text-[12.5px]"
           >
-            <Plus className="h-4 w-4" /> Yangi qoida
+            <Plus className="h-4 w-4" /> {t("notifRules.newRule")}
           </button>
         }
       />
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
         {loading && (
           <div className="card p-12 text-center text-text-muted">
-            Yuklanmoqda...
+            {t("common.loading")}
           </div>
         )}
         {!loading && rules.length === 0 && (
           <div className="card p-12 text-center text-text-muted">
             <AlarmClock className="mx-auto mb-3 h-10 w-10 opacity-40" />
-            <div className="text-[14px] mb-1">Hozircha qoida yo'q</div>
+            <div className="text-[14px] mb-1">{t("notifRules.empty")}</div>
             <div className="text-[12px]">
-              Premium tugashidan oldin yoki kunlik eslatma uchun qoida qo'shing
+              {t("notifRules.emptyHint")}
             </div>
           </div>
         )}
@@ -197,13 +215,13 @@ export function NotificationRulesPage() {
                           className="h-4 w-4"
                         />
                         <span className="text-[11px] font-medium text-text-secondary">
-                          Faol
+                          {t("notifRules.active")}
                         </span>
                       </label>
                     </div>
                     <div className="mt-1 text-[12px] text-text-secondary">
-                      {TRIGGER_LABELS[r.trigger_type]}
-                      {triggerSummary(r)} → {AUDIENCE_LABELS[r.audience]}
+                      {triggerLabels[r.trigger_type]}
+                      {triggerSummary(r, t, weekdays)} → {audienceLabels[r.audience]}
                     </div>
                     <div className="mt-2 line-clamp-2 text-[12.5px] text-text-primary">
                       {r.title || "—"}
@@ -222,11 +240,11 @@ export function NotificationRulesPage() {
                           💬 SMS
                         </span>
                       )}
-                      <span>· Keyingi: {fmtDateTime(r.next_run_at)}</span>
+                      <span>{t("notifRules.nextRun", { time: fmtDateTime(r.next_run_at) })}</span>
                     </div>
                     {r.last_run_at && (
                       <div className="text-[10.5px] text-text-muted">
-                        Oxirgi: {fmtDateTime(r.last_run_at)}
+                        {t("notifRules.lastRun", { time: fmtDateTime(r.last_run_at) })}
                       </div>
                     )}
                   </div>
@@ -235,9 +253,9 @@ export function NotificationRulesPage() {
                   <button
                     onClick={() => runNow(r)}
                     className="inline-flex items-center gap-1 rounded-lg border border-line bg-bg-input px-2.5 py-1 text-[11px] font-medium text-text-secondary hover:bg-bg-hover"
-                    title="Darrov ishga tushirish"
+                    title={t("notifRules.runNowTitle")}
                   >
-                    <Play className="h-3 w-3" /> Hozir yuborish
+                    <Play className="h-3 w-3" /> {t("notifRules.runNowBtn")}
                   </button>
                   <button
                     onClick={() => setEditing(r)}
@@ -272,23 +290,24 @@ export function NotificationRulesPage() {
   );
 }
 
-function triggerSummary(r: AdminNotifRule): string {
+function triggerSummary(r: AdminNotifRule, t: TFn, weekdays: string[]): string {
   const p = r.trigger_params || {};
   if (r.trigger_type === "premium_expiry") {
-    return ` (${p.days_before ?? 3} kun oldin)`;
+    return t("notifRules.summary.daysBefore", { days: Number(p.days_before ?? 3) });
   }
   const h = String(p.hour ?? 9).padStart(2, "0");
   const m = String(p.minute ?? 0).padStart(2, "0");
-  if (r.trigger_type === "daily") return ` (${h}:${m})`;
+  const time = `${h}:${m}`;
+  if (r.trigger_type === "daily") return t("notifRules.summary.time", { time });
   if (r.trigger_type === "weekly") {
-    const wd = WEEKDAYS[Number(p.weekday ?? 0)] || "Du";
-    return ` (${wd}, ${h}:${m})`;
+    const wd = weekdays[Number(p.weekday ?? 0)] || t("notifRules.weekday.monShort");
+    return t("notifRules.summary.weekly", { weekday: wd, time });
   }
   if (r.trigger_type === "monthly") {
-    return ` (${p.day ?? 1}-kuni ${h}:${m})`;
+    return t("notifRules.summary.monthly", { day: Number(p.day ?? 1), time });
   }
   if (r.trigger_type === "one_off") {
-    return ` (${p.run_at || "—"})`;
+    return t("notifRules.summary.oneOff", { when: String(p.run_at || "—") });
   }
   return "";
 }
@@ -302,6 +321,11 @@ function RuleEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useT();
+  const triggerLabels = useMemo(() => getTriggerLabels(t), [t]);
+  const audienceLabels = useMemo(() => getAudienceLabels(t), [t]);
+  const weekdays = useMemo(() => getWeekdays(t), [t]);
+
   const [draft, setDraft] = useState(rule);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -317,7 +341,7 @@ function RuleEditor({
   const save = async () => {
     setError(null);
     if (!draft.name.trim() || !draft.title.trim() || !draft.body.trim()) {
-      setError("Nom, sarlavha va matn majburiy");
+      setError(t("notifRules.requiredErr"));
       return;
     }
     setBusy(true);
@@ -329,7 +353,7 @@ function RuleEditor({
       }
       onSaved();
     } catch (e) {
-      setError((e as { message?: string }).message || "Xato");
+      setError((e as { message?: string }).message || t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -346,7 +370,7 @@ function RuleEditor({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[16px] font-semibold text-text-primary">
-            {draft.id === 0 ? "Yangi qoida" : "Qoidani tahrirlash"}
+            {draft.id === 0 ? t("notifRules.createTitle") : t("notifRules.editTitle")}
           </h3>
           <button onClick={onClose} className="icon-btn h-7 w-7">
             <X className="h-4 w-4" />
@@ -356,12 +380,12 @@ function RuleEditor({
         <div className="space-y-4">
           <div>
             <div className="text-[12px] font-medium text-text-secondary mb-1.5">
-              Nom (admin uchun yorliq)
+              {t("notifRules.fieldName")}
             </div>
             <input
               value={draft.name}
               onChange={(e) => setDraft({ ...draft, name: e.target.value })}
-              placeholder="Premium tugashidan 3 kun oldin eslatma"
+              placeholder={t("notifRules.namePlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             />
           </div>
@@ -369,7 +393,7 @@ function RuleEditor({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <div className="text-[12px] font-medium text-text-secondary mb-1.5">
-                Trigger
+                {t("notifRules.fieldTrigger")}
               </div>
               <select
                 value={draft.trigger_type}
@@ -381,7 +405,7 @@ function RuleEditor({
                 }
                 className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none"
               >
-                {Object.entries(TRIGGER_LABELS).map(([k, v]) => (
+                {Object.entries(triggerLabels).map(([k, v]) => (
                   <option key={k} value={k}>
                     {v}
                   </option>
@@ -390,7 +414,7 @@ function RuleEditor({
             </div>
             <div>
               <div className="text-[12px] font-medium text-text-secondary mb-1.5">
-                Auditoriya
+                {t("notifRules.fieldAudience")}
               </div>
               <select
                 value={draft.audience}
@@ -402,7 +426,7 @@ function RuleEditor({
                 }
                 className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none"
               >
-                {Object.entries(AUDIENCE_LABELS).map(([k, v]) => (
+                {Object.entries(audienceLabels).map(([k, v]) => (
                   <option key={k} value={k}>
                     {v}
                   </option>
@@ -414,18 +438,18 @@ function RuleEditor({
           {/* Trigger params */}
           <div className="rounded-lg border border-line bg-bg-input/40 p-3">
             <div className="text-[11.5px] font-semibold text-text-secondary uppercase tracking-wide mb-2">
-              Trigger sozlamalari
+              {t("notifRules.triggerSettings")}
             </div>
             {draft.trigger_type === "premium_expiry" && (
               <label className="flex items-center gap-3 text-[13px] text-text-secondary">
-                Premium tugashidan
+                {t("notifRules.premiumBeforeLabel")}
                 <input
                   type="number"
                   value={Number(tp.days_before ?? 3)}
                   onChange={(e) => setTp({ days_before: Number(e.target.value) })}
                   className="w-20 rounded-lg border border-line bg-bg px-2 py-1 text-center"
                 />
-                kun oldin
+                {t("notifRules.daysBeforeSuffix")}
               </label>
             )}
             {draft.trigger_type === "daily" && (
@@ -439,10 +463,10 @@ function RuleEditor({
               <div className="space-y-3">
                 <div>
                   <div className="text-[12px] text-text-secondary mb-1">
-                    Haftaning kuni
+                    {t("notifRules.dayOfWeek")}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {WEEKDAYS.map((w, i) => (
+                    {weekdays.map((w, i) => (
                       <button
                         key={i}
                         onClick={() => setTp({ weekday: i })}
@@ -468,7 +492,7 @@ function RuleEditor({
             {draft.trigger_type === "monthly" && (
               <div className="space-y-3">
                 <label className="flex items-center gap-2 text-[13px] text-text-secondary">
-                  Oyning
+                  {t("notifRules.monthDayPrefix")}
                   <input
                     type="number"
                     min={1}
@@ -477,7 +501,7 @@ function RuleEditor({
                     onChange={(e) => setTp({ day: Number(e.target.value) })}
                     className="w-20 rounded-lg border border-line bg-bg px-2 py-1 text-center"
                   />
-                  -kuni
+                  {t("notifRules.monthDaySuffix")}
                 </label>
                 <TimePicker
                   hour={Number(tp.hour ?? 9)}
@@ -488,7 +512,7 @@ function RuleEditor({
             )}
             {draft.trigger_type === "one_off" && (
               <label className="flex items-center gap-3 text-[13px] text-text-secondary">
-                Vaqti:
+                {t("notifRules.dateTimeLabel")}
                 <input
                   type="datetime-local"
                   value={String(tp.run_at || "").slice(0, 16)}
@@ -503,21 +527,21 @@ function RuleEditor({
           {draft.audience === "premium_expiring" && (
             <div className="rounded-lg border border-line bg-bg-input/40 p-3">
               <label className="flex items-center gap-3 text-[13px] text-text-secondary">
-                Tugashga
+                {t("notifRules.audienceExpiringPrefix")}
                 <input
                   type="number"
                   value={Number(ap.days ?? 7)}
                   onChange={(e) => setAp({ days: Number(e.target.value) })}
                   className="w-20 rounded-lg border border-line bg-bg px-2 py-1 text-center"
                 />
-                kun qolgan parentlar
+                {t("notifRules.audienceExpiringSuffix")}
               </label>
             </div>
           )}
 
           {/* Title + body (multilingual) */}
           <MultilangInput
-            label="Sarlavha"
+            label={t("notifRules.titleField")}
             value={{
               uz: draft.title,
               uz_cyrl: (draft as { title_uz_cyrl?: string }).title_uz_cyrl || "",
@@ -532,14 +556,14 @@ function RuleEditor({
                 title_en: v.en,
               })
             }
-            placeholder="Hurmatli {name}, premium muddati tugayapti!"
+            placeholder={t("notifRules.titlePlaceholder")}
           />
           <div className="text-[10.5px] text-text-muted -mt-2">
-            O'zgaruvchilar: <code>{"{name}"}</code>, <code>{"{phone}"}</code>,{" "}
+            {t("notifRules.variablesHint")} <code>{"{name}"}</code>, <code>{"{phone}"}</code>,{" "}
             <code>{"{days_left}"}</code>
           </div>
           <MultilangInput
-            label="Matn"
+            label={t("notifRules.bodyField")}
             value={{
               uz: draft.body,
               uz_cyrl: (draft as { body_uz_cyrl?: string }).body_uz_cyrl || "",
@@ -554,7 +578,7 @@ function RuleEditor({
                 body_en: v.en,
               })
             }
-            placeholder="Premium {days_left} kun ichida tugaydi. Hozir uzaytirib qo'ying!"
+            placeholder={t("notifRules.bodyPlaceholder")}
             multiline
             rows={4}
           />
@@ -562,7 +586,7 @@ function RuleEditor({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <div className="text-[12px] font-medium text-text-secondary mb-1.5">
-                Kategoriya
+                {t("notifRules.category")}
               </div>
               <select
                 value={draft.category}
@@ -571,11 +595,11 @@ function RuleEditor({
                 }
                 className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none"
               >
-                <option value="system">Tizim</option>
-                <option value="premium">Premium</option>
-                <option value="tip">Maslahat</option>
-                <option value="order">Buyurtma</option>
-                <option value="deal">Aksiya</option>
+                <option value="system">{t("notifRules.category.system")}</option>
+                <option value="premium">{t("notifRules.category.premium")}</option>
+                <option value="tip">{t("notifRules.category.tip")}</option>
+                <option value="order">{t("notifRules.category.order")}</option>
+                <option value="deal">{t("notifRules.category.deal")}</option>
               </select>
             </div>
             <div className="flex items-end gap-4">
@@ -607,7 +631,7 @@ function RuleEditor({
                     setDraft({ ...draft, is_active: e.target.checked })
                   }
                 />
-                Faol
+                {t("notifRules.active")}
               </label>
             </div>
           </div>
@@ -630,7 +654,7 @@ function RuleEditor({
                     ) : (
                       <XCircle className="h-3.5 w-3.5 text-text-muted" />
                     )}
-                    {draft.is_active ? "Faol" : "Nofaol"}
+                    {draft.is_active ? t("notifRules.active") : t("notifRules.inactive")}
                   </>
                 )}
               </>
@@ -638,7 +662,7 @@ function RuleEditor({
           </div>
           <div className="flex gap-2">
             <button onClick={onClose} className="btn-secondary text-[12.5px]">
-              Bekor
+              {t("notifRules.cancel")}
             </button>
             <button
               onClick={save}
@@ -646,7 +670,7 @@ function RuleEditor({
               className="btn-primary text-[12.5px] disabled:opacity-50"
             >
               <Save className="h-3.5 w-3.5" />{" "}
-              {busy ? "Saqlanmoqda..." : "Saqlash"}
+              {busy ? t("common.saving") : t("common.save")}
             </button>
           </div>
         </div>
@@ -664,9 +688,10 @@ function TimePicker({
   minute: number;
   onChange: (h: number, m: number) => void;
 }) {
+  const { t } = useT();
   return (
     <label className="flex items-center gap-3 text-[13px] text-text-secondary">
-      Vaqti:
+      {t("notifRules.timeLabel")}
       <input
         type="number"
         min={0}

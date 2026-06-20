@@ -13,6 +13,7 @@ import {
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
 import { MultilangInput, buildLangValue } from "../components/MultilangInput";
+import { useT } from "../lib/i18n";
 import {
   kidsContentApi,
   kidsVideosApi,
@@ -26,6 +27,7 @@ import {
 type Tab = "games" | "categories" | "videos" | "video_categories";
 
 export function KidsContentPage() {
+  const { t } = useT();
   const [tab, setTab] = useState<Tab>("games");
   const [categories, setCategories] = useState<AdminGameCategory[]>([]);
   const [games, setGames] = useState<AdminGame[]>([]);
@@ -77,24 +79,24 @@ export function KidsContentPage() {
   }, [reloadCats, reloadGames, reloadVideoCats, reloadVideos]);
 
   const removeGame = async (id: number) => {
-    if (!confirm("O'yinni o'chirasizmi?")) return;
+    if (!confirm(t("kidsContent.confirmDeleteGame"))) return;
     await kidsContentApi.games.remove(id);
     void reloadGames();
   };
   const removeCat = async (id: number) => {
-    if (!confirm("Kategoriya va undagi barcha o'yinlar o'chiriladi. Davom etaylikmi?"))
+    if (!confirm(t("kidsContent.confirmDeleteGameCategory")))
       return;
     await kidsContentApi.categories.remove(id);
     void reloadCats();
     void reloadGames();
   };
   const removeVideo = async (id: number) => {
-    if (!confirm("Videoni o'chirasizmi?")) return;
+    if (!confirm(t("kidsContent.confirmDeleteVideo"))) return;
     await kidsVideosApi.videos.remove(id);
     void reloadVideos();
   };
   const removeVideoCat = async (id: number) => {
-    if (!confirm("Kategoriya va undagi barcha videolar o'chiriladi. Davom etaylikmi?"))
+    if (!confirm(t("kidsContent.confirmDeleteVideoCategory")))
       return;
     await kidsVideosApi.categories.remove(id);
     void reloadVideoCats();
@@ -102,13 +104,17 @@ export function KidsContentPage() {
   };
 
   const headerSubtitle = useMemo(() => {
-    return `${games.length} ta o'yin · ${videos.length} ta video · ${categories.length + videoCategories.length} ta kategoriya`;
-  }, [games.length, videos.length, categories.length, videoCategories.length]);
+    return t("kidsContent.headerSubtitle", {
+      games: games.length,
+      videos: videos.length,
+      categories: categories.length + videoCategories.length,
+    });
+  }, [t, games.length, videos.length, categories.length, videoCategories.length]);
 
   return (
     <div className="flex h-full flex-col">
       <PageHeader
-        title="Kids kontent"
+        title={t("kidsContent.pageTitle")}
         subtitle={headerSubtitle}
         actions={
           tab === "games" ? (
@@ -133,7 +139,7 @@ export function KidsContentPage() {
               }
               className="btn-primary text-[12.5px]"
             >
-              <Plus className="h-4 w-4" /> Yangi o'yin
+              <Plus className="h-4 w-4" /> {t("kidsContent.newGame")}
             </button>
           ) : tab === "categories" ? (
             <button
@@ -149,7 +155,7 @@ export function KidsContentPage() {
               }
               className="btn-primary text-[12.5px]"
             >
-              <Plus className="h-4 w-4" /> Yangi kategoriya
+              <Plus className="h-4 w-4" /> {t("kidsContent.newCategory")}
             </button>
           ) : tab === "videos" ? (
             <button
@@ -175,7 +181,7 @@ export function KidsContentPage() {
               }
               className="btn-primary text-[12.5px]"
             >
-              <Plus className="h-4 w-4" /> Yangi video
+              <Plus className="h-4 w-4" /> {t("kidsContent.newVideo")}
             </button>
           ) : (
             <button
@@ -193,7 +199,7 @@ export function KidsContentPage() {
               }
               className="btn-primary text-[12.5px]"
             >
-              <Plus className="h-4 w-4" /> Yangi video kategoriya
+              <Plus className="h-4 w-4" /> {t("kidsContent.newVideoCategory")}
             </button>
           )
         }
@@ -206,25 +212,25 @@ export function KidsContentPage() {
             active={tab === "games"}
             onClick={() => setTab("games")}
             icon={<Gamepad2 className="h-4 w-4" />}
-            label="O'yinlar"
+            label={t("kidsContent.tab.games")}
           />
           <TabButton
             active={tab === "categories"}
             onClick={() => setTab("categories")}
             icon={<FolderTree className="h-4 w-4" />}
-            label="O'yin kategoriyalari"
+            label={t("kidsContent.tab.categories")}
           />
           <TabButton
             active={tab === "videos"}
             onClick={() => setTab("videos")}
             icon={<Youtube className="h-4 w-4" />}
-            label="Videolar"
+            label={t("kidsContent.tab.videos")}
           />
           <TabButton
             active={tab === "video_categories"}
             onClick={() => setTab("video_categories")}
             icon={<FolderTree className="h-4 w-4" />}
-            label="Video kategoriyalari"
+            label={t("kidsContent.tab.videoCategories")}
           />
         </div>
 
@@ -380,6 +386,7 @@ function GamesPanel({
   onEdit: (g: AdminGame) => void;
   onRemove: (id: number) => void;
 }) {
+  const { t } = useT();
   return (
     <>
       <div className="card p-4 mb-4">
@@ -390,7 +397,7 @@ function GamesPanel({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onReload()}
-              placeholder="O'yin nomi..."
+              placeholder={t("kidsContent.search.gamePlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] outline-none focus:border-primary"
             />
           </div>
@@ -401,7 +408,7 @@ function GamesPanel({
             }
             className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none"
           >
-            <option value="">Barcha kategoriyalar</option>
+            <option value="">{t("kidsContent.filter.allCategories")}</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -414,13 +421,13 @@ function GamesPanel({
       <div className="grid grid-cols-3 gap-4">
         {loading && (
           <div className="col-span-3 py-12 text-center text-text-muted">
-            Yuklanmoqda...
+            {t("common.loading")}
           </div>
         )}
         {!loading && games.length === 0 && (
           <div className="col-span-3 py-12 text-center text-text-muted">
             <Gamepad2 className="mx-auto mb-2 h-8 w-8 opacity-40" />
-            O'yinlar yo'q
+            {t("kidsContent.empty.games")}
           </div>
         )}
         {games.map((g) => (
@@ -461,16 +468,16 @@ function GamesPanel({
               </div>
               <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                 <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10.5px] font-medium text-blue-500">
-                  {g.age_min}–{g.age_max} yosh
+                  {t("kidsContent.ageRange", { min: g.age_min, max: g.age_max })}
                 </span>
                 {g.reward_points > 0 && (
                   <span className="rounded-full bg-yellow-500/15 px-2 py-0.5 text-[10.5px] font-medium text-yellow-600">
-                    +{g.reward_points} ball
+                    {t("kidsContent.rewardPoints", { points: g.reward_points })}
                   </span>
                 )}
                 {g.is_featured && (
                   <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10.5px] font-medium text-purple-500">
-                    Tavsiya
+                    {t("kidsContent.featured")}
                   </span>
                 )}
                 <span
@@ -481,7 +488,7 @@ function GamesPanel({
                       : "bg-text-muted/15 text-text-muted")
                   }
                 >
-                  {g.is_active ? "Faol" : "Nofaol"}
+                  {g.is_active ? t("common.active") : t("common.inactive")}
                 </span>
               </div>
             </div>
@@ -503,24 +510,25 @@ function CategoriesPanel({
   onEdit: (c: AdminGameCategory) => void;
   onRemove: (id: number) => void;
 }) {
+  const { t } = useT();
   return (
     <div className="card overflow-hidden">
       <table className="min-w-full text-[13px]">
         <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
           <tr>
-            <th className="px-4 py-3 w-16">№</th>
-            <th className="px-4 py-3">Nom</th>
-            <th className="px-4 py-3 w-28">O'yinlar</th>
-            <th className="px-4 py-3 w-24">Tartib</th>
-            <th className="px-4 py-3 w-28">Holat</th>
-            <th className="px-4 py-3 w-28 text-right">Amal</th>
+            <th className="px-4 py-3 w-16">{t("kidsContent.col.id")}</th>
+            <th className="px-4 py-3">{t("kidsContent.col.name")}</th>
+            <th className="px-4 py-3 w-28">{t("kidsContent.col.games")}</th>
+            <th className="px-4 py-3 w-24">{t("kidsContent.col.order")}</th>
+            <th className="px-4 py-3 w-28">{t("kidsContent.col.status")}</th>
+            <th className="px-4 py-3 w-28 text-right">{t("kidsContent.col.action")}</th>
           </tr>
         </thead>
         <tbody>
           {loading && (
             <tr>
               <td colSpan={6} className="px-4 py-8 text-center text-text-muted">
-                Yuklanmoqda...
+                {t("common.loading")}
               </td>
             </tr>
           )}
@@ -528,7 +536,7 @@ function CategoriesPanel({
             <tr>
               <td colSpan={6} className="px-4 py-12 text-center text-text-muted">
                 <FolderTree className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                Kategoriyalar yo'q
+                {t("kidsContent.empty.categories")}
               </td>
             </tr>
           )}
@@ -562,7 +570,7 @@ function CategoriesPanel({
                       : "bg-text-muted/15 text-text-muted")
                   }
                 >
-                  {c.is_active ? "Faol" : "Nofaol"}
+                  {c.is_active ? t("common.active") : t("common.inactive")}
                 </span>
               </td>
               <td className="px-4 py-3 text-right">
@@ -614,6 +622,7 @@ function VideosPanel({
   onEdit: (v: AdminKidsVideo) => void;
   onRemove: (id: number) => void;
 }) {
+  const { t } = useT();
   return (
     <>
       <div className="card p-4 mb-4">
@@ -624,7 +633,7 @@ function VideosPanel({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onReload()}
-              placeholder="Video nomi..."
+              placeholder={t("kidsContent.search.videoPlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input pl-9 pr-3 py-2 text-[13px] outline-none focus:border-primary"
             />
           </div>
@@ -635,7 +644,7 @@ function VideosPanel({
             }
             className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none"
           >
-            <option value="">Barcha kategoriyalar</option>
+            <option value="">{t("kidsContent.filter.allCategories")}</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -648,13 +657,13 @@ function VideosPanel({
       <div className="grid grid-cols-3 gap-4">
         {loading && (
           <div className="col-span-3 py-12 text-center text-text-muted">
-            Yuklanmoqda...
+            {t("common.loading")}
           </div>
         )}
         {!loading && videos.length === 0 && (
           <div className="col-span-3 py-12 text-center text-text-muted">
             <Youtube className="mx-auto mb-2 h-8 w-8 opacity-40" />
-            Videolar yo'q
+            {t("kidsContent.empty.videos")}
           </div>
         )}
         {videos.map((v) => (
@@ -700,7 +709,7 @@ function VideosPanel({
               </div>
               <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                 <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[10.5px] font-medium text-blue-500">
-                  {v.age_min}–{v.age_max} yosh
+                  {t("kidsContent.ageRange", { min: v.age_min, max: v.age_max })}
                 </span>
                 {v.title_ru && (
                   <span className="rounded-full bg-bg-input px-2 py-0.5 text-[10.5px] font-medium text-text-secondary">
@@ -714,7 +723,7 @@ function VideosPanel({
                 )}
                 {v.is_featured && (
                   <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10.5px] font-medium text-purple-500">
-                    Tavsiya
+                    {t("kidsContent.featured")}
                   </span>
                 )}
                 <span
@@ -725,7 +734,7 @@ function VideosPanel({
                       : "bg-text-muted/15 text-text-muted")
                   }
                 >
-                  {v.is_active ? "Faol" : "Nofaol"}
+                  {v.is_active ? t("common.active") : t("common.inactive")}
                 </span>
               </div>
             </div>
@@ -747,25 +756,26 @@ function VideoCategoriesPanel({
   onEdit: (c: AdminKidsVideoCategory) => void;
   onRemove: (id: number) => void;
 }) {
+  const { t } = useT();
   return (
     <div className="card overflow-hidden">
       <table className="min-w-full text-[13px]">
         <thead className="border-b border-line bg-bg-input text-left text-[11px] font-semibold uppercase tracking-wider text-text-muted">
           <tr>
-            <th className="px-4 py-3 w-16">№</th>
-            <th className="px-4 py-3">Nom (uz)</th>
-            <th className="px-4 py-3">Tarjima</th>
-            <th className="px-4 py-3 w-28">Videolar</th>
-            <th className="px-4 py-3 w-24">Tartib</th>
-            <th className="px-4 py-3 w-28">Holat</th>
-            <th className="px-4 py-3 w-28 text-right">Amal</th>
+            <th className="px-4 py-3 w-16">{t("kidsContent.col.id")}</th>
+            <th className="px-4 py-3">{t("kidsContent.col.nameUz")}</th>
+            <th className="px-4 py-3">{t("kidsContent.col.translation")}</th>
+            <th className="px-4 py-3 w-28">{t("kidsContent.col.videos")}</th>
+            <th className="px-4 py-3 w-24">{t("kidsContent.col.order")}</th>
+            <th className="px-4 py-3 w-28">{t("kidsContent.col.status")}</th>
+            <th className="px-4 py-3 w-28 text-right">{t("kidsContent.col.action")}</th>
           </tr>
         </thead>
         <tbody>
           {loading && (
             <tr>
               <td colSpan={7} className="px-4 py-8 text-center text-text-muted">
-                Yuklanmoqda...
+                {t("common.loading")}
               </td>
             </tr>
           )}
@@ -773,7 +783,7 @@ function VideoCategoriesPanel({
             <tr>
               <td colSpan={7} className="px-4 py-12 text-center text-text-muted">
                 <FolderTree className="mx-auto mb-2 h-8 w-8 opacity-40" />
-                Kategoriyalar yo'q
+                {t("kidsContent.empty.categories")}
               </td>
             </tr>
           )}
@@ -819,7 +829,7 @@ function VideoCategoriesPanel({
                       : "bg-text-muted/15 text-text-muted")
                   }
                 >
-                  {c.is_active ? "Faol" : "Nofaol"}
+                  {c.is_active ? t("common.active") : t("common.inactive")}
                 </span>
               </td>
               <td className="px-4 py-3 text-right">
@@ -859,6 +869,7 @@ function GameEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useT();
   const [d, setD] = useState(game);
   const [busy, setBusy] = useState(false);
 
@@ -872,7 +883,7 @@ function GameEditor({
       }
       onSaved();
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -889,7 +900,7 @@ function GameEditor({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[16px] font-semibold text-text-primary">
-            {d.id === 0 ? "Yangi o'yin" : "O'yinni tahrirlash"}
+            {d.id === 0 ? t("kidsContent.editor.gameNew") : t("kidsContent.editor.gameEdit")}
           </h3>
           <button onClick={onClose} className="icon-btn h-7 w-7">
             <X className="h-4 w-4" />
@@ -901,14 +912,14 @@ function GameEditor({
               value={d.thumbnail}
               onChange={(url) => setD({ ...d, thumbnail: url })}
               folder="uploads"
-              label="Rasm (thumbnail)"
+              label={t("kidsContent.editor.thumbnailLabel")}
             />
           </div>
           <div className="col-span-2">
             <input
               value={d.title}
               onChange={(e) => setD({ ...d, title: e.target.value })}
-              placeholder="O'yin nomi"
+              placeholder={t("kidsContent.editor.gameNamePlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] font-semibold outline-none focus:border-primary"
             />
           </div>
@@ -917,7 +928,7 @@ function GameEditor({
               value={d.description}
               onChange={(e) => setD({ ...d, description: e.target.value })}
               rows={3}
-              placeholder="Tavsif"
+              placeholder={t("kidsContent.editor.descPlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             />
           </div>
@@ -926,7 +937,7 @@ function GameEditor({
             onChange={(e) => setD({ ...d, category: Number(e.target.value) })}
             className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
           >
-            <option value={0}>— kategoriya —</option>
+            <option value={0}>{t("kidsContent.editor.categoryDash")}</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -939,33 +950,33 @@ function GameEditor({
             onChange={(e) =>
               setD({ ...d, reward_points: Number(e.target.value) })
             }
-            placeholder="Ballar"
+            placeholder={t("kidsContent.editor.rewardPlaceholder")}
             className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
           />
           <input
             type="number"
             value={d.age_min}
             onChange={(e) => setD({ ...d, age_min: Number(e.target.value) })}
-            placeholder="Yosh: min"
+            placeholder={t("kidsContent.editor.ageMinPlaceholder")}
             className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
           />
           <input
             type="number"
             value={d.age_max}
             onChange={(e) => setD({ ...d, age_max: Number(e.target.value) })}
-            placeholder="Yosh: max"
+            placeholder={t("kidsContent.editor.ageMaxPlaceholder")}
             className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
           />
           <input
             value={d.game_url}
             onChange={(e) => setD({ ...d, game_url: e.target.value })}
-            placeholder="WebGame URL (ixtiyoriy)"
+            placeholder={t("kidsContent.editor.gameUrlPlaceholder")}
             className="col-span-2 rounded-lg border border-line bg-bg-input px-3 py-2 text-[12px] font-mono outline-none focus:border-primary"
           />
           <input
             value={d.screen_key}
             onChange={(e) => setD({ ...d, screen_key: e.target.value })}
-            placeholder="Local screen key (Flutter)"
+            placeholder={t("kidsContent.editor.screenKeyPlaceholder")}
             className="col-span-2 rounded-lg border border-line bg-bg-input px-3 py-2 text-[12px] font-mono outline-none focus:border-primary"
           />
           <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
@@ -974,7 +985,7 @@ function GameEditor({
               checked={d.is_active}
               onChange={(e) => setD({ ...d, is_active: e.target.checked })}
             />
-            Faol
+            {t("common.active")}
           </label>
           <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
             <input
@@ -982,19 +993,19 @@ function GameEditor({
               checked={d.is_featured}
               onChange={(e) => setD({ ...d, is_featured: e.target.checked })}
             />
-            Tavsiya etiladi
+            {t("kidsContent.editor.featured")}
           </label>
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onClose} className="btn-secondary text-[12.5px]">
-            Bekor
+            {t("form.cancel")}
           </button>
           <button
             onClick={save}
             disabled={busy || !d.title.trim() || !d.category}
             className="btn-primary text-[12.5px] disabled:opacity-50"
           >
-            {busy ? "Saqlanmoqda..." : "Saqlash"}
+            {busy ? t("common.saving") : t("common.save")}
           </button>
         </div>
       </div>
@@ -1011,6 +1022,7 @@ function CategoryEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useT();
   const [d, setD] = useState(cat);
   const [busy, setBusy] = useState(false);
 
@@ -1024,7 +1036,7 @@ function CategoryEditor({
       }
       onSaved();
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -1041,7 +1053,7 @@ function CategoryEditor({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[16px] font-semibold text-text-primary">
-            {d.id === 0 ? "Yangi kategoriya" : "Kategoriyani tahrirlash"}
+            {d.id === 0 ? t("kidsContent.editor.categoryNew") : t("kidsContent.editor.categoryEdit")}
           </h3>
           <button onClick={onClose} className="icon-btn h-7 w-7">
             <X className="h-4 w-4" />
@@ -1052,19 +1064,19 @@ function CategoryEditor({
             value={d.icon}
             onChange={(url) => setD({ ...d, icon: url })}
             folder="uploads"
-            label="Belgi (ixtiyoriy)"
+            label={t("kidsContent.editor.iconOptional")}
           />
           <input
             value={d.name}
             onChange={(e) => setD({ ...d, name: e.target.value })}
-            placeholder="Nom"
+            placeholder={t("kidsContent.editor.namePlaceholder")}
             className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] font-semibold outline-none focus:border-primary"
           />
           <input
             type="number"
             value={d.order}
             onChange={(e) => setD({ ...d, order: Number(e.target.value) })}
-            placeholder="Tartib"
+            placeholder={t("kidsContent.editor.orderPlaceholder")}
             className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
           />
           <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
@@ -1073,19 +1085,19 @@ function CategoryEditor({
               checked={d.is_active}
               onChange={(e) => setD({ ...d, is_active: e.target.checked })}
             />
-            Faol
+            {t("common.active")}
           </label>
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onClose} className="btn-secondary text-[12.5px]">
-            Bekor
+            {t("form.cancel")}
           </button>
           <button
             onClick={save}
             disabled={busy || !d.name.trim()}
             className="btn-primary text-[12.5px] disabled:opacity-50"
           >
-            {busy ? "Saqlanmoqda..." : "Saqlash"}
+            {busy ? t("common.saving") : t("common.save")}
           </button>
         </div>
       </div>
@@ -1108,6 +1120,7 @@ function VideoEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useT();
   const [d, setD] = useState(video);
   const [busy, setBusy] = useState(false);
 
@@ -1138,7 +1151,7 @@ function VideoEditor({
       }
       onSaved();
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -1155,7 +1168,7 @@ function VideoEditor({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[16px] font-semibold text-text-primary">
-            {d.id === 0 ? "Yangi video" : "Videoni tahrirlash"}
+            {d.id === 0 ? t("kidsContent.editor.videoNew") : t("kidsContent.editor.videoEdit")}
           </h3>
           <button onClick={onClose} className="icon-btn h-7 w-7">
             <X className="h-4 w-4" />
@@ -1169,7 +1182,7 @@ function VideoEditor({
                 value={d.thumbnail}
                 onChange={(url) => setD({ ...d, thumbnail: url })}
                 folder="uploads"
-                label="Custom thumbnail (ixtiyoriy)"
+                label={t("kidsContent.editor.customThumbnailLabel")}
               />
             </div>
             <div className="rounded-xl border border-line bg-bg-input p-2 flex flex-col items-center justify-center min-h-[160px]">
@@ -1182,12 +1195,12 @@ function VideoEditor({
               ) : (
                 <div className="text-text-muted text-[12px] flex flex-col items-center">
                   <Youtube className="h-7 w-7 mb-2 opacity-50" />
-                  YouTube havola kiriting
+                  {t("kidsContent.video.previewPlaceholder")}
                 </div>
               )}
               {ytId && (
                 <div className="mt-2 text-[10.5px] font-mono text-text-muted">
-                  id: {ytId}
+                  {t("kidsContent.video.idLabel", { id: ytId })}
                 </div>
               )}
             </div>
@@ -1196,7 +1209,7 @@ function VideoEditor({
           <div>
             <label className="text-[12px] font-medium text-text-secondary flex items-center gap-1.5 mb-1.5">
               <Youtube className="h-3.5 w-3.5" />
-              YouTube havola
+              {t("kidsContent.video.youtubeLabel")}
               <span className="text-red-500">*</span>
             </label>
             <input
@@ -1212,13 +1225,13 @@ function VideoEditor({
             />
             {d.youtube_url && !ytId && (
               <div className="text-[11px] text-status-blocked mt-1">
-                YouTube ID topilmadi — havolani tekshiring.
+                {t("kidsContent.video.youtubeIdNotFound")}
               </div>
             )}
           </div>
 
           <MultilangInput
-            label="Sarlavha"
+            label={t("notifRules.titleField")}
             required
             value={titleValue}
             onChange={(v) =>
@@ -1230,11 +1243,11 @@ function VideoEditor({
                 title_en: v.en,
               })
             }
-            placeholder="Video nomi"
+            placeholder={t("kidsContent.editor.videoTitlePlaceholder")}
           />
 
           <MultilangInput
-            label="Tavsif"
+            label={t("kidsContent.editor.descPlaceholder")}
             multiline
             rows={3}
             value={descValue}
@@ -1247,7 +1260,7 @@ function VideoEditor({
                 description_en: v.en,
               })
             }
-            placeholder="Video haqida qisqacha"
+            placeholder={t("kidsContent.editor.videoDescPlaceholder")}
           />
 
           <div className="grid grid-cols-2 gap-3">
@@ -1256,7 +1269,7 @@ function VideoEditor({
               onChange={(e) => setD({ ...d, category: Number(e.target.value) })}
               className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             >
-              <option value={0}>— kategoriya —</option>
+              <option value={0}>{t("kidsContent.editor.categoryDash")}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -1266,28 +1279,28 @@ function VideoEditor({
             <input
               value={d.duration_label}
               onChange={(e) => setD({ ...d, duration_label: e.target.value })}
-              placeholder="Davomiyligi (masalan, 5:42)"
+              placeholder={t("kidsContent.editor.durationPlaceholder")}
               className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             />
             <input
               type="number"
               value={d.age_min}
               onChange={(e) => setD({ ...d, age_min: Number(e.target.value) })}
-              placeholder="Yosh: min"
+              placeholder={t("kidsContent.editor.ageMinPlaceholder")}
               className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             />
             <input
               type="number"
               value={d.age_max}
               onChange={(e) => setD({ ...d, age_max: Number(e.target.value) })}
-              placeholder="Yosh: max"
+              placeholder={t("kidsContent.editor.ageMaxPlaceholder")}
               className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             />
             <input
               type="number"
               value={d.order}
               onChange={(e) => setD({ ...d, order: Number(e.target.value) })}
-              placeholder="Tartib"
+              placeholder={t("kidsContent.editor.orderPlaceholder")}
               className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             />
             <div className="flex flex-col gap-1 justify-center">
@@ -1297,7 +1310,7 @@ function VideoEditor({
                   checked={d.is_active}
                   onChange={(e) => setD({ ...d, is_active: e.target.checked })}
                 />
-                Faol
+                {t("common.active")}
               </label>
               <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
                 <input
@@ -1305,7 +1318,7 @@ function VideoEditor({
                   checked={d.is_featured}
                   onChange={(e) => setD({ ...d, is_featured: e.target.checked })}
                 />
-                Tavsiya etiladi
+                {t("kidsContent.editor.featured")}
               </label>
             </div>
           </div>
@@ -1313,7 +1326,7 @@ function VideoEditor({
 
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onClose} className="btn-secondary text-[12.5px]">
-            Bekor
+            {t("form.cancel")}
           </button>
           <button
             onClick={save}
@@ -1326,7 +1339,7 @@ function VideoEditor({
             }
             className="btn-primary text-[12.5px] disabled:opacity-50"
           >
-            {busy ? "Saqlanmoqda..." : "Saqlash"}
+            {busy ? t("common.saving") : t("common.save")}
           </button>
         </div>
       </div>
@@ -1343,6 +1356,7 @@ function VideoCategoryEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useT();
   const [d, setD] = useState(cat);
   const [busy, setBusy] = useState(false);
 
@@ -1363,7 +1377,7 @@ function VideoCategoryEditor({
       }
       onSaved();
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -1380,7 +1394,7 @@ function VideoCategoryEditor({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[16px] font-semibold text-text-primary">
-            {d.id === 0 ? "Yangi video kategoriya" : "Kategoriyani tahrirlash"}
+            {d.id === 0 ? t("kidsContent.editor.videoCategoryNew") : t("kidsContent.editor.videoCategoryEdit")}
           </h3>
           <button onClick={onClose} className="icon-btn h-7 w-7">
             <X className="h-4 w-4" />
@@ -1391,10 +1405,10 @@ function VideoCategoryEditor({
             value={d.icon}
             onChange={(url) => setD({ ...d, icon: url })}
             folder="uploads"
-            label="Belgi (ixtiyoriy)"
+            label={t("kidsContent.editor.iconOptional")}
           />
           <MultilangInput
-            label="Nom"
+            label={t("kidsContent.editor.namePlaceholder")}
             required
             value={nameValue}
             onChange={(v) =>
@@ -1406,13 +1420,13 @@ function VideoCategoryEditor({
                 name_en: v.en,
               })
             }
-            placeholder="Kategoriya nomi"
+            placeholder={t("kidsContent.editor.videoCategoryNamePlaceholder")}
           />
           <input
             type="number"
             value={d.order}
             onChange={(e) => setD({ ...d, order: Number(e.target.value) })}
-            placeholder="Tartib"
+            placeholder={t("kidsContent.editor.orderPlaceholder")}
             className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
           />
           <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
@@ -1421,19 +1435,19 @@ function VideoCategoryEditor({
               checked={d.is_active}
               onChange={(e) => setD({ ...d, is_active: e.target.checked })}
             />
-            Faol
+            {t("common.active")}
           </label>
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <button onClick={onClose} className="btn-secondary text-[12.5px]">
-            Bekor
+            {t("form.cancel")}
           </button>
           <button
             onClick={save}
             disabled={busy || !d.name.trim()}
             className="btn-primary text-[12.5px] disabled:opacity-50"
           >
-            {busy ? "Saqlanmoqda..." : "Saqlash"}
+            {busy ? t("common.saving") : t("common.save")}
           </button>
         </div>
       </div>
