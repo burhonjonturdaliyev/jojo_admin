@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Package, Pencil, Trash2, Search, Sparkles, Loader2, X, ImagePlus, Youtube } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Package, Pencil, Trash2, Search, Sparkles, Loader2, X, ImagePlus, Video } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
 import { MultilangInput } from "../components/MultilangInput";
@@ -477,7 +477,7 @@ function ProductEditor({
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <div className="text-[12px] font-semibold text-text-secondary flex items-center gap-1.5">
-                  <Youtube className="h-3.5 w-3.5 text-red-500" />
+                  <Video className="h-3.5 w-3.5 text-red-500" />
                   {t("products.videos.title")} ({draft.videoUrls.length})
                 </div>
                 <button
