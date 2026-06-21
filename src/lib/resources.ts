@@ -736,16 +736,23 @@ export const dashboardApi = {
 
 export interface AdminOrder {
   id: number;
+  code?: string;
   status: string;
+  status_label?: string;
   total_price?: number;
+  unit_price?: number;
   quantity?: number;
   contact_phone?: string;
   contact_name?: string;
   address?: string;
   note?: string;
   product?: { id: number; name: string };
+  /** Backend `user` nested obyekti qaytaradi (id + phone + full_name). */
+  user?: { id: number; phone?: string; full_name?: string };
+  /** Eski moslashish — ba'zi joylar `parent` ham o'qishi mumkin. */
   parent?: { id: number; name?: string; phone?: string };
   created_at: string;
+  updated_at?: string;
 }
 
 export const ordersApi = {

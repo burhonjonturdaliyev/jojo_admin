@@ -35,10 +35,16 @@ export function OrdersPage() {
   const [statuses, setStatuses] = useState<AdminOrderStatus[]>([]);
   const [managerOpen, setManagerOpen] = useState(false);
 
-  const statusLabel = (slug: string) => {
+  /** Status label uchun ustun-prioritet:
+   *  1) admin yaratgan `OrderStatus` jadvali (multilang, color bilan) bo'lsa
+   *  2) backend serializer'dan kelgan `status_label` (default tizim status'lari)
+   *  3) faqat slug.
+   */
+  const statusLabel = (slug: string, order?: AdminOrder) => {
     const s = statuses.find((x) => x.slug === slug);
-    if (!s) return slug;
-    return pickName(s, lang);
+    if (s) return pickName(s, lang);
+    if (order?.status_label) return order.status_label;
+    return slug;
   };
 
   const statusColor = (slug: string) => {
@@ -173,9 +179,11 @@ export function OrdersPage() {
                     {o.product?.name || "—"}
                   </td>
                   <td className="px-4 py-3 text-text-secondary">
-                    <div>{o.parent?.name || o.contact_name || "—"}</div>
+                    <div>
+                      {o.user?.full_name || o.parent?.name || o.contact_name || "—"}
+                    </div>
                     <div className="text-[11px] text-text-muted">
-                      {o.parent?.phone || o.contact_phone || ""}
+                      {o.user?.phone || o.parent?.phone || o.contact_phone || ""}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-text-secondary">
@@ -199,7 +207,7 @@ export function OrdersPage() {
                         </option>
                       ))}
                       {!activeStatuses.find((s) => s.slug === o.status) && (
-                        <option value={o.status}>{statusLabel(o.status)}</option>
+                        <option value={o.status}>{statusLabel(o.status, o)}</option>
                       )}
                     </select>
                   </td>
