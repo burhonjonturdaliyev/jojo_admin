@@ -24,6 +24,7 @@ import {
 import { Link } from "react-router-dom";
 import { PageHeader } from "../components/PageHeader";
 import { Avatar } from "../components/Avatar";
+import { SendNotificationModal } from "../components/SendNotificationModal";
 import { useT } from "../lib/i18n";
 import {
   subscriptionGiveApi,
@@ -48,6 +49,7 @@ export function UsersPage() {
   const [givingPremium, setGivingPremium] = useState<AdminUserRow | null>(null);
   const [editing, setEditing] = useState<AdminUserRow | null>(null);
   const [viewing, setViewing] = useState<AdminUserRow | null>(null);
+  const [notifying, setNotifying] = useState<AdminUserRow | null>(null);
 
   const reload = async () => {
     setLoading(true);
@@ -414,6 +416,13 @@ export function UsersPage() {
                         )}
                       </button>
                       <button
+                        onClick={() => setNotifying(u)}
+                        className="icon-btn h-7 w-7 hover:bg-blue-500/15 hover:text-blue-500"
+                        title={t("usersNotif.button")}
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                      </button>
+                      <button
                         onClick={() => setEditing(u)}
                         className="icon-btn h-7 w-7"
                         title={t("users.action.edit")}
@@ -464,6 +473,16 @@ export function UsersPage() {
           onGivePremium={() => {
             setGivingPremium(viewing);
             setViewing(null);
+          }}
+        />
+      )}
+      {notifying && (
+        <SendNotificationModal
+          user={notifying}
+          onClose={() => setNotifying(null)}
+          onSent={() => {
+            // Keep the modal open briefly so the operator sees the
+            // success banner; they close it themselves.
           }}
         />
       )}
