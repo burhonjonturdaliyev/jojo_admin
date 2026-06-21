@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, BookOpen, Pencil, Trash2, Search, Sparkles, Loader2 } from "lucide-react";
+import { Plus, BookOpen, Pencil, Trash2, Search, Sparkles, Loader2, X } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
 import { MultilangInput } from "../components/MultilangInput";
@@ -310,8 +310,14 @@ function AdviceEditor({
   const canSave = filled(draft.title.uz) || filled(draft.title.ru) || filled(draft.title.en);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin rounded-2xl bg-bg p-5">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin rounded-2xl bg-bg p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h3 className="text-[16px] font-semibold text-text-primary">
@@ -321,20 +327,30 @@ function AdviceEditor({
               {t("advice.editSubtitle")}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={translateAllFields}
-            disabled={translating || !canSave}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-2.5 py-1.5 text-[11.5px] font-medium hover:bg-primary/20 disabled:opacity-40"
-            title={t("advice.translateAllHint")}
-          >
-            {translating ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5" />
-            )}
-            {t("advice.translateAll")}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={translateAllFields}
+              disabled={translating || !canSave}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-2.5 py-1.5 text-[11.5px] font-medium hover:bg-primary/20 disabled:opacity-40"
+              title={t("advice.translateAllHint")}
+            >
+              {translating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              {t("advice.translateAll")}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="icon-btn h-7 w-7"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
         <div className="space-y-3">
           <MultilangInput
