@@ -7,13 +7,17 @@ import {
   History,
   RotateCcw,
   Users as UsersIcon,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { MultilangInput, type LangValue } from "../components/MultilangInput";
 import { useT } from "../lib/i18n";
 import {
   broadcastApi,
+  translateApi,
   type AdminBroadcastHistoryRow,
+  type TranslateLang,
 } from "../lib/resources";
 
 /**
@@ -29,11 +33,63 @@ export function AdsPage() {
     "system",
   );
   const [sending, setSending] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [withSms, setWithSms] = useState(false);
   const title = titleL.uz;
   const body = bodyL.uz;
+
+  // Manba til — eng to'liq to'ldirilganini topadi (uz odatda asosiy).
+  const detectSource = (v: LangValue): TranslateLang => {
+    const candidates: TranslateLang[] = ["uz", "ru", "en", "uz_cyrl"];
+    const filled = candidates.filter((k) => (v[k] || "").trim().length > 0);
+    if (filled.length === 0) return "uz";
+    return filled.includes("uz") ? "uz" : filled[0];
+  };
+
+  const translateAllFields = async () => {
+    setError(null);
+    const titleSrc = detectSource(titleL);
+    const bodySrc = detectSource(bodyL);
+    const titleBase = (titleL[titleSrc] || "").trim();
+    const bodyBase = (bodyL[bodySrc] || "").trim();
+    if (!titleBase && !bodyBase) {
+      setError(t("ads.error.fillSource"));
+      return;
+    }
+    setTranslating(true);
+    try {
+      const [tRes, bRes] = await Promise.all([
+        titleBase ? translateApi.all(titleBase, titleSrc) : Promise.resolve(null),
+        bodyBase ? translateApi.all(bodyBase, bodySrc) : Promise.resolve(null),
+      ]);
+      if (tRes) {
+        setTitleL((prev) => ({
+          uz: prev.uz || tRes.translations.uz || "",
+          uz_cyrl: prev.uz_cyrl || tRes.translations.uz_cyrl || "",
+          ru: prev.ru || tRes.translations.ru || "",
+          en: prev.en || tRes.translations.en || "",
+        }));
+      }
+      if (bRes) {
+        setBodyL((prev) => ({
+          uz: prev.uz || bRes.translations.uz || "",
+          uz_cyrl: prev.uz_cyrl || bRes.translations.uz_cyrl || "",
+          ru: prev.ru || bRes.translations.ru || "",
+          en: prev.en || bRes.translations.en || "",
+        }));
+      }
+    } catch (e) {
+      setError((e as { message?: string }).message || t("ads.error"));
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const canTranslate =
+    (titleL.uz || titleL.uz_cyrl || titleL.ru || titleL.en).trim().length > 0 ||
+    (bodyL.uz || bodyL.uz_cyrl || bodyL.ru || bodyL.en).trim().length > 0;
 
   const [history, setHistory] = useState<AdminBroadcastHistoryRow[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -58,18 +114,31 @@ export function AdsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const send = async () => {
+  const send = async (autoTranslate = false) => {
     setError(null);
     setResult(null);
-    if (!titleL.uz.trim() || !bodyL.uz.trim()) {
-      setError("O'zbek tilidagi sarlavha va matn majburiy");
-      return;
+    const titleSrc = detectSource(titleL);
+    const bodySrc = detectSource(bodyL);
+    const titleBase = (titleL[titleSrc] || "").trim();
+    const bodyBase = (bodyL[bodySrc] || "").trim();
+
+    if (autoTranslate) {
+      // Manba til to'ldirilgan bo'lsa kifoya — server qolganlarini tarjima qiladi.
+      if (!titleBase || !bodyBase) {
+        setError(t("ads.error.fillSource"));
+        return;
+      }
+    } else {
+      if (!titleL.uz.trim() || !bodyL.uz.trim()) {
+        setError(t("ads.error.uzRequired"));
+        return;
+      }
     }
     setSending(true);
     try {
       const r = await broadcastApi.send({
-        title: titleL.uz.trim(),
-        body: bodyL.uz.trim(),
+        title: (titleL.uz || titleBase).trim(),
+        body: (bodyL.uz || bodyBase).trim(),
         title_uz_cyrl: titleL.uz_cyrl.trim() || undefined,
         title_ru: titleL.ru.trim() || undefined,
         title_en: titleL.en.trim() || undefined,
@@ -78,6 +147,10 @@ export function AdsPage() {
         body_en: bodyL.en.trim() || undefined,
         category,
         send_sms: withSms,
+        auto_translate: autoTranslate || undefined,
+        translate_source: autoTranslate
+          ? ((titleSrc === "uz_cyrl" ? "uz" : titleSrc) as "uz" | "ru" | "en")
+          : undefined,
       });
       const smsLine = r.sms_sent ? t("ads.smsExtra", { count: r.sms_sent }) : "";
       setResult(`${r.sent_to} ta ota-onaga yetkazildi${smsLine}`);
@@ -102,11 +175,11 @@ export function AdsPage() {
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
         <div className="grid grid-cols-[1fr_320px] gap-5">
           <div className="card p-6">
-            <div className="mb-5 flex items-center gap-3">
+            <div className="mb-5 flex items-start gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/15 text-blue-500">
                 <Megaphone className="h-5 w-5" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h3 className="text-[15px] font-semibold text-text-primary">
                   {t("ads.newAnnouncement")}
                 </h3>
@@ -114,6 +187,20 @@ export function AdsPage() {
                   {t("ads.deliveryHint")}
                 </p>
               </div>
+              <button
+                type="button"
+                onClick={translateAllFields}
+                disabled={translating || !canTranslate}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-2.5 py-1.5 text-[11.5px] font-medium hover:bg-primary/20 disabled:opacity-40"
+                title={t("ads.translateAllHint")}
+              >
+                {translating ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3.5 w-3.5" />
+                )}
+                {t("ads.translateAll")}
+              </button>
             </div>
 
             <div className="space-y-4">
@@ -197,14 +284,25 @@ export function AdsPage() {
                 </div>
               )}
 
-              <button
-                onClick={send}
-                disabled={sending}
-                className="btn-primary w-full justify-center py-2.5 text-[13px] disabled:opacity-60"
-              >
-                <Send className="h-4 w-4" />
-                {sending ? t("ads.sending") : t("ads.sendButton")}
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => send(true)}
+                  disabled={sending || translating}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary/10 text-primary py-2.5 text-[13px] font-medium hover:bg-primary/20 disabled:opacity-60"
+                  title={t("ads.sendWithTranslateHint")}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {sending ? t("ads.sending") : t("ads.sendWithTranslate")}
+                </button>
+                <button
+                  onClick={() => send(false)}
+                  disabled={sending || translating}
+                  className="btn-primary flex-1 justify-center py-2.5 text-[13px] disabled:opacity-60"
+                >
+                  <Send className="h-4 w-4" />
+                  {sending ? t("ads.sending") : t("ads.sendButton")}
+                </button>
+              </div>
             </div>
           </div>
 

@@ -468,6 +468,8 @@ export const broadcastApi = {
     send_sms?: boolean;
     audience?: BroadcastAudience;
     parent_ids?: number[];
+    auto_translate?: boolean;
+    translate_source?: "uz" | "ru" | "en";
   }) =>
     api<{
       status: boolean;

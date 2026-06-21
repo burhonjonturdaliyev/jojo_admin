@@ -13,7 +13,8 @@ import {
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
 import { MultilangInput, buildLangValue } from "../components/MultilangInput";
-import { useT } from "../lib/i18n";
+import { TranslateAllButton } from "../components/TranslateAllButton";
+import { useT, type Lang } from "../lib/i18n";
 import {
   kidsContentApi,
   kidsVideosApi,
@@ -869,9 +870,22 @@ function GameEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [d, setD] = useState(game);
   const [busy, setBusy] = useState(false);
+
+  const titleValue = buildLangValue(
+    d.title,
+    d.title_ru,
+    d.title_en,
+    d.title_uz_cyrl,
+  );
+  const descValue = buildLangValue(
+    d.description,
+    d.description_ru,
+    d.description_en,
+    d.description_uz_cyrl,
+  );
 
   const save = async () => {
     setBusy(true);
@@ -902,9 +916,38 @@ function GameEditor({
           <h3 className="text-[16px] font-semibold text-text-primary">
             {d.id === 0 ? t("kidsContent.editor.gameNew") : t("kidsContent.editor.gameEdit")}
           </h3>
-          <button onClick={onClose} className="icon-btn h-7 w-7">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <TranslateAllButton
+              from={lang as Lang}
+              fields={[
+                {
+                  value: titleValue as never,
+                  onChange: (v) =>
+                    setD((p) => ({
+                      ...p,
+                      title: v.uz,
+                      title_uz_cyrl: v.uz_cyrl,
+                      title_ru: v.ru,
+                      title_en: v.en,
+                    })),
+                },
+                {
+                  value: descValue as never,
+                  onChange: (v) =>
+                    setD((p) => ({
+                      ...p,
+                      description: v.uz,
+                      description_uz_cyrl: v.uz_cyrl,
+                      description_ru: v.ru,
+                      description_en: v.en,
+                    })),
+                },
+              ]}
+            />
+            <button onClick={onClose} className="icon-btn h-7 w-7">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
@@ -916,69 +959,105 @@ function GameEditor({
             />
           </div>
           <div className="col-span-2">
-            <input
-              value={d.title}
-              onChange={(e) => setD({ ...d, title: e.target.value })}
+            <MultilangInput
+              label={t("kidsContent.field.gameName")}
+              required
+              value={titleValue}
+              onChange={(v) =>
+                setD({
+                  ...d,
+                  title: v.uz,
+                  title_uz_cyrl: v.uz_cyrl,
+                  title_ru: v.ru,
+                  title_en: v.en,
+                })
+              }
               placeholder={t("kidsContent.editor.gameNamePlaceholder")}
-              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] font-semibold outline-none focus:border-primary"
             />
           </div>
           <div className="col-span-2">
-            <textarea
-              value={d.description}
-              onChange={(e) => setD({ ...d, description: e.target.value })}
+            <MultilangInput
+              label={t("kidsContent.field.description")}
+              multiline
               rows={3}
+              value={descValue}
+              onChange={(v) =>
+                setD({
+                  ...d,
+                  description: v.uz,
+                  description_uz_cyrl: v.uz_cyrl,
+                  description_ru: v.ru,
+                  description_en: v.en,
+                })
+              }
               placeholder={t("kidsContent.editor.descPlaceholder")}
+            />
+          </div>
+          <div>
+            <FieldLabel required>{t("kidsContent.field.category")}</FieldLabel>
+            <select
+              value={d.category}
+              onChange={(e) => setD({ ...d, category: Number(e.target.value) })}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            >
+              <option value={0}>{t("kidsContent.editor.categoryDash")}</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <FieldLabel>{t("kidsContent.field.rewardPoints")}</FieldLabel>
+            <input
+              type="number"
+              value={d.reward_points}
+              onChange={(e) =>
+                setD({ ...d, reward_points: Number(e.target.value) })
+              }
+              placeholder={t("kidsContent.editor.rewardPlaceholder")}
               className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
             />
           </div>
-          <select
-            value={d.category}
-            onChange={(e) => setD({ ...d, category: Number(e.target.value) })}
-            className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-          >
-            <option value={0}>{t("kidsContent.editor.categoryDash")}</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            value={d.reward_points}
-            onChange={(e) =>
-              setD({ ...d, reward_points: Number(e.target.value) })
-            }
-            placeholder={t("kidsContent.editor.rewardPlaceholder")}
-            className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-          />
-          <input
-            type="number"
-            value={d.age_min}
-            onChange={(e) => setD({ ...d, age_min: Number(e.target.value) })}
-            placeholder={t("kidsContent.editor.ageMinPlaceholder")}
-            className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-          />
-          <input
-            type="number"
-            value={d.age_max}
-            onChange={(e) => setD({ ...d, age_max: Number(e.target.value) })}
-            placeholder={t("kidsContent.editor.ageMaxPlaceholder")}
-            className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-          />
-          <input
-            value={d.game_url}
-            onChange={(e) => setD({ ...d, game_url: e.target.value })}
-            placeholder={t("kidsContent.editor.gameUrlPlaceholder")}
-            className="col-span-2 rounded-lg border border-line bg-bg-input px-3 py-2 text-[12px] font-mono outline-none focus:border-primary"
-          />
-          <input
-            value={d.screen_key}
-            onChange={(e) => setD({ ...d, screen_key: e.target.value })}
-            placeholder={t("kidsContent.editor.screenKeyPlaceholder")}
-            className="col-span-2 rounded-lg border border-line bg-bg-input px-3 py-2 text-[12px] font-mono outline-none focus:border-primary"
-          />
+          <div>
+            <FieldLabel>{t("kidsContent.field.ageMin")}</FieldLabel>
+            <input
+              type="number"
+              value={d.age_min}
+              onChange={(e) => setD({ ...d, age_min: Number(e.target.value) })}
+              placeholder={t("kidsContent.editor.ageMinPlaceholder")}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <FieldLabel>{t("kidsContent.field.ageMax")}</FieldLabel>
+            <input
+              type="number"
+              value={d.age_max}
+              onChange={(e) => setD({ ...d, age_max: Number(e.target.value) })}
+              placeholder={t("kidsContent.editor.ageMaxPlaceholder")}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
+          <div className="col-span-2">
+            <FieldLabel>{t("kidsContent.field.gameUrl")}</FieldLabel>
+            <input
+              value={d.game_url}
+              onChange={(e) => setD({ ...d, game_url: e.target.value })}
+              placeholder={t("kidsContent.editor.gameUrlPlaceholder")}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12px] font-mono outline-none focus:border-primary"
+            />
+          </div>
+          <div className="col-span-2">
+            <FieldLabel>{t("kidsContent.field.screenKey")}</FieldLabel>
+            <input
+              value={d.screen_key}
+              onChange={(e) => setD({ ...d, screen_key: e.target.value })}
+              placeholder={t("kidsContent.editor.screenKeyPlaceholder")}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12px] font-mono outline-none focus:border-primary"
+            />
+          </div>
           <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
             <input
               type="checkbox"
@@ -1022,9 +1101,16 @@ function CategoryEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [d, setD] = useState(cat);
   const [busy, setBusy] = useState(false);
+
+  const nameValue = buildLangValue(
+    d.name,
+    d.name_ru,
+    d.name_en,
+    d.name_uz_cyrl,
+  );
 
   const save = async () => {
     setBusy(true);
@@ -1055,9 +1141,27 @@ function CategoryEditor({
           <h3 className="text-[16px] font-semibold text-text-primary">
             {d.id === 0 ? t("kidsContent.editor.categoryNew") : t("kidsContent.editor.categoryEdit")}
           </h3>
-          <button onClick={onClose} className="icon-btn h-7 w-7">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <TranslateAllButton
+              from={lang as Lang}
+              fields={[
+                {
+                  value: nameValue as never,
+                  onChange: (v) =>
+                    setD((p) => ({
+                      ...p,
+                      name: v.uz,
+                      name_uz_cyrl: v.uz_cyrl,
+                      name_ru: v.ru,
+                      name_en: v.en,
+                    })),
+                },
+              ]}
+            />
+            <button onClick={onClose} className="icon-btn h-7 w-7">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
         <div className="space-y-3">
           <ImageUpload
@@ -1066,19 +1170,31 @@ function CategoryEditor({
             folder="uploads"
             label={t("kidsContent.editor.iconOptional")}
           />
-          <input
-            value={d.name}
-            onChange={(e) => setD({ ...d, name: e.target.value })}
+          <MultilangInput
+            label={t("kidsContent.field.categoryName")}
+            required
+            value={nameValue}
+            onChange={(v) =>
+              setD({
+                ...d,
+                name: v.uz,
+                name_uz_cyrl: v.uz_cyrl,
+                name_ru: v.ru,
+                name_en: v.en,
+              })
+            }
             placeholder={t("kidsContent.editor.namePlaceholder")}
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13.5px] font-semibold outline-none focus:border-primary"
           />
-          <input
-            type="number"
-            value={d.order}
-            onChange={(e) => setD({ ...d, order: Number(e.target.value) })}
-            placeholder={t("kidsContent.editor.orderPlaceholder")}
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-          />
+          <div>
+            <FieldLabel>{t("kidsContent.field.order")}</FieldLabel>
+            <input
+              type="number"
+              value={d.order}
+              onChange={(e) => setD({ ...d, order: Number(e.target.value) })}
+              placeholder={t("kidsContent.editor.orderPlaceholder")}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
           <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
             <input
               type="checkbox"
@@ -1105,6 +1221,26 @@ function CategoryEditor({
   );
 }
 
+/**
+ * Compact field label used above every editor input — gives each field a
+ * visible name so an operator can tell "Age min" from "Age max" without
+ * relying on placeholder text alone. Renders nothing when label is empty.
+ */
+function FieldLabel({
+  children,
+  required,
+}: {
+  children: React.ReactNode;
+  required?: boolean;
+}) {
+  return (
+    <div className="mb-1 text-[11.5px] font-medium text-text-secondary">
+      {children}
+      {required && <span className="text-red-500 ml-0.5">*</span>}
+    </div>
+  );
+}
+
 // ============================================================================
 // Video editors — multi-language title/description + YouTube URL
 // ============================================================================
@@ -1120,7 +1256,7 @@ function VideoEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [d, setD] = useState(video);
   const [busy, setBusy] = useState(false);
 
@@ -1170,9 +1306,38 @@ function VideoEditor({
           <h3 className="text-[16px] font-semibold text-text-primary">
             {d.id === 0 ? t("kidsContent.editor.videoNew") : t("kidsContent.editor.videoEdit")}
           </h3>
-          <button onClick={onClose} className="icon-btn h-7 w-7">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <TranslateAllButton
+              from={lang as Lang}
+              fields={[
+                {
+                  value: titleValue as never,
+                  onChange: (v) =>
+                    setD((p) => ({
+                      ...p,
+                      title: v.uz,
+                      title_uz_cyrl: v.uz_cyrl,
+                      title_ru: v.ru,
+                      title_en: v.en,
+                    })),
+                },
+                {
+                  value: descValue as never,
+                  onChange: (v) =>
+                    setD((p) => ({
+                      ...p,
+                      description: v.uz,
+                      description_uz_cyrl: v.uz_cyrl,
+                      description_ru: v.ru,
+                      description_en: v.en,
+                    })),
+                },
+              ]}
+            />
+            <button onClick={onClose} className="icon-btn h-7 w-7">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -1231,7 +1396,7 @@ function VideoEditor({
           </div>
 
           <MultilangInput
-            label={t("notifRules.titleField")}
+            label={t("kidsContent.field.videoTitle")}
             required
             value={titleValue}
             onChange={(v) =>
@@ -1247,7 +1412,7 @@ function VideoEditor({
           />
 
           <MultilangInput
-            label={t("kidsContent.editor.descPlaceholder")}
+            label={t("kidsContent.field.description")}
             multiline
             rows={3}
             value={descValue}
@@ -1264,45 +1429,68 @@ function VideoEditor({
           />
 
           <div className="grid grid-cols-2 gap-3">
-            <select
-              value={d.category}
-              onChange={(e) => setD({ ...d, category: Number(e.target.value) })}
-              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-            >
-              <option value={0}>{t("kidsContent.editor.categoryDash")}</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <input
-              value={d.duration_label}
-              onChange={(e) => setD({ ...d, duration_label: e.target.value })}
-              placeholder={t("kidsContent.editor.durationPlaceholder")}
-              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-            />
-            <input
-              type="number"
-              value={d.age_min}
-              onChange={(e) => setD({ ...d, age_min: Number(e.target.value) })}
-              placeholder={t("kidsContent.editor.ageMinPlaceholder")}
-              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-            />
-            <input
-              type="number"
-              value={d.age_max}
-              onChange={(e) => setD({ ...d, age_max: Number(e.target.value) })}
-              placeholder={t("kidsContent.editor.ageMaxPlaceholder")}
-              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-            />
-            <input
-              type="number"
-              value={d.order}
-              onChange={(e) => setD({ ...d, order: Number(e.target.value) })}
-              placeholder={t("kidsContent.editor.orderPlaceholder")}
-              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-            />
+            <div>
+              <FieldLabel required>{t("kidsContent.field.category")}</FieldLabel>
+              <select
+                value={d.category}
+                onChange={(e) =>
+                  setD({ ...d, category: Number(e.target.value) })
+                }
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+              >
+                <option value={0}>{t("kidsContent.editor.categoryDash")}</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <FieldLabel>{t("kidsContent.field.duration")}</FieldLabel>
+              <input
+                value={d.duration_label}
+                onChange={(e) => setD({ ...d, duration_label: e.target.value })}
+                placeholder={t("kidsContent.editor.durationPlaceholder")}
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <FieldLabel>{t("kidsContent.field.ageMin")}</FieldLabel>
+              <input
+                type="number"
+                value={d.age_min}
+                onChange={(e) =>
+                  setD({ ...d, age_min: Number(e.target.value) })
+                }
+                placeholder={t("kidsContent.editor.ageMinPlaceholder")}
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <FieldLabel>{t("kidsContent.field.ageMax")}</FieldLabel>
+              <input
+                type="number"
+                value={d.age_max}
+                onChange={(e) =>
+                  setD({ ...d, age_max: Number(e.target.value) })
+                }
+                placeholder={t("kidsContent.editor.ageMaxPlaceholder")}
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+              />
+            </div>
+            <div>
+              <FieldLabel>{t("kidsContent.field.order")}</FieldLabel>
+              <input
+                type="number"
+                value={d.order}
+                onChange={(e) =>
+                  setD({ ...d, order: Number(e.target.value) })
+                }
+                placeholder={t("kidsContent.editor.orderPlaceholder")}
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+              />
+            </div>
             <div className="flex flex-col gap-1 justify-center">
               <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
                 <input
@@ -1356,7 +1544,7 @@ function VideoCategoryEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const { t } = useT();
+  const { t, lang } = useT();
   const [d, setD] = useState(cat);
   const [busy, setBusy] = useState(false);
 
@@ -1396,9 +1584,27 @@ function VideoCategoryEditor({
           <h3 className="text-[16px] font-semibold text-text-primary">
             {d.id === 0 ? t("kidsContent.editor.videoCategoryNew") : t("kidsContent.editor.videoCategoryEdit")}
           </h3>
-          <button onClick={onClose} className="icon-btn h-7 w-7">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <TranslateAllButton
+              from={lang as Lang}
+              fields={[
+                {
+                  value: nameValue as never,
+                  onChange: (v) =>
+                    setD((p) => ({
+                      ...p,
+                      name: v.uz,
+                      name_uz_cyrl: v.uz_cyrl,
+                      name_ru: v.ru,
+                      name_en: v.en,
+                    })),
+                },
+              ]}
+            />
+            <button onClick={onClose} className="icon-btn h-7 w-7">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
         <div className="space-y-3">
           <ImageUpload
@@ -1408,7 +1614,7 @@ function VideoCategoryEditor({
             label={t("kidsContent.editor.iconOptional")}
           />
           <MultilangInput
-            label={t("kidsContent.editor.namePlaceholder")}
+            label={t("kidsContent.field.categoryName")}
             required
             value={nameValue}
             onChange={(v) =>
@@ -1422,13 +1628,16 @@ function VideoCategoryEditor({
             }
             placeholder={t("kidsContent.editor.videoCategoryNamePlaceholder")}
           />
-          <input
-            type="number"
-            value={d.order}
-            onChange={(e) => setD({ ...d, order: Number(e.target.value) })}
-            placeholder={t("kidsContent.editor.orderPlaceholder")}
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
-          />
+          <div>
+            <FieldLabel>{t("kidsContent.field.order")}</FieldLabel>
+            <input
+              type="number"
+              value={d.order}
+              onChange={(e) => setD({ ...d, order: Number(e.target.value) })}
+              placeholder={t("kidsContent.editor.orderPlaceholder")}
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] outline-none focus:border-primary"
+            />
+          </div>
           <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
             <input
               type="checkbox"
