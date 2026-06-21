@@ -94,6 +94,9 @@ const uz: Dict = {
   "userStatus.bloklangan": "Bloklangan",
 
   // ───── Order status enum
+  // `new` is the canonical code; `sent` is the legacy alias kept for
+  // any backend row that hasn't been migrated yet. Both render as "Yangi".
+  "orderStatus.new": "Yangi",
   "orderStatus.sent": "Yangi",
   "orderStatus.review": "Ko'rib chiqilmoqda",
   "orderStatus.confirmed": "Tasdiqlangan",
@@ -1634,6 +1637,7 @@ const ru: Dict = {
   "userStatus.bloklangan": "Заблокирован",
 
   // ───── Order status
+  "orderStatus.new": "Новый",
   "orderStatus.sent": "Новый",
   "orderStatus.review": "На рассмотрении",
   "orderStatus.confirmed": "Подтверждён",
@@ -3174,6 +3178,7 @@ const en: Dict = {
   "userStatus.bloklangan": "Blocked",
 
   // ───── Order status
+  "orderStatus.new": "New",
   "orderStatus.sent": "New",
   "orderStatus.review": "Under review",
   "orderStatus.confirmed": "Confirmed",

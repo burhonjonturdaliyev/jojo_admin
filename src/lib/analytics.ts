@@ -28,6 +28,7 @@ export interface OrderTotals {
 }
 
 const EMPTY_STATUS: Record<OrderStatus, number> = {
+  new: 0,
   sent: 0,
   review: 0,
   confirmed: 0,
@@ -36,7 +37,16 @@ const EMPTY_STATUS: Record<OrderStatus, number> = {
   cancelled: 0,
 };
 
-const ACTIVE_STATUSES: OrderStatus[] = ["sent", "review", "confirmed", "shipping"];
+// Both the modern `new` code and the legacy `sent` code count as
+// "active / not yet finalised". Until every backend row is migrated, the
+// dashboard's bucket sums need to include both.
+const ACTIVE_STATUSES: OrderStatus[] = [
+  "new",
+  "sent",
+  "review",
+  "confirmed",
+  "shipping",
+];
 
 // Parses dates like "30.05.2024" or "30.05.2024 09:12". Returns epoch ms or NaN.
 export function parseOrderDate(input: string): number {
