@@ -790,6 +790,9 @@ export const ordersApi = {
     api<void>(`/admin/orders/${id}/`, { method: "DELETE" }),
   events: (id: number) =>
     api<{ results: AdminOrderEvent[] }>(`/admin/orders/${id}/events/`),
+  /** Yangi keladigan (`sent` status) buyurtmalar soni — sidebar badge uchun. */
+  unreadCount: () =>
+    api<{ count: number }>("/admin/orders/unread-count/"),
 };
 
 // ============================================================================

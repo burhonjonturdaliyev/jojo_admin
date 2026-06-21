@@ -106,7 +106,7 @@ export function OrdersPage() {
       await ordersApi.remove(id);
       setItems((prev) => prev.filter((o) => o.id !== id));
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     }
   };
 
@@ -353,7 +353,7 @@ function OrderEditor({
       });
       onSaved(r);
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -467,7 +467,7 @@ function StatusManager({
       await orderStatusesApi.remove(s.id);
       await onChanged();
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     }
   };
 
@@ -641,7 +641,7 @@ function StatusEditor({
       }
       await onSaved();
     } catch (e) {
-      alert((e as { message?: string }).message || "Xato");
+      alert((e as { message?: string }).message || t("common.error"));
     } finally {
       setBusy(false);
     }
@@ -686,7 +686,7 @@ function StatusEditor({
             label={t("orders.status.nameLabel")}
             value={names}
             onChange={setNames}
-            placeholder="Nomi"
+            placeholder={t("orders.status.namePh") || t("orders.status.nameLabel")}
           />
           <div>
             <div className="text-[11.5px] font-medium text-text-secondary mb-1">

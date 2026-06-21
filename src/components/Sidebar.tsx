@@ -26,7 +26,7 @@ import {
 import { cn } from "../lib/utils";
 import { useAuth } from "../lib/auth";
 import { useT } from "../lib/i18n";
-import { leadsApi } from "../lib/resources";
+import { leadsApi, ordersApi } from "../lib/resources";
 import { subscribe } from "../lib/leadsSocket";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
@@ -40,6 +40,10 @@ export function Sidebar() {
   // kelganda darrov yangilanadi. Fallback: 60 sekundlik polling.
   const [unreadRequests, setUnreadRequests] = useState(0);
   const [unreadLeads, setUnreadLeads] = useState(0);
+  // Yangi (sent) buyurtmalar sanog'i — sidebar'da "Buyurtmalar" yonida
+  // ko'rinadi. Default polling 60s; status o'zgartirilganda darhol kamayadi
+  // (faqat sahifa qaytarilgandan keyin).
+  const [unreadOrders, setUnreadOrders] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -55,6 +59,11 @@ export function Sidebar() {
       leadsApi
         .unreadCount({ source: "app,manual", mode: "new" })
         .then((r) => !cancelled && setUnreadLeads(r.count ?? 0))
+        .catch(() => {});
+      // Buyurtmalar — yangi (sent) buyurtmalar soni.
+      ordersApi
+        .unreadCount()
+        .then((r) => !cancelled && setUnreadOrders(r.count ?? 0))
         .catch(() => {});
     };
     refresh();
@@ -96,7 +105,7 @@ export function Sidebar() {
         { to: "/products", perm: "products", label: t("nav.products"), icon: Package },
         { to: "/categories", perm: "categories", label: t("nav.categories"), icon: FolderTree },
         { to: "/banners", perm: "banners", label: t("nav.banners"), icon: ImageIcon },
-        { to: "/orders", perm: "orders", label: t("nav.orders"), icon: ShoppingBag },
+        { to: "/orders", perm: "orders", label: t("nav.orders"), icon: ShoppingBag, badge: unreadOrders },
       ],
     },
     {
