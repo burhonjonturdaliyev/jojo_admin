@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Bookmark, Package, Play, ShoppingBag, Truck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Bookmark, Clock, Package, Play, ShoppingBag, Truck } from "lucide-react";
 import type { UiProduct } from "../lib/adapters";
 import type { AdminStoreCategory } from "../lib/resources";
 import type { Lang } from "../lib/i18n";
@@ -187,6 +187,15 @@ export function ProductPreview({
               videoUrls={product.videoUrls}
               brand={product.brand}
               isFeatured={product.isFeatured}
+              dealEndsAt={product.dealEndsAt}
+              delivery={{
+                courier: product.delivery.courier,
+                price: product.delivery.price,
+                isFree: product.delivery.isFree,
+                city: pickLang(product.delivery.city, lang),
+                time: pickLang(product.delivery.time, lang),
+                note: pickLang(product.delivery.note, lang),
+              }}
             />
           )}
         </div>
@@ -413,6 +422,8 @@ function DetailPreview({
   videoUrls,
   brand,
   isFeatured,
+  dealEndsAt,
+  delivery,
 }: {
   name: string;
   categoryLabel: string;
@@ -428,6 +439,15 @@ function DetailPreview({
   videoUrls: string[];
   brand: string;
   isFeatured: boolean;
+  dealEndsAt: string | null;
+  delivery: {
+    courier: string;
+    price: number;
+    isFree: boolean;
+    city: string;
+    time: string;
+    note: string;
+  };
 }) {
   const [selected, setSelected] = useState(0);
   const items: { type: "img" | "video"; src: string }[] = [
@@ -700,39 +720,62 @@ function DetailPreview({
           </div>
         </div>
 
-        {/* Delivery box */}
-        <div
-          style={{
-            backgroundColor: C.accentSoft,
-            border: `1px solid ${C.accentLine}`,
-            borderRadius: 14,
-            padding: "12px 13px",
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 11,
-            marginBottom: 14,
-          }}
-        >
+        {/* Countdown — chegirma tugashiga */}
+        {hasDiscount && dealEndsAt ? (
+          <DealCountdown endsAt={dealEndsAt} />
+        ) : null}
+
+        {/* Delivery box — real ma'lumotlardan */}
+        {(delivery.city || delivery.time || delivery.note || delivery.courier) && (
           <div
-            className="flex items-center justify-center shrink-0"
             style={{
-              width: 30,
-              height: 30,
-              borderRadius: 9,
-              backgroundColor: C.accent,
+              backgroundColor: C.accentSoft,
+              border: `1px solid ${C.accentLine}`,
+              borderRadius: 14,
+              padding: "12px 13px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 11,
+              marginBottom: 14,
             }}
           >
-            <Truck size={17} className="text-white" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div style={{ fontSize: 13.5, fontWeight: 800, color: C.ink, marginBottom: 2 }}>
-              Bepul yetkazib berish
+            <div
+              className="flex items-center justify-center shrink-0"
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 9,
+                backgroundColor: C.accent,
+              }}
+            >
+              <Truck size={17} className="text-white" />
             </div>
-            <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.45 }}>
-              Toshkent ichida 1-2 ish kuni
+            <div className="min-w-0 flex-1">
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: C.ink, marginBottom: 2 }}>
+                {delivery.isFree
+                  ? "Bepul yetkazib berish"
+                  : delivery.price > 0
+                    ? `Yetkazib berish: ${fmtPrice(delivery.price)} so'm`
+                    : "Yetkazib berish"}
+              </div>
+              {(delivery.city || delivery.time) && (
+                <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.45 }}>
+                  {[delivery.city, delivery.time].filter(Boolean).join(" · ")}
+                </div>
+              )}
+              {delivery.courier && (
+                <div style={{ fontSize: 11.5, color: C.ink2, marginTop: 4 }}>
+                  {courierLabel(delivery.courier)}
+                </div>
+              )}
+              {delivery.note && (
+                <div style={{ fontSize: 11.5, color: C.muted, marginTop: 4, lineHeight: 1.4 }}>
+                  {delivery.note}
+                </div>
+              )}
             </div>
           </div>
-        </div>
+        )}
 
         {/* Purchase CTA */}
         <button
@@ -767,4 +810,110 @@ function parseYouTubeId(url: string): string | null {
     if (m) return m[1];
   }
   return null;
+}
+
+function courierLabel(code: string): string {
+  switch (code) {
+    case "bts":
+      return "BTS Cargo";
+    case "uzposhta":
+      return "UzPosta";
+    case "yandex":
+      return "Yandex Delivery";
+    case "fargo":
+      return "Fargo";
+    case "express24":
+      return "Express24";
+    case "self_pickup":
+      return "O'zi olib ketadi";
+    case "other":
+      return "Boshqa kuryer";
+    default:
+      return "";
+  }
+}
+
+/** Real-time countdown — Flutter widget StoreDealCountdown'ning ekvivalenti. */
+function DealCountdown({ endsAt }: { endsAt: string }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const target = new Date(endsAt).getTime();
+  const diff = target - now;
+
+  if (isNaN(target) || diff <= 0) {
+    return (
+      <div
+        style={{
+          backgroundColor: C.redSoft,
+          border: `1px solid ${C.redLine}`,
+          borderRadius: 14,
+          padding: "11px 14px",
+          marginBottom: 12,
+          color: C.red,
+          fontSize: 12.5,
+          fontWeight: 700,
+        }}
+      >
+        Chegirma tugadi
+      </div>
+    );
+  }
+
+  const days = Math.floor(diff / 86_400_000);
+  const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((diff % 3_600_000) / 60_000);
+  const seconds = Math.floor((diff % 60_000) / 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  const cells: { label: string; value: string }[] = [];
+  if (days > 0) cells.push({ label: "K", value: pad(days) });
+  cells.push({ label: "S", value: pad(hours) });
+  cells.push({ label: "D", value: pad(minutes) });
+  cells.push({ label: "S", value: pad(seconds) });
+
+  return (
+    <div
+      style={{
+        backgroundColor: C.redSoft,
+        border: `1px solid ${C.redLine}`,
+        borderRadius: 14,
+        padding: "11px 14px",
+        marginBottom: 12,
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+      }}
+    >
+      <div className="flex items-center gap-1.5" style={{ color: C.red }}>
+        <Clock size={14} />
+        <span style={{ fontSize: 12.5, fontWeight: 700 }}>
+          Chegirma tugashiga
+        </span>
+      </div>
+      <div className="flex items-center gap-1 ml-auto">
+        {cells.map((c, i) => (
+          <span
+            key={i}
+            style={{
+              minWidth: 27,
+              padding: "3px 6px",
+              borderRadius: 6,
+              backgroundColor: C.red,
+              color: "#FFFFFF",
+              fontSize: 13,
+              fontWeight: 800,
+              textAlign: "center",
+            }}
+          >
+            {c.value}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }

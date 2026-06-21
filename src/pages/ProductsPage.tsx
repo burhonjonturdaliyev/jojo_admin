@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, Package, Pencil, Trash2, Search, Sparkles, Loader2, X, ImagePlus, Video, Smartphone } from "lucide-react";
+import { Plus, Package, Pencil, Trash2, Search, Sparkles, Loader2, X, ImagePlus, Video, Smartphone, Clock, Truck } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
 import { MultilangInput } from "../components/MultilangInput";
@@ -90,6 +90,15 @@ export function ProductsPage() {
     isActive: true,
     isFeatured: false,
     stock: 0,
+    dealEndsAt: null,
+    delivery: {
+      courier: "bts",
+      price: 0,
+      isFree: true,
+      time: emptyLocalizedString(),
+      city: emptyLocalizedString(),
+      note: emptyLocalizedString(),
+    },
   });
 
   return (
@@ -771,6 +780,18 @@ function ProductEditor({
                 Tavsiya etiladi
               </label>
             </div>
+
+            {/* Chegirma muddati */}
+            <DealEndsAtField
+              value={draft.dealEndsAt}
+              onChange={(v) => setDraft({ ...draft, dealEndsAt: v })}
+            />
+
+            {/* Yetkazib berish ma'lumotlari */}
+            <DeliverySection
+              value={draft.delivery}
+              onChange={(d) => setDraft({ ...draft, delivery: d })}
+            />
           </div>
         </div>
 
@@ -990,4 +1011,294 @@ function parseYouTubeId(url: string): string | null {
     if (m) return m[1];
   }
   return null;
+}
+
+// ============================================================================
+// Chegirma muddati va Yetkazib berish sektsiyalari
+// ============================================================================
+
+/** ISO datetime ↔ HTML `datetime-local` (YYYY-MM-DDTHH:mm) o'rtasidagi konvert. */
+function toLocalInput(iso: string | null): string {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return (
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+      `T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    );
+  } catch {
+    return "";
+  }
+}
+
+function fromLocalInput(local: string): string | null {
+  if (!local) return null;
+  try {
+    const d = new Date(local);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
+  } catch {
+    return null;
+  }
+}
+
+function DealEndsAtField({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (v: string | null) => void;
+}) {
+  const { t } = useT();
+  const presets: Array<{ hours: number; label: string }> = [
+    { hours: 1, label: t("products.deal.preset.1h") },
+    { hours: 6, label: t("products.deal.preset.6h") },
+    { hours: 24, label: t("products.deal.preset.24h") },
+    { hours: 72, label: t("products.deal.preset.3d") },
+    { hours: 168, label: t("products.deal.preset.7d") },
+  ];
+
+  const setPreset = (hours: number) => {
+    const d = new Date();
+    d.setHours(d.getHours() + hours);
+    onChange(d.toISOString());
+  };
+
+  // Live ko'rinish — qancha vaqt qoldi.
+  const remaining = (() => {
+    if (!value) return null;
+    const target = new Date(value).getTime();
+    if (isNaN(target)) return null;
+    const diff = target - Date.now();
+    if (diff <= 0) return { expired: true } as const;
+    const days = Math.floor(diff / 86_400_000);
+    const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+    const mins = Math.floor((diff % 3_600_000) / 60_000);
+    return { expired: false, days, hours, mins } as const;
+  })();
+
+  return (
+    <div className="rounded-xl border border-line bg-bg-input/40 p-3 mt-2">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[12px] font-semibold text-text-secondary">
+          <Clock className="h-3.5 w-3.5 text-amber-500" />
+          {t("products.deal.title")}
+        </div>
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="text-[10.5px] font-medium text-text-muted hover:text-red-500"
+          >
+            {t("products.deal.clear")}
+          </button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-2">
+        {presets.map((p) => (
+          <button
+            key={p.hours}
+            type="button"
+            onClick={() => setPreset(p.hours)}
+            className="rounded-md border border-line bg-bg-input px-2.5 py-1 text-[11.5px] font-medium text-text-secondary hover:border-amber-500 hover:text-amber-600"
+          >
+            +{p.label}
+          </button>
+        ))}
+      </div>
+
+      <input
+        type="datetime-local"
+        value={toLocalInput(value)}
+        onChange={(e) => onChange(fromLocalInput(e.target.value))}
+        className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] outline-none focus:border-primary"
+      />
+
+      {remaining && (
+        <div className="mt-2 text-[11px]">
+          {remaining.expired ? (
+            <span className="text-red-500 font-medium">
+              {t("products.deal.expired")}
+            </span>
+          ) : (
+            <span className="text-emerald-600 font-medium">
+              {t("products.deal.remaining", {
+                d: remaining.days,
+                h: remaining.hours,
+                m: remaining.mins,
+              })}
+            </span>
+          )}
+        </div>
+      )}
+      {!value && (
+        <div className="mt-1 text-[10.5px] text-text-muted">
+          {t("products.deal.hint")}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const COURIER_OPTIONS: { code: import("../lib/adapters").CourierCode; label: string }[] = [
+  { code: "bts", label: "BTS Cargo" },
+  { code: "uzposhta", label: "UzPosta" },
+  { code: "yandex", label: "Yandex Delivery" },
+  { code: "fargo", label: "Fargo" },
+  { code: "express24", label: "Express24" },
+  { code: "self_pickup", label: "" }, // ko'rsatishda labelni i18n'dan olamiz
+  { code: "other", label: "" },
+];
+
+function DeliverySection({
+  value,
+  onChange,
+}: {
+  value: UiProduct["delivery"];
+  onChange: (d: UiProduct["delivery"]) => void;
+}) {
+  const { t } = useT();
+  const [activeLang, setActiveLang] = useState<"uz" | "ru" | "en">("uz");
+
+  const setField = (field: "time" | "city" | "note", lang: "uz" | "ru" | "en", v: string) => {
+    onChange({
+      ...value,
+      [field]: { ...value[field], [lang]: v },
+    });
+  };
+
+  return (
+    <div className="rounded-xl border border-line bg-bg-input/40 p-3 mt-2 space-y-3">
+      <div className="flex items-center gap-1.5 text-[12px] font-semibold text-text-secondary">
+        <Truck className="h-3.5 w-3.5 text-blue-500" />
+        {t("products.delivery.title")}
+      </div>
+
+      <div>
+        <div className="text-[10.5px] text-text-secondary mb-1">
+          {t("products.delivery.courier")}
+        </div>
+        <select
+          value={value.courier}
+          onChange={(e) =>
+            onChange({
+              ...value,
+              courier: e.target.value as UiProduct["delivery"]["courier"],
+            })
+          }
+          className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] outline-none focus:border-primary"
+        >
+          <option value="">— {t("common.none")} —</option>
+          {COURIER_OPTIONS.map((o) => (
+            <option key={o.code} value={o.code}>
+              {o.label ||
+                (o.code === "self_pickup"
+                  ? t("products.delivery.courier.selfPickup")
+                  : o.code === "other"
+                    ? t("products.delivery.courier.other")
+                    : o.code)}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Free / paid toggle + narx */}
+      <div className="grid grid-cols-3 gap-2">
+        <label
+          className={
+            "col-span-1 flex cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 py-2 text-[12px] " +
+            (value.isFree
+              ? "border-emerald-500 bg-emerald-500/10 text-emerald-600"
+              : "border-line bg-bg-input text-text-secondary")
+          }
+        >
+          <span>{t("products.delivery.free")}</span>
+          <input
+            type="checkbox"
+            checked={value.isFree}
+            onChange={(e) => onChange({ ...value, isFree: e.target.checked })}
+          />
+        </label>
+        <div className="col-span-2">
+          <input
+            type="number"
+            min={0}
+            disabled={value.isFree}
+            value={value.isFree ? "" : value.price === 0 ? "" : String(value.price)}
+            onChange={(e) =>
+              onChange({
+                ...value,
+                price: e.target.value.trim() === "" ? 0 : Number(e.target.value) || 0,
+              })
+            }
+            placeholder={
+              value.isFree
+                ? t("products.delivery.freeHint")
+                : t("products.delivery.pricePh")
+            }
+            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] outline-none focus:border-primary disabled:opacity-50"
+          />
+        </div>
+      </div>
+
+      {/* Multilang tab */}
+      <div className="flex items-center gap-1 rounded-lg border border-line bg-bg-input p-0.5">
+        {(["uz", "ru", "en"] as const).map((l) => (
+          <button
+            key={l}
+            type="button"
+            onClick={() => setActiveLang(l)}
+            className={
+              "flex-1 rounded-md px-2 py-1 text-[10.5px] font-medium transition-colors " +
+              (activeLang === l
+                ? "bg-primary/15 text-primary"
+                : "text-text-secondary hover:text-text-primary")
+            }
+          >
+            {l === "uz" ? "🇺🇿 UZ" : l === "ru" ? "🇷🇺 RU" : "🇬🇧 EN"}
+          </button>
+        ))}
+      </div>
+
+      <div>
+        <div className="text-[10.5px] text-text-secondary mb-1">
+          {t("products.delivery.city")}
+        </div>
+        <input
+          value={value.city[activeLang] || ""}
+          onChange={(e) => setField("city", activeLang, e.target.value)}
+          placeholder={t("products.delivery.cityPh")}
+          className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] outline-none focus:border-primary"
+        />
+      </div>
+
+      <div>
+        <div className="text-[10.5px] text-text-secondary mb-1">
+          {t("products.delivery.time")}
+        </div>
+        <input
+          value={value.time[activeLang] || ""}
+          onChange={(e) => setField("time", activeLang, e.target.value)}
+          placeholder={t("products.delivery.timePh")}
+          className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] outline-none focus:border-primary"
+        />
+      </div>
+
+      <div>
+        <div className="text-[10.5px] text-text-secondary mb-1">
+          {t("products.delivery.note")}
+        </div>
+        <textarea
+          value={value.note[activeLang] || ""}
+          onChange={(e) => setField("note", activeLang, e.target.value)}
+          placeholder={t("products.delivery.notePh")}
+          rows={2}
+          className="w-full resize-none rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] outline-none focus:border-primary"
+        />
+      </div>
+    </div>
+  );
 }

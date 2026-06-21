@@ -125,6 +125,16 @@ export interface UiProductTag {
   name_en?: string;
 }
 
+export type CourierCode =
+  | ""
+  | "bts"
+  | "uzposhta"
+  | "yandex"
+  | "fargo"
+  | "express24"
+  | "self_pickup"
+  | "other";
+
 export interface UiProduct {
   id: string;
   name: Localized<string>;
@@ -146,6 +156,17 @@ export interface UiProduct {
   isActive: boolean;
   isFeatured: boolean;
   stock: number;
+  /** Chegirma tugash sanasi (ISO). null bo'lsa countdown ko'rsatilmaydi. */
+  dealEndsAt: string | null;
+  /** Yetkazib berish ma'lumotlari. */
+  delivery: {
+    courier: CourierCode;
+    price: number;
+    isFree: boolean;
+    time: Localized<string>;
+    city: Localized<string>;
+    note: Localized<string>;
+  };
 }
 
 type StoreProductRaw = AdminStoreProduct & {
@@ -165,6 +186,22 @@ type StoreProductRaw = AdminStoreProduct & {
   gallery_images?: string[];
   age_label?: string;
   tags?: UiProductTag[];
+  deal_ends_at?: string | null;
+  delivery_courier?: string;
+  delivery_price?: number;
+  delivery_is_free?: boolean;
+  delivery_time?: string;
+  delivery_time_ru?: string;
+  delivery_time_en?: string;
+  delivery_time_uz_cyrl?: string;
+  delivery_city?: string;
+  delivery_city_ru?: string;
+  delivery_city_en?: string;
+  delivery_city_uz_cyrl?: string;
+  delivery_note?: string;
+  delivery_note_ru?: string;
+  delivery_note_en?: string;
+  delivery_note_uz_cyrl?: string;
 };
 
 export function productToUi(p: AdminStoreProduct): UiProduct {
@@ -211,6 +248,30 @@ export function productToUi(p: AdminStoreProduct): UiProduct {
     isActive: p.is_active ?? true,
     isFeatured: p.is_featured ?? false,
     stock: p.stock_count ?? 0,
+    dealEndsAt: raw.deal_ends_at ?? null,
+    delivery: {
+      courier: ((raw.delivery_courier as string) || "") as UiProduct["delivery"]["courier"],
+      price: raw.delivery_price ?? 0,
+      isFree: raw.delivery_is_free ?? true,
+      time: {
+        uz: raw.delivery_time || "",
+        uz_cyrl: raw.delivery_time_uz_cyrl || "",
+        ru: raw.delivery_time_ru || "",
+        en: raw.delivery_time_en || "",
+      },
+      city: {
+        uz: raw.delivery_city || "",
+        uz_cyrl: raw.delivery_city_uz_cyrl || "",
+        ru: raw.delivery_city_ru || "",
+        en: raw.delivery_city_en || "",
+      },
+      note: {
+        uz: raw.delivery_note || "",
+        uz_cyrl: raw.delivery_note_uz_cyrl || "",
+        ru: raw.delivery_note_ru || "",
+        en: raw.delivery_note_en || "",
+      },
+    },
   };
 }
 
@@ -252,6 +313,22 @@ export function productToApi(
     is_active: u.isActive,
     is_featured: u.isFeatured,
     stock_count: u.stock,
+    deal_ends_at: u.dealEndsAt,
+    delivery_courier: u.delivery.courier,
+    delivery_price: u.delivery.isFree ? 0 : u.delivery.price,
+    delivery_is_free: u.delivery.isFree,
+    delivery_time: u.delivery.time.uz,
+    delivery_time_uz_cyrl: u.delivery.time.uz_cyrl,
+    delivery_time_ru: u.delivery.time.ru,
+    delivery_time_en: u.delivery.time.en,
+    delivery_city: u.delivery.city.uz,
+    delivery_city_uz_cyrl: u.delivery.city.uz_cyrl,
+    delivery_city_ru: u.delivery.city.ru,
+    delivery_city_en: u.delivery.city.en,
+    delivery_note: u.delivery.note.uz,
+    delivery_note_uz_cyrl: u.delivery.note.uz_cyrl,
+    delivery_note_ru: u.delivery.note.ru,
+    delivery_note_en: u.delivery.note.en,
   };
 }
 
