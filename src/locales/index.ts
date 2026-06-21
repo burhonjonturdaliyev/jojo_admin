@@ -2853,6 +2853,12 @@ const ru: Dict = {
   "ads.previewTitlePlaceholder": "Заголовок появится здесь",
   "ads.previewBodyPlaceholder": "Текст появится здесь...",
   "ads.error": "Произошла ошибка",
+  "ads.error.uzRequired": "Заголовок и текст на узбекском (uz) обязательны",
+  "ads.error.fillSource": "Сначала заполните заголовок и текст хотя бы на одном языке",
+  "ads.translateAll": "Перевести",
+  "ads.translateAllHint": "Автоматический перевод с самого заполненного языка на остальные",
+  "ads.sendWithTranslate": "Отправить с переводом",
+  "ads.sendWithTranslateHint": "Сервер автоматически заполнит пустые языки и отправит",
   "ads.smsExtra": " + {count} SMS",
 
   // ───── ImageUpload component
@@ -4405,6 +4411,12 @@ const en: Dict = {
   "ads.previewTitlePlaceholder": "Title appears here",
   "ads.previewBodyPlaceholder": "Body appears here...",
   "ads.error": "An error occurred",
+  "ads.error.uzRequired": "Uzbek (uz) title and body are required",
+  "ads.error.fillSource": "Fill in title and body in at least one language first",
+  "ads.translateAll": "Translate",
+  "ads.translateAllHint": "Auto-translate from the most filled language to the others",
+  "ads.sendWithTranslate": "Send with translation",
+  "ads.sendWithTranslateHint": "Server auto-fills empty languages and sends",
   "ads.smsExtra": " + {count} SMS",
 
   // ───── ImageUpload component
