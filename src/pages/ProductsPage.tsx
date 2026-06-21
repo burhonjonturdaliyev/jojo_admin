@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, Package, Pencil, Trash2, Search, Sparkles, Loader2, X, ImagePlus, Video, Smartphone, Clock, Truck } from "lucide-react";
+import { Plus, Package, Pencil, Trash2, Search, Sparkles, Loader2, X, ImagePlus, Video, Smartphone, Clock } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
 import { MultilangInput } from "../components/MultilangInput";
@@ -91,14 +91,7 @@ export function ProductsPage() {
     isFeatured: false,
     stock: 0,
     dealEndsAt: null,
-    delivery: {
-      courier: "bts",
-      price: 0,
-      isFree: true,
-      time: emptyLocalizedString(),
-      city: emptyLocalizedString(),
-      note: emptyLocalizedString(),
-    },
+    deliveryInfo: emptyLocalizedString(),
   });
 
   return (
@@ -339,7 +332,13 @@ function ProductEditor({
 
   /** Mavjud uz/ru/en qiymatlardan tanlangan source tili eng to'liq bo'lganini tanlaydi. */
   const detectSource = (): TranslateLang => {
-    const fields = [draft.name, draft.shortDescription, draft.description, draft.categoryLabel];
+    const fields = [
+      draft.name,
+      draft.shortDescription,
+      draft.description,
+      draft.categoryLabel,
+      draft.deliveryInfo,
+    ];
     const score: Record<TranslateLang, number> = { uz: 0, uz_cyrl: 0, ru: 0, en: 0 };
     fields.forEach((f) => {
       (["uz", "uz_cyrl", "ru", "en"] as TranslateLang[]).forEach((l) => {
@@ -360,8 +359,8 @@ function ProductEditor({
       const next = { ...draft };
       const fields: (keyof Pick<
         UiProduct,
-        "name" | "shortDescription" | "description" | "categoryLabel"
-      >)[] = ["name", "shortDescription", "description", "categoryLabel"];
+        "name" | "shortDescription" | "description" | "categoryLabel" | "deliveryInfo"
+      >)[] = ["name", "shortDescription", "description", "categoryLabel", "deliveryInfo"];
       for (const key of fields) {
         const base = (next[key][source] || "").trim();
         if (!base) continue;
@@ -787,10 +786,14 @@ function ProductEditor({
               onChange={(v) => setDraft({ ...draft, dealEndsAt: v })}
             />
 
-            {/* Yetkazib berish ma'lumotlari */}
-            <DeliverySection
-              value={draft.delivery}
-              onChange={(d) => setDraft({ ...draft, delivery: d })}
+            {/* Yetkazib berish — yagona multilang matn (auto-tarjima qo'llab-quvvatlanadi) */}
+            <MultilangInput
+              label={t("products.delivery.title")}
+              multiline
+              rows={3}
+              value={draft.deliveryInfo}
+              onChange={(v) => setDraft({ ...draft, deliveryInfo: v })}
+              placeholder={t("products.delivery.placeholder")}
             />
           </div>
         </div>
@@ -1143,162 +1146,3 @@ function DealEndsAtField({
   );
 }
 
-const COURIER_OPTIONS: { code: import("../lib/adapters").CourierCode; label: string }[] = [
-  { code: "bts", label: "BTS Cargo" },
-  { code: "uzposhta", label: "UzPosta" },
-  { code: "yandex", label: "Yandex Delivery" },
-  { code: "fargo", label: "Fargo" },
-  { code: "express24", label: "Express24" },
-  { code: "self_pickup", label: "" }, // ko'rsatishda labelni i18n'dan olamiz
-  { code: "other", label: "" },
-];
-
-function DeliverySection({
-  value,
-  onChange,
-}: {
-  value: UiProduct["delivery"];
-  onChange: (d: UiProduct["delivery"]) => void;
-}) {
-  const { t } = useT();
-  const [activeLang, setActiveLang] = useState<"uz" | "ru" | "en">("uz");
-
-  const setField = (field: "time" | "city" | "note", lang: "uz" | "ru" | "en", v: string) => {
-    onChange({
-      ...value,
-      [field]: { ...value[field], [lang]: v },
-    });
-  };
-
-  return (
-    <div className="rounded-xl border border-line bg-bg-input/40 p-3 mt-2 space-y-3">
-      <div className="flex items-center gap-1.5 text-[12px] font-semibold text-text-secondary">
-        <Truck className="h-3.5 w-3.5 text-blue-500" />
-        {t("products.delivery.title")}
-      </div>
-
-      <div>
-        <div className="text-[10.5px] text-text-secondary mb-1">
-          {t("products.delivery.courier")}
-        </div>
-        <select
-          value={value.courier}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              courier: e.target.value as UiProduct["delivery"]["courier"],
-            })
-          }
-          className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] outline-none focus:border-primary"
-        >
-          <option value="">— {t("common.none")} —</option>
-          {COURIER_OPTIONS.map((o) => (
-            <option key={o.code} value={o.code}>
-              {o.label ||
-                (o.code === "self_pickup"
-                  ? t("products.delivery.courier.selfPickup")
-                  : o.code === "other"
-                    ? t("products.delivery.courier.other")
-                    : o.code)}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Free / paid toggle + narx */}
-      <div className="grid grid-cols-3 gap-2">
-        <label
-          className={
-            "col-span-1 flex cursor-pointer items-center justify-between gap-2 rounded-lg border px-3 py-2 text-[12px] " +
-            (value.isFree
-              ? "border-emerald-500 bg-emerald-500/10 text-emerald-600"
-              : "border-line bg-bg-input text-text-secondary")
-          }
-        >
-          <span>{t("products.delivery.free")}</span>
-          <input
-            type="checkbox"
-            checked={value.isFree}
-            onChange={(e) => onChange({ ...value, isFree: e.target.checked })}
-          />
-        </label>
-        <div className="col-span-2">
-          <input
-            type="number"
-            min={0}
-            disabled={value.isFree}
-            value={value.isFree ? "" : value.price === 0 ? "" : String(value.price)}
-            onChange={(e) =>
-              onChange({
-                ...value,
-                price: e.target.value.trim() === "" ? 0 : Number(e.target.value) || 0,
-              })
-            }
-            placeholder={
-              value.isFree
-                ? t("products.delivery.freeHint")
-                : t("products.delivery.pricePh")
-            }
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] outline-none focus:border-primary disabled:opacity-50"
-          />
-        </div>
-      </div>
-
-      {/* Multilang tab */}
-      <div className="flex items-center gap-1 rounded-lg border border-line bg-bg-input p-0.5">
-        {(["uz", "ru", "en"] as const).map((l) => (
-          <button
-            key={l}
-            type="button"
-            onClick={() => setActiveLang(l)}
-            className={
-              "flex-1 rounded-md px-2 py-1 text-[10.5px] font-medium transition-colors " +
-              (activeLang === l
-                ? "bg-primary/15 text-primary"
-                : "text-text-secondary hover:text-text-primary")
-            }
-          >
-            {l === "uz" ? "🇺🇿 UZ" : l === "ru" ? "🇷🇺 RU" : "🇬🇧 EN"}
-          </button>
-        ))}
-      </div>
-
-      <div>
-        <div className="text-[10.5px] text-text-secondary mb-1">
-          {t("products.delivery.city")}
-        </div>
-        <input
-          value={value.city[activeLang] || ""}
-          onChange={(e) => setField("city", activeLang, e.target.value)}
-          placeholder={t("products.delivery.cityPh")}
-          className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] outline-none focus:border-primary"
-        />
-      </div>
-
-      <div>
-        <div className="text-[10.5px] text-text-secondary mb-1">
-          {t("products.delivery.time")}
-        </div>
-        <input
-          value={value.time[activeLang] || ""}
-          onChange={(e) => setField("time", activeLang, e.target.value)}
-          placeholder={t("products.delivery.timePh")}
-          className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] outline-none focus:border-primary"
-        />
-      </div>
-
-      <div>
-        <div className="text-[10.5px] text-text-secondary mb-1">
-          {t("products.delivery.note")}
-        </div>
-        <textarea
-          value={value.note[activeLang] || ""}
-          onChange={(e) => setField("note", activeLang, e.target.value)}
-          placeholder={t("products.delivery.notePh")}
-          rows={2}
-          className="w-full resize-none rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] outline-none focus:border-primary"
-        />
-      </div>
-    </div>
-  );
-}

@@ -188,14 +188,7 @@ export function ProductPreview({
               brand={product.brand}
               isFeatured={product.isFeatured}
               dealEndsAt={product.dealEndsAt}
-              delivery={{
-                courier: product.delivery.courier,
-                price: product.delivery.price,
-                isFree: product.delivery.isFree,
-                city: pickLang(product.delivery.city, lang),
-                time: pickLang(product.delivery.time, lang),
-                note: pickLang(product.delivery.note, lang),
-              }}
+              deliveryInfo={pickLang(product.deliveryInfo, lang)}
             />
           )}
         </div>
@@ -423,7 +416,7 @@ function DetailPreview({
   brand,
   isFeatured,
   dealEndsAt,
-  delivery,
+  deliveryInfo,
 }: {
   name: string;
   categoryLabel: string;
@@ -440,14 +433,7 @@ function DetailPreview({
   brand: string;
   isFeatured: boolean;
   dealEndsAt: string | null;
-  delivery: {
-    courier: string;
-    price: number;
-    isFree: boolean;
-    city: string;
-    time: string;
-    note: string;
-  };
+  deliveryInfo: string;
 }) {
   const [selected, setSelected] = useState(0);
   const items: { type: "img" | "video"; src: string }[] = [
@@ -725,8 +711,8 @@ function DetailPreview({
           <DealCountdown endsAt={dealEndsAt} />
         ) : null}
 
-        {/* Delivery box — real ma'lumotlardan */}
-        {(delivery.city || delivery.time || delivery.note || delivery.courier) && (
+        {/* Delivery box — admin kiritgan yagona matn */}
+        {deliveryInfo.trim() && (
           <div
             style={{
               backgroundColor: C.accentSoft,
@@ -751,28 +737,26 @@ function DetailPreview({
               <Truck size={17} className="text-white" />
             </div>
             <div className="min-w-0 flex-1">
-              <div style={{ fontSize: 13.5, fontWeight: 800, color: C.ink, marginBottom: 2 }}>
-                {delivery.isFree
-                  ? "Bepul yetkazib berish"
-                  : delivery.price > 0
-                    ? `Yetkazib berish: ${fmtPrice(delivery.price)} so'm`
-                    : "Yetkazib berish"}
+              <div
+                style={{
+                  fontSize: 13.5,
+                  fontWeight: 800,
+                  color: C.ink,
+                  marginBottom: 2,
+                }}
+              >
+                Yetkazib berish
               </div>
-              {(delivery.city || delivery.time) && (
-                <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.45 }}>
-                  {[delivery.city, delivery.time].filter(Boolean).join(" · ")}
-                </div>
-              )}
-              {delivery.courier && (
-                <div style={{ fontSize: 11.5, color: C.ink2, marginTop: 4 }}>
-                  {courierLabel(delivery.courier)}
-                </div>
-              )}
-              {delivery.note && (
-                <div style={{ fontSize: 11.5, color: C.muted, marginTop: 4, lineHeight: 1.4 }}>
-                  {delivery.note}
-                </div>
-              )}
+              <div
+                style={{
+                  fontSize: 12,
+                  color: C.ink2,
+                  lineHeight: 1.5,
+                  whiteSpace: "pre-wrap",
+                }}
+              >
+                {deliveryInfo.trim()}
+              </div>
             </div>
           </div>
         )}
@@ -810,27 +794,6 @@ function parseYouTubeId(url: string): string | null {
     if (m) return m[1];
   }
   return null;
-}
-
-function courierLabel(code: string): string {
-  switch (code) {
-    case "bts":
-      return "BTS Cargo";
-    case "uzposhta":
-      return "UzPosta";
-    case "yandex":
-      return "Yandex Delivery";
-    case "fargo":
-      return "Fargo";
-    case "express24":
-      return "Express24";
-    case "self_pickup":
-      return "O'zi olib ketadi";
-    case "other":
-      return "Boshqa kuryer";
-    default:
-      return "";
-  }
 }
 
 /** Real-time countdown — Flutter widget StoreDealCountdown'ning ekvivalenti. */

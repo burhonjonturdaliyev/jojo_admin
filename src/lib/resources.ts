@@ -132,22 +132,11 @@ export interface AdminStoreProduct {
   video_urls?: string[];
   gallery_images?: string[];
   age_label?: string;
-  // Yetkazib berish — har bir mahsulot uchun alohida sozlanadi.
-  delivery_courier?: string;
-  delivery_price?: number;
-  delivery_is_free?: boolean;
-  delivery_time?: string;
-  delivery_time_ru?: string;
-  delivery_time_en?: string;
-  delivery_time_uz_cyrl?: string;
-  delivery_city?: string;
-  delivery_city_ru?: string;
-  delivery_city_en?: string;
-  delivery_city_uz_cyrl?: string;
-  delivery_note?: string;
-  delivery_note_ru?: string;
-  delivery_note_en?: string;
-  delivery_note_uz_cyrl?: string;
+  // Yetkazib berish — yagona multilang matn maydoni.
+  delivery_info?: string;
+  delivery_info_ru?: string;
+  delivery_info_en?: string;
+  delivery_info_uz_cyrl?: string;
 }
 
 export const storeProductsApi = {
