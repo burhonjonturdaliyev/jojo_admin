@@ -905,22 +905,35 @@ function CategoryQuickAddModal({
   // re-rendered with `disabled`. The ref blocks duplicate POSTs immediately.
   const inFlightRef = useRef(false);
 
-  const submit = async () => {
+  const submit = async (autoTranslate: boolean = false) => {
     if (inFlightRef.current) return;
-    if (!name.uz.trim()) {
+    // Source manzilini tanlash — eng to'liq tildan boshqalariga tarjima qilamiz.
+    const sources: Array<["uz" | "ru" | "en", string]> = [
+      ["uz", name.uz.trim()],
+      ["ru", name.ru.trim()],
+      ["en", name.en.trim()],
+    ];
+    const ordered = [...sources].sort((a, b) => b[1].length - a[1].length);
+    if (!ordered[0][1]) {
       setError(t("products.category.nameRequired"));
       return;
     }
+    const source = ordered[0][0];
     inFlightRef.current = true;
     setError(null);
     setBusy(true);
     try {
-      const created = await storeCategoriesApi.create({
+      const payload: Record<string, unknown> = {
         name: name.uz.trim(),
         name_ru: name.ru.trim() || undefined,
         name_en: name.en.trim() || undefined,
         is_active: true,
-      });
+      };
+      if (autoTranslate) {
+        payload.auto_translate = true;
+        payload.translate_source = source;
+      }
+      const created = await storeCategoriesApi.create(payload);
       // onCreated already calls onClose (via the parent's setShowCategoryAdd
       // false in onCategoryCreated callback). Do NOT setBusy(false) afterwards
       // because the component is unmounted — React would warn, and a stale
@@ -989,7 +1002,20 @@ function CategoryQuickAddModal({
             {t("premium.cancel")}
           </button>
           <button
-            onClick={submit}
+            onClick={() => submit(true)}
+            disabled={busy}
+            className="btn-secondary text-[12.5px] inline-flex items-center gap-1 disabled:opacity-50"
+            title="Saqlashda backend bo'sh tillarni tarjima qilib to'ldiradi"
+          >
+            {busy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {t("categories.saveWithTranslate") || "Tarjima bilan"}
+          </button>
+          <button
+            onClick={() => submit(false)}
             disabled={busy}
             className="btn-primary text-[12.5px] disabled:opacity-50"
           >

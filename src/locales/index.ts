@@ -908,6 +908,8 @@ const uz: Dict = {
   "categories.col.status": "Holat",
   "categories.editTitle": "Kategoriya tahrirlash",
   "categories.newTitle": "Yangi kategoriya",
+  "categories.translateAll": "Tarjima qilish",
+  "categories.saveWithTranslate": "Tarjima bilan saqlash",
   "categories.confirmDelete": "\"{name}\" kategoriyani o'chirishni xohlaysizmi?",
 
   // ───── Products / Orders
@@ -2393,6 +2395,8 @@ const ru: Dict = {
   "categories.col.status": "Статус",
   "categories.editTitle": "Изменить категорию",
   "categories.newTitle": "Новая категория",
+  "categories.translateAll": "Перевести",
+  "categories.saveWithTranslate": "Сохранить с переводом",
   "categories.confirmDelete": "Удалить категорию \"{name}\"?",
 
   // ───── Products / Orders
@@ -3878,6 +3882,8 @@ const en: Dict = {
   "categories.col.status": "Status",
   "categories.editTitle": "Edit category",
   "categories.newTitle": "New category",
+  "categories.translateAll": "Translate",
+  "categories.saveWithTranslate": "Save with translation",
   "categories.confirmDelete": "Delete category \"{name}\"?",
 
   // ───── Products / Orders

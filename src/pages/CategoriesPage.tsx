@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, FolderTree, Pencil, Trash2, Package, BookOpen } from "lucide-react";
+import { Plus, FolderTree, Pencil, Trash2, Package, BookOpen, Sparkles, Loader2 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
 import { MultilangInput, type LangValue } from "../components/MultilangInput";
@@ -7,9 +7,11 @@ import { useT } from "../lib/i18n";
 import {
   storeCategoriesApi,
   blogCategoriesApi,
+  translateApi,
   unwrapList,
   type AdminStoreCategory,
   type AdminBlogCategory,
+  type TranslateLang,
 } from "../lib/resources";
 
 type Tab = "store" | "blog";
@@ -53,7 +55,10 @@ export function CategoriesPage() {
     void reload();
   }, [tab]);
 
-  const save = async (d: CategoryDraft) => {
+  const save = async (
+    d: CategoryDraft,
+    opts: { autoTranslate?: boolean; translateSource?: TranslateLang } = {},
+  ) => {
     const payload: Record<string, unknown> = {
       name: d.name,
       name_ru: d.name_ru || "",
@@ -63,6 +68,10 @@ export function CategoriesPage() {
       order: d.order ?? 0,
       is_active: d.is_active ?? true,
     };
+    if (opts.autoTranslate) {
+      payload.auto_translate = true;
+      payload.translate_source = opts.translateSource || "uz";
+    }
     if (tab === "store") payload.icon = d.icon || "";
     if (d.id) {
       if (tab === "store") await storeCategoriesApi.update(d.id, payload);
@@ -261,16 +270,94 @@ function CategoryEditor({
   draft: CategoryDraft;
   showIcon: boolean;
   onClose: () => void;
-  onSave: (d: CategoryDraft) => void;
+  onSave: (
+    d: CategoryDraft,
+    opts?: { autoTranslate?: boolean; translateSource?: TranslateLang },
+  ) => void | Promise<void>;
 }) {
   const { t } = useT();
   const [d, setD] = useState(draft);
+  const [translating, setTranslating] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const filled = (v: string | undefined) => !!v && v.trim().length > 0;
+
+  /** Eng to'liq tildan boshqa tillarni avtomatik tarjima qiladi. */
+  const detectSource = (): TranslateLang => {
+    const sources: Array<[TranslateLang, string | undefined]> = [
+      ["uz", d.name],
+      ["uz_cyrl", d.name_uz_cyrl],
+      ["ru", d.name_ru],
+      ["en", d.name_en],
+    ];
+    const ordered = sources
+      .map(([k, v]) => [k, (v || "").trim().length] as const)
+      .sort((a, b) => b[1] - a[1]);
+    return ordered[0][1] > 0 ? ordered[0][0] : "uz";
+  };
+
+  const translateNow = async () => {
+    if (translating) return;
+    const source = detectSource();
+    const baseRaw =
+      source === "uz" ? d.name : source === "uz_cyrl" ? d.name_uz_cyrl
+      : source === "ru" ? d.name_ru : d.name_en;
+    const base = (baseRaw || "").trim();
+    if (!base) return;
+    setTranslating(true);
+    try {
+      const result = await translateApi.all(base, source);
+      setD((prev) => ({
+        ...prev,
+        name: filled(prev.name) || source === "uz" ? prev.name : result.translations.uz || prev.name,
+        name_uz_cyrl: filled(prev.name_uz_cyrl) || source === "uz_cyrl"
+          ? prev.name_uz_cyrl
+          : result.translations.uz_cyrl || prev.name_uz_cyrl,
+        name_ru: filled(prev.name_ru) || source === "ru" ? prev.name_ru : result.translations.ru || prev.name_ru,
+        name_en: filled(prev.name_en) || source === "en" ? prev.name_en : result.translations.en || prev.name_en,
+      }));
+    } catch (e) {
+      console.warn("category translate failed", e);
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleSave = async (autoTranslate: boolean) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onSave(d, {
+        autoTranslate,
+        translateSource: detectSource(),
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-bg p-5">
-        <h3 className="text-[16px] font-semibold text-text-primary mb-4">
-          {draft.id ? t("categories.editTitle") : t("categories.newTitle")}
-        </h3>
+      <div className="w-full max-w-md max-h-[92vh] overflow-y-auto scrollbar-thin rounded-2xl bg-bg p-5">
+        <div className="flex items-start justify-between mb-4">
+          <h3 className="text-[16px] font-semibold text-text-primary">
+            {draft.id ? t("categories.editTitle") : t("categories.newTitle")}
+          </h3>
+          <button
+            type="button"
+            onClick={translateNow}
+            disabled={translating || !filled(d.name) && !filled(d.name_ru) && !filled(d.name_en) && !filled(d.name_uz_cyrl)}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-2.5 py-1.5 text-[11.5px] font-medium hover:bg-primary/20 disabled:opacity-40"
+            title="To'lgan tildan qolgan tillarga avtomatik tarjima"
+          >
+            {translating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {t("categories.translateAll") || "Tarjima qilish"}
+          </button>
+        </div>
         <div className="space-y-3">
           <MultilangInput
             label={t("categories.col.name")}
@@ -339,15 +426,34 @@ function CategoryEditor({
           </label>
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <button className="btn-secondary text-[12.5px]" onClick={onClose}>
+          <button
+            className="btn-secondary text-[12.5px]"
+            onClick={onClose}
+            disabled={saving}
+          >
             {t("form.cancel")}
           </button>
           <button
-            className="btn-primary text-[12.5px]"
-            onClick={() => onSave(d)}
-            disabled={!d.name.trim()}
+            className="btn-secondary text-[12.5px] inline-flex items-center gap-1"
+            onClick={() => handleSave(true)}
+            disabled={
+              saving || (!filled(d.name) && !filled(d.name_ru) && !filled(d.name_en) && !filled(d.name_uz_cyrl))
+            }
+            title="Saqlashda backend bo'sh tillarni tarjima qilib to'ldiradi"
           >
-            {t("form.save")}
+            {saving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {t("categories.saveWithTranslate") || "Tarjima bilan saqlash"}
+          </button>
+          <button
+            className="btn-primary text-[12.5px]"
+            onClick={() => handleSave(false)}
+            disabled={saving || !d.name.trim()}
+          >
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t("form.save")}
           </button>
         </div>
       </div>
