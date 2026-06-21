@@ -27,8 +27,12 @@ export interface Order {
   createdAt: string;
 }
 
+// Default labels in case the OrderStatus lookup misses (e.g. when a code
+// arrives from backend before the admin's custom OrderStatus table has
+// loaded). Mirrors the `orderStatus.*` locale keys; runtime UI prefers
+// the localized version via `useT()`.
 export const orderStatusLabels: Record<OrderStatus, string> = {
-  sent: "Yuborildi",
+  sent: "Yangi",
   review: "Ko'rib chiqilmoqda",
   confirmed: "Tasdiqlangan",
   shipping: "Yetkazilmoqda",

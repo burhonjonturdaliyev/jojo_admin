@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, BookOpen, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, BookOpen, Pencil, Trash2, Search, Sparkles, Loader2 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
 import { MultilangInput } from "../components/MultilangInput";
@@ -7,8 +7,10 @@ import { useT } from "../lib/i18n";
 import {
   blogPostsApi,
   blogCategoriesApi,
+  translateApi,
   unwrapList,
   type AdminBlogCategory,
+  type TranslateLang,
 } from "../lib/resources";
 import {
   adviceToApi,
@@ -48,8 +50,15 @@ export function AdvicePage() {
     void reload();
   }, [categoryFilter]);
 
-  const save = async (p: UiAdvice) => {
-    const payload = adviceToApi(p);
+  const save = async (
+    p: UiAdvice,
+    opts: { autoTranslate?: boolean; translateSource?: TranslateLang } = {},
+  ) => {
+    const payload = adviceToApi(p) as Record<string, unknown>;
+    if (opts.autoTranslate) {
+      payload.auto_translate = true;
+      payload.translate_source = opts.translateSource || "uz";
+    }
     if (p.id && p.id !== "0") {
       await blogPostsApi.update(Number(p.id), payload);
     } else {
@@ -60,7 +69,7 @@ export function AdvicePage() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm("Maqolani o'chirasizmi?")) return;
+    if (!confirm(t("advice.confirmDelete"))) return;
     await blogPostsApi.remove(Number(id));
     void reload();
   };
@@ -220,81 +229,190 @@ function AdviceEditor({
   post: UiAdvice;
   categories: AdminBlogCategory[];
   onClose: () => void;
-  onSave: (p: UiAdvice) => void;
+  onSave: (
+    p: UiAdvice,
+    opts?: { autoTranslate?: boolean; translateSource?: TranslateLang },
+  ) => void | Promise<void>;
 }) {
+  const { t } = useT();
   const [draft, setDraft] = useState(post);
+  const [translating, setTranslating] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const filled = (v: string) => !!v && v.trim().length > 0;
+
+  /** Eng to'lgan tildan boshqalarni tarjima qilish manbasini tanlash. */
+  const detectSource = (): TranslateLang => {
+    const fields = [draft.title, draft.excerpt, draft.body];
+    const score: Record<TranslateLang, number> = { uz: 0, uz_cyrl: 0, ru: 0, en: 0 };
+    fields.forEach((f) => {
+      (["uz", "uz_cyrl", "ru", "en"] as TranslateLang[]).forEach((l) => {
+        if (filled(f[l])) score[l] += f[l].length;
+      });
+    });
+    const ordered = (Object.entries(score) as [TranslateLang, number][]).sort(
+      (a, b) => b[1] - a[1],
+    );
+    return ordered[0]?.[1] > 0 ? ordered[0][0] : "uz";
+  };
+
+  /** Frontend translate API — title/excerpt/body uchun bo'sh tillarni to'ldiradi. */
+  const translateAllFields = async () => {
+    if (translating) return;
+    const source = detectSource();
+    setTranslating(true);
+    try {
+      const next = { ...draft };
+      const fields: (keyof Pick<UiAdvice, "title" | "excerpt" | "body">)[] = [
+        "title",
+        "excerpt",
+        "body",
+      ];
+      for (const key of fields) {
+        const base = (next[key][source] || "").trim();
+        if (!base) continue;
+        try {
+          const result = await translateApi.all(base, source);
+          next[key] = {
+            ...next[key],
+            ...((["uz", "uz_cyrl", "ru", "en"] as TranslateLang[]).reduce(
+              (acc, l) => {
+                if (l === source) return acc;
+                if (!filled(next[key][l])) acc[l] = result.translations[l] || "";
+                return acc;
+              },
+              {} as Record<TranslateLang, string>,
+            )),
+          };
+        } catch (err) {
+          console.warn("translate failed", key, err);
+        }
+      }
+      setDraft(next);
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleSave = async (autoTranslate: boolean) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onSave(draft, {
+        autoTranslate,
+        translateSource: detectSource(),
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const canSave = filled(draft.title.uz) || filled(draft.title.ru) || filled(draft.title.en);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-bg p-5">
-        <h3 className="text-[16px] font-semibold text-text-primary mb-4">
-          {post.id !== "0" ? "Maqola tahrirlash" : "Yangi maqola"}
-        </h3>
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin rounded-2xl bg-bg p-5">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-[16px] font-semibold text-text-primary">
+              {post.id !== "0" ? t("advice.editTitle") : t("advice.newTitle")}
+            </h3>
+            <p className="mt-0.5 text-[11.5px] text-text-muted">
+              {t("advice.editSubtitle")}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={translateAllFields}
+            disabled={translating || !canSave}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-2.5 py-1.5 text-[11.5px] font-medium hover:bg-primary/20 disabled:opacity-40"
+            title={t("advice.translateAllHint")}
+          >
+            {translating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {t("advice.translateAll")}
+          </button>
+        </div>
         <div className="space-y-3">
           <MultilangInput
-            label="Sarlavha"
-            placeholder="Sarlavha"
+            label={t("advice.field.title")}
+            placeholder={t("advice.field.titlePh")}
             value={draft.title}
             onChange={(v) => setDraft({ ...draft, title: v })}
             required
           />
           <MultilangInput
-            label="Qisqacha (excerpt)"
-            placeholder="Qisqacha matn"
+            label={t("advice.field.excerpt")}
+            placeholder={t("advice.field.excerptPh")}
             value={draft.excerpt}
             onChange={(v) => setDraft({ ...draft, excerpt: v })}
             multiline
             rows={2}
           />
           <MultilangInput
-            label="To'liq matn"
-            placeholder="Maqola matni"
+            label={t("advice.field.body")}
+            placeholder={t("advice.field.bodyPh")}
             value={draft.body}
             onChange={(v) => setDraft({ ...draft, body: v })}
             multiline
             rows={8}
           />
-          <select
-            value={draft.categoryId ?? ""}
-            onChange={(e) =>
-              setDraft({ ...draft, categoryId: e.target.value || null })
-            }
-            className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-          >
-            <option value="">Kategoriya</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              type="number"
-              value={draft.readMinutes}
+          <div>
+            <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
+              {t("advice.field.category")}
+            </label>
+            <select
+              value={draft.categoryId ?? ""}
               onChange={(e) =>
-                setDraft({ ...draft, readMinutes: Number(e.target.value) })
+                setDraft({ ...draft, categoryId: e.target.value || null })
               }
-              placeholder="O'qish daqiqalari"
-              className="rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-            />
+              className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+            >
+              <option value="">{t("advice.field.categoryPh")}</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="mb-1 block text-[11.5px] font-medium text-text-secondary">
+                {t("advice.field.readMinutes")}
+              </label>
+              <input
+                type="number"
+                min={1}
+                value={draft.readMinutes}
+                onChange={(e) =>
+                  setDraft({ ...draft, readMinutes: Number(e.target.value) })
+                }
+                placeholder={t("advice.field.readMinutesPh")}
+                className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+              />
+            </div>
             <div className="col-span-2">
               <ImageUpload
                 value={draft.image}
                 onChange={(url) => setDraft({ ...draft, image: url })}
                 folder="blog/thumbnails"
-                label="Maqola rasmi (ixtiyoriy)"
+                label={t("advice.field.image")}
               />
             </div>
             <div className="col-span-2">
-              <div className="text-[12px] font-medium text-text-secondary mb-1.5">
-                YouTube video URL (ixtiyoriy)
+              <div className="text-[11.5px] font-medium text-text-secondary mb-1">
+                {t("advice.field.videoUrl")}
               </div>
               <input
                 value={draft.videoUrl}
                 onChange={(e) =>
                   setDraft({ ...draft, videoUrl: e.target.value })
                 }
-                placeholder="https://youtube.com/watch?v=..."
+                placeholder={t("advice.field.videoUrlPh")}
                 className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] font-mono text-text-primary outline-none focus:border-primary"
               />
               {(() => {
@@ -315,7 +433,7 @@ function AdviceEditor({
                 if (draft.videoUrl) {
                   return (
                     <div className="mt-1 text-[11px] text-amber-600">
-                      YouTube havolasi noto'g'ri
+                      {t("advice.field.videoUrlInvalid")}
                     </div>
                   );
                 }
@@ -324,7 +442,7 @@ function AdviceEditor({
             </div>
           </div>
           <div className="flex gap-4 pt-2">
-            <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
+            <label className="flex items-center gap-2 text-[12.5px] text-text-secondary cursor-pointer">
               <input
                 type="checkbox"
                 checked={draft.isActive}
@@ -332,9 +450,9 @@ function AdviceEditor({
                   setDraft({ ...draft, isActive: e.target.checked })
                 }
               />
-              Faol
+              {t("advice.field.active")}
             </label>
-            <label className="flex items-center gap-2 text-[12.5px] text-text-secondary">
+            <label className="flex items-center gap-2 text-[12.5px] text-text-secondary cursor-pointer">
               <input
                 type="checkbox"
                 checked={draft.isFeatured}
@@ -342,19 +460,37 @@ function AdviceEditor({
                   setDraft({ ...draft, isFeatured: e.target.checked })
                 }
               />
-              Tavsiya
+              {t("advice.field.featured")}
             </label>
           </div>
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <button className="btn-secondary text-[12.5px]" onClick={onClose}>
-            Bekor
+          <button
+            className="btn-secondary text-[12.5px]"
+            onClick={onClose}
+            disabled={saving}
+          >
+            {t("form.cancel")}
           </button>
           <button
-            className="btn-primary text-[12.5px]"
-            onClick={() => onSave(draft)}
+            className="btn-secondary text-[12.5px] inline-flex items-center gap-1 disabled:opacity-50"
+            onClick={() => handleSave(true)}
+            disabled={saving || !canSave}
+            title={t("advice.saveWithTranslateHint")}
           >
-            Saqlash
+            {saving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {t("advice.saveWithTranslate")}
+          </button>
+          <button
+            className="btn-primary text-[12.5px] disabled:opacity-50"
+            onClick={() => handleSave(false)}
+            disabled={saving || !canSave}
+          >
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t("form.save")}
           </button>
         </div>
       </div>

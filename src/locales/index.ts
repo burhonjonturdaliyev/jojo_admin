@@ -94,7 +94,7 @@ const uz: Dict = {
   "userStatus.bloklangan": "Bloklangan",
 
   // ───── Order status enum
-  "orderStatus.sent": "Yuborildi",
+  "orderStatus.sent": "Yangi",
   "orderStatus.review": "Ko'rib chiqilmoqda",
   "orderStatus.confirmed": "Tasdiqlangan",
   "orderStatus.shipping": "Yetkazilmoqda",
@@ -1024,11 +1024,28 @@ const uz: Dict = {
   "advice.featured": "Tavsiya",
   "advice.editTitle": "Maqola tahrirlash",
   "advice.newTitle": "Yangi maqola",
+  "advice.editSubtitle": "Uz / Ru / En tillarida to'ldiring — yoki avtomatik tarjima qiling",
+  "advice.field.title": "Sarlavha",
+  "advice.field.titlePh": "Masalan: Maktabga tayyorlash bo'yicha 5 ta maslahat",
   "advice.field.excerpt": "Qisqacha (excerpt)",
+  "advice.field.excerptPh": "Bir-ikki gap — maqola haqida tezkor tasavvur",
+  "advice.field.body": "To'liq matn",
+  "advice.field.bodyPh": "Maqola matni — paragraflar, ro'yxatlar, misollar...",
   "advice.field.category": "Kategoriya",
+  "advice.field.categoryPh": "— Kategoriya tanlang —",
   "advice.field.readMinutes": "O'qish daqiqalari",
+  "advice.field.readMinutesPh": "5",
   "advice.field.image": "Maqola rasmi (ixtiyoriy)",
   "advice.field.video": "YouTube video URL (ixtiyoriy)",
+  "advice.field.videoUrl": "YouTube video URL (ixtiyoriy)",
+  "advice.field.videoUrlPh": "https://youtube.com/watch?v=...",
+  "advice.field.videoUrlInvalid": "YouTube havolasi noto'g'ri",
+  "advice.field.active": "Faol",
+  "advice.field.featured": "Tavsiya",
+  "advice.translateAll": "Tarjima qilish",
+  "advice.translateAllHint": "Eng to'lgan tildan boshqa tillarga avtomatik tarjima qilinadi",
+  "advice.saveWithTranslate": "Tarjima bilan saqlash",
+  "advice.saveWithTranslateHint": "Saqlashda backend bo'sh tillarni avtomatik tarjima qilib to'ldiradi",
   "advice.confirmDelete": "Maqolani o'chirasizmi?",
 
   // ───── Blocked / Bulk SMS / Premium
@@ -1621,7 +1638,7 @@ const ru: Dict = {
   "userStatus.bloklangan": "Заблокирован",
 
   // ───── Order status
-  "orderStatus.sent": "Отправлен",
+  "orderStatus.sent": "Новый",
   "orderStatus.review": "На рассмотрении",
   "orderStatus.confirmed": "Подтверждён",
   "orderStatus.shipping": "В доставке",
@@ -3148,7 +3165,7 @@ const en: Dict = {
   "userStatus.bloklangan": "Blocked",
 
   // ───── Order status
-  "orderStatus.sent": "Sent",
+  "orderStatus.sent": "New",
   "orderStatus.review": "Under review",
   "orderStatus.confirmed": "Confirmed",
   "orderStatus.shipping": "Shipping",
