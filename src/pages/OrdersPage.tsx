@@ -38,14 +38,22 @@ export function OrdersPage() {
   const [managerOpen, setManagerOpen] = useState(false);
 
   /** Status label uchun ustun-prioritet:
-   *  1) admin yaratgan `OrderStatus` jadvali (multilang, color bilan) bo'lsa
-   *  2) backend serializer'dan kelgan `status_label` (default tizim status'lari)
-   *  3) faqat slug.
+   *  1) admin yaratgan `OrderStatus` jadvali (slug bo'yicha topilsa)
+   *  2) admin yaratgan jadval (order.status_label nomi bo'yicha topilsa —
+   *     "Yangi" === "Yangi" ekvivalenti, slug farqli bo'lsa ham)
+   *  3) backend serializer'dan kelgan `status_label`
+   *  4) faqat slug.
    */
   const statusLabel = (slug: string, order?: AdminOrder) => {
     const s = statuses.find((x) => x.slug === slug);
     if (s) return pickName(s, lang);
-    if (order?.status_label) return order.status_label;
+    if (order?.status_label) {
+      const byName = statuses.find((x) =>
+        statusNameMatches(x, order.status_label!),
+      );
+      if (byName) return pickName(byName, lang);
+      return order.status_label;
+    }
     return slug;
   };
 
@@ -209,27 +217,51 @@ export function OrdersPage() {
                     {(o.total_price ?? 0).toLocaleString("uz-UZ").replace(/,/g, " ")} {t("common.sum")}
                   </td>
                   <td className="px-4 py-3">
-                    <select
-                      value={o.status}
-                      onChange={(e) => {
-                        const newStatus = e.target.value;
-                        if (newStatus === o.status) return;
-                        setStatusChange({ order: o, newStatus });
-                      }}
-                      className={
-                        "rounded-full border-0 px-2.5 py-1 text-[11px] font-medium outline-none cursor-pointer " +
-                        statusColor(o.status)
-                      }
-                    >
-                      {activeStatuses.map((s) => (
-                        <option key={s.slug} value={s.slug}>
-                          {pickName(s, lang)}
-                        </option>
-                      ))}
-                      {!activeStatuses.find((s) => s.slug === o.status) && (
-                        <option value={o.status}>{statusLabel(o.status, o)}</option>
-                      )}
-                    </select>
+                    {(() => {
+                      // When the order's status code doesn't match any admin
+                      // OrderStatus slug, look for an admin row whose name (in
+                      // any supported language) equals the backend-provided
+                      // `status_label`. That way an order with status "sent"
+                      // and label "Yangi" picks up the admin's "Yangi" row
+                      // (slug e.g. "yangi") without a duplicate fallback
+                      // option appearing in the dropdown.
+                      const exact = activeStatuses.find(
+                        (s) => s.slug === o.status,
+                      );
+                      const fuzzy =
+                        !exact && o.status_label
+                          ? activeStatuses.find((s) =>
+                              statusNameMatches(s, o.status_label!),
+                            )
+                          : undefined;
+                      const selectedSlug = (exact ?? fuzzy)?.slug ?? o.status;
+                      const needsFallback = !exact && !fuzzy;
+                      return (
+                        <select
+                          value={selectedSlug}
+                          onChange={(e) => {
+                            const newStatus = e.target.value;
+                            if (newStatus === selectedSlug) return;
+                            setStatusChange({ order: o, newStatus });
+                          }}
+                          className={
+                            "rounded-full border-0 px-2.5 py-1 text-[11px] font-medium outline-none cursor-pointer " +
+                            statusColor(selectedSlug)
+                          }
+                        >
+                          {activeStatuses.map((s) => (
+                            <option key={s.slug} value={s.slug}>
+                              {pickName(s, lang)}
+                            </option>
+                          ))}
+                          {needsFallback && (
+                            <option value={o.status}>
+                              {statusLabel(o.status, o)}
+                            </option>
+                          )}
+                        </select>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-text-secondary">
                     {new Date(o.created_at).toLocaleDateString("uz-UZ")}
@@ -322,6 +354,19 @@ function pickName(s: AdminOrderStatus, lang: Lang): string {
   if (lang === "en") return s.name_en || s.name;
   if (lang === "uz_cyrl") return s.name_uz_cyrl || s.name;
   return s.name;
+}
+
+/** Compare an admin status against a free-form label. Case-insensitive, and
+ * matches if the label equals ANY of the row's localized names. Used when
+ * the order's `status` code doesn't match a slug — we want to align the row
+ * with the admin entry that displays the same word ("Yangi" === "Yangi"). */
+function statusNameMatches(s: AdminOrderStatus, label: string): boolean {
+  const target = label.trim().toLowerCase();
+  if (!target) return false;
+  const candidates = [s.name, s.name_uz_cyrl, s.name_ru, s.name_en];
+  return candidates.some(
+    (c) => (c ?? "").trim().toLowerCase() === target,
+  );
 }
 
 function OrderEditor({
