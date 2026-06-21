@@ -142,7 +142,7 @@ export interface UiProduct {
   brand: string;
   /** YouTube havolalari ro'yxati. Birinchi element backendning `video_url`'iga ham yoziladi (backward-compat). */
   videoUrls: string[];
-  ageLabel: string;
+  ageLabel: Localized<string>;
   isActive: boolean;
   isFeatured: boolean;
   stock: number;
@@ -168,6 +168,9 @@ type StoreProductRaw = AdminStoreProduct & {
   video_urls?: string[];
   gallery_images?: string[];
   age_label?: string;
+  age_label_ru?: string;
+  age_label_en?: string;
+  age_label_uz_cyrl?: string;
   tags?: UiProductTag[];
   deal_ends_at?: string | null;
   delivery_info?: string;
@@ -216,7 +219,12 @@ export function productToUi(p: AdminStoreProduct): UiProduct {
       : raw.video_url
         ? [raw.video_url]
         : [],
-    ageLabel: raw.age_label || "",
+    ageLabel: {
+      uz: raw.age_label || "",
+      uz_cyrl: raw.age_label_uz_cyrl || "",
+      ru: raw.age_label_ru || "",
+      en: raw.age_label_en || "",
+    },
     isActive: p.is_active ?? true,
     isFeatured: p.is_featured ?? false,
     stock: p.stock_count ?? 0,
@@ -264,7 +272,10 @@ export function productToApi(
     brand: u.brand,
     video_url: u.videoUrls[0] || "",
     video_urls: u.videoUrls.filter((x) => x && x.trim().length > 0),
-    age_label: u.ageLabel,
+    age_label: u.ageLabel.uz,
+    age_label_uz_cyrl: u.ageLabel.uz_cyrl,
+    age_label_ru: u.ageLabel.ru,
+    age_label_en: u.ageLabel.en,
     is_active: u.isActive,
     is_featured: u.isFeatured,
     stock_count: u.stock,

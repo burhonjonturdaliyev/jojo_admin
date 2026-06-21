@@ -1,27 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   GripVertical,
   Pencil,
   Trash2,
   X,
-  Eye,
   ChevronRight,
-  Ban,
   Link as LinkIcon,
   Package,
-  Filter,
   Search,
   ExternalLink,
+  Image as ImageIcon,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
-import { LocalizedField } from "../components/LocalizedField";
-import { TranslateAllButton } from "../components/TranslateAllButton";
 import { ImageUpload } from "../components/ImageUpload";
 import {
-  themeStyles,
   type BannerActionType,
-  type BannerTheme,
   type PromoBanner,
 } from "../data/banners";
 import {
@@ -32,13 +26,8 @@ import {
 } from "../lib/resources";
 import { bannerToApi, bannerToUi } from "../lib/adapters";
 import { cn } from "../lib/utils";
-import { useT, type Lang } from "../lib/i18n";
-import {
-  emptyLocalized,
-  pickLocalized,
-  toLocalized,
-  type Localized,
-} from "../types/locale";
+import { useT } from "../lib/i18n";
+import { emptyLocalized } from "../types/locale";
 
 const emptyBanner = (sortOrder: number): PromoBanner => ({
   id: `BNR-${Math.floor(Math.random() * 9000 + 1000)}`,
@@ -47,22 +36,20 @@ const emptyBanner = (sortOrder: number): PromoBanner => ({
   subtitle: emptyLocalized(),
   theme: "sky",
   imageUrl: null,
-  actionType: "none",
+  actionType: "openProduct",
   actionValue: "",
   sortOrder,
   isActive: true,
 });
 
 export function PromoBannersPage() {
-  const { t, lang } = useT();
+  const { t } = useT();
   const [banners, setBanners] = useState<PromoBanner[]>([]);
   const [, setLoading] = useState(true);
   const [, setBusy] = useState(false);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [editing, setEditing] = useState<PromoBanner | null>(null);
-  const [previewIdx, setPreviewIdx] = useState(0);
 
-  // Backend'dan ro'yxat olib kelamiz.
   const reload = async () => {
     setLoading(true);
     try {
@@ -83,10 +70,6 @@ export function PromoBannersPage() {
   const sorted = useMemo(
     () => [...banners].sort((a, b) => a.sortOrder - b.sortOrder),
     [banners],
-  );
-  const activeBanners = useMemo(
-    () => sorted.filter((b) => b.isActive),
-    [sorted],
   );
 
   const handleDrop = (targetId: string) => {
@@ -171,193 +154,108 @@ export function PromoBannersPage() {
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-7 py-5">
-        <div className="grid grid-cols-[1fr_360px] gap-5">
-          <div className="card p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-[15px] font-semibold text-text-primary">
-                  {t("banners.order")}
-                </h3>
-                <p className="mt-0.5 text-[12px] text-text-secondary">
-                  {t("banners.orderHint")}
-                </p>
-              </div>
-              <div className="text-[12px] text-text-muted">
-                {t("banners.activeCount", {
-                  active: activeBanners.length,
-                  inactive: banners.length - activeBanners.length,
-                })}
-              </div>
-            </div>
-
-            <div className="space-y-2.5">
-              {sorted.map((b) => {
-                const theme = themeStyles[b.theme];
-                const isDragging = draggedId === b.id;
-                const kickerText = pickLocalized(b.kicker, lang);
-                const titleText = pickLocalized(b.title, lang);
-                const subtitleText = pickLocalized(b.subtitle, lang);
-                return (
-                  <div
-                    key={b.id}
-                    draggable
-                    onDragStart={(e) => {
-                      setDraggedId(b.id);
-                      e.dataTransfer.effectAllowed = "move";
-                    }}
-                    onDragEnd={() => setDraggedId(null)}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => handleDrop(b.id)}
-                    className={cn(
-                      "group flex items-center gap-3 rounded-xl border border-line bg-bg-input p-3 transition-all",
-                      isDragging && "opacity-40",
-                      !b.isActive && "opacity-60",
-                    )}
-                  >
-                    <button className="cursor-grab text-text-muted hover:text-text-secondary active:cursor-grabbing">
-                      <GripVertical className="h-5 w-5" />
-                    </button>
-                    <div
-                      className="flex h-16 w-28 shrink-0 flex-col justify-between rounded-lg p-2"
-                      style={{ background: theme.bg, color: theme.text }}
-                    >
-                      <span
-                        className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider"
-                        style={{ background: theme.chip, color: theme.kicker }}
-                      >
-                        {kickerText || t("banners.kickerDefault")}
-                      </span>
-                      <span className="line-clamp-2 text-[10px] font-bold leading-tight">
-                        {titleText.split("\n")[0]}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10.5px] text-text-muted">
-                          #{b.sortOrder}
-                        </span>
-                        <span className="text-[14px] font-semibold text-text-primary">
-                          {titleText.split("\n")[0] || t("banners.untitled")}
-                        </span>
-                        <LocaleAvailabilityDots banner={b} />
-                      </div>
-                      <div className="mt-0.5 truncate text-[12px] text-text-secondary">
-                        {subtitleText}
-                      </div>
-                      <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-text-muted">
-                        <span
-                          className="inline-block h-2 w-2 rounded-full"
-                          style={{ background: theme.kicker }}
-                        />
-                        {theme.name}
-                        <ChevronRight className="h-3 w-3" />
-                        {actionLabel(t, b.actionType, b.actionValue)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => toggleActive(b.id)}
-                        className={cn(
-                          "rounded-full px-2.5 py-1 text-[10.5px] font-medium",
-                          b.isActive
-                            ? "bg-status-resolved/15 text-status-resolved"
-                            : "bg-text-muted/15 text-text-muted",
-                        )}
-                      >
-                        {b.isActive ? t("common.active") : t("common.inactive")}
-                      </button>
-                      <button
-                        className="icon-btn h-8 w-8"
-                        onClick={() => setEditing(b)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        className="icon-btn h-8 w-8 hover:bg-status-blocked/15 hover:text-status-blocked"
-                        onClick={() => remove(b.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {banners.length === 0 && (
-                <div className="rounded-xl border border-dashed border-line py-12 text-center text-[13px] text-text-muted">
-                  {t("banners.empty")}
-                </div>
-              )}
+        <div className="card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-[15px] font-semibold text-text-primary">
+                {t("banners.order")}
+              </h3>
+              <p className="mt-0.5 text-[12px] text-text-secondary">
+                {t("banners.orderHint")}
+              </p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="card p-4">
-              <div className="mb-3 flex items-center gap-2">
-                <Eye className="h-4 w-4 text-brand" />
-                <h3 className="text-[14px] font-semibold text-text-primary">
-                  {t("banners.preview")}
-                </h3>
-              </div>
-              <p className="mb-3 text-[11.5px] text-text-secondary">
-                {t("banners.previewSub")}
-              </p>
-              {activeBanners.length > 0 ? (
-                <>
-                  <BannerPreview
-                    banner={activeBanners[previewIdx % activeBanners.length]}
-                    previewLang={lang}
-                  />
-                  <div className="mt-3 flex items-center justify-center gap-1.5">
-                    {activeBanners.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setPreviewIdx(i)}
-                        className={cn(
-                          "h-1.5 rounded-full transition-all",
-                          previewIdx % activeBanners.length === i
-                            ? "w-6 bg-brand"
-                            : "w-1.5 bg-line",
-                        )}
+          <div className="space-y-2.5">
+            {sorted.map((b) => {
+              const isDragging = draggedId === b.id;
+              return (
+                <div
+                  key={b.id}
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggedId(b.id);
+                    e.dataTransfer.effectAllowed = "move";
+                  }}
+                  onDragEnd={() => setDraggedId(null)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDrop(b.id)}
+                  className={cn(
+                    "group flex items-center gap-3 rounded-xl border border-line bg-bg-input p-3 transition-all",
+                    isDragging && "opacity-40",
+                    !b.isActive && "opacity-60",
+                  )}
+                >
+                  <button className="cursor-grab text-text-muted hover:text-text-secondary active:cursor-grabbing">
+                    <GripVertical className="h-5 w-5" />
+                  </button>
+                  <div className="flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-bg-card">
+                    {b.imageUrl ? (
+                      <img
+                        src={b.imageUrl}
+                        alt=""
+                        className="h-full w-full object-cover"
                       />
-                    ))}
+                    ) : (
+                      <ImageIcon className="h-5 w-5 text-text-muted opacity-50" />
+                    )}
                   </div>
-                </>
-              ) : (
-                <div className="rounded-lg border border-dashed border-line bg-bg-input py-10 text-center text-[12px] text-text-muted">
-                  {t("banners.noActive")}
-                </div>
-              )}
-            </div>
-
-            <div className="card p-4">
-              <h3 className="mb-3 text-[14px] font-semibold text-text-primary">
-                {t("banners.themes")}
-              </h3>
-              <div className="space-y-2">
-                {(Object.keys(themeStyles) as BannerTheme[]).map((th) => (
-                  <div
-                    key={th}
-                    className="flex items-center gap-3 rounded-lg border border-line bg-bg-input p-2.5"
-                  >
-                    <div
-                      className="h-10 w-14 rounded-md"
-                      style={{ background: themeStyles[th].bg }}
-                    />
-                    <div className="flex-1">
-                      <div className="text-[13px] font-medium text-text-primary">
-                        {themeStyles[th].name}
-                      </div>
-                      <div className="text-[11px] text-text-muted">
-                        {t("banners.themeCount", {
-                          count: banners.filter((b) => b.theme === th).length,
-                        })}
-                      </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[10.5px] text-text-muted">
+                        #{b.sortOrder}
+                      </span>
+                      <span className="text-[14px] font-semibold text-text-primary truncate">
+                        {bannerDisplayName(t, b)}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5 text-[11.5px] text-text-muted">
+                      {b.actionType === "openProduct" ? (
+                        <Package className="h-3 w-3" />
+                      ) : b.actionType === "externalUrl" ? (
+                        <LinkIcon className="h-3 w-3" />
+                      ) : (
+                        <Package className="h-3 w-3" />
+                      )}
+                      <span className="truncate">
+                        {actionLabel(t, b.actionType, b.actionValue)}
+                      </span>
                     </div>
                   </div>
-                ))}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => toggleActive(b.id)}
+                      className={cn(
+                        "rounded-full px-2.5 py-1 text-[10.5px] font-medium",
+                        b.isActive
+                          ? "bg-status-resolved/15 text-status-resolved"
+                          : "bg-text-muted/15 text-text-muted",
+                      )}
+                    >
+                      {b.isActive ? t("common.active") : t("common.inactive")}
+                    </button>
+                    <button
+                      className="icon-btn h-8 w-8"
+                      onClick={() => setEditing(b)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      className="icon-btn h-8 w-8 hover:bg-status-blocked/15 hover:text-status-blocked"
+                      onClick={() => remove(b.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {banners.length === 0 && (
+              <div className="rounded-xl border border-dashed border-line py-12 text-center text-[13px] text-text-muted">
+                {t("banners.empty")}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -373,25 +271,17 @@ export function PromoBannersPage() {
   );
 }
 
-function LocaleAvailabilityDots({ banner }: { banner: PromoBanner }) {
-  const langs: Lang[] = ["uz", "uz_cyrl", "ru", "en"];
-  return (
-    <span className="ml-1 inline-flex items-center gap-0.5 rounded-md border border-line bg-bg-card px-1 py-0.5">
-      {langs.map((l) => {
-        const hasTitle = !!pickLocalized(banner.title, l).trim();
-        return (
-          <span
-            key={l}
-            title={l.toUpperCase()}
-            className={cn(
-              "h-1.5 w-1.5 rounded-full",
-              hasTitle ? "bg-status-resolved" : "bg-line",
-            )}
-          />
-        );
-      })}
-    </span>
-  );
+function bannerDisplayName(
+  t: (key: string, vars?: Record<string, string | number>) => string,
+  b: PromoBanner,
+): string {
+  if (b.actionType === "openProduct" && b.actionValue) {
+    return t("banners.action.productLabel", { value: b.actionValue });
+  }
+  if (b.actionType === "externalUrl" && b.actionValue) {
+    return b.actionValue;
+  }
+  return t("banners.untitled");
 }
 
 function actionLabel(
@@ -403,76 +293,15 @@ function actionLabel(
     return value
       ? t("banners.action.productLabel", { value })
       : t("banners.action.openProduct");
-  if (type === "filterByType")
-    return value
-      ? t("banners.action.filterLabel", { value })
-      : t("banners.action.filterByType");
   if (type === "externalUrl")
     return value
       ? t("banners.action.externalLabel", { value })
       : t("banners.action.externalUrl");
+  if (type === "filterByType")
+    return value
+      ? t("banners.action.filterLabel", { value })
+      : t("banners.action.filterByType");
   return t("banners.action.none");
-}
-
-function BannerPreview({
-  banner,
-  previewLang,
-}: {
-  banner: PromoBanner;
-  previewLang: Lang;
-}) {
-  const { t } = useT();
-  const theme = themeStyles[banner.theme];
-  const kicker = pickLocalized(banner.kicker, previewLang);
-  const title = pickLocalized(banner.title, previewLang);
-  const subtitle = pickLocalized(banner.subtitle, previewLang);
-  return (
-    <div
-      className="relative h-44 overflow-hidden rounded-xl p-4"
-      style={{ background: theme.bg, color: theme.text }}
-    >
-      <span
-        className="inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
-        style={{ background: theme.chip, color: theme.kicker }}
-      >
-        {kicker || t("banners.kickerDefault")}
-      </span>
-      <div className="mt-2 whitespace-pre-line text-[16px] font-bold leading-tight">
-        {title || t("banners.titleSample")}
-      </div>
-      <div className="mt-1.5 text-[11.5px] font-medium opacity-80">
-        {subtitle || t("banners.subtitleSample")}
-      </div>
-      <div className="absolute bottom-3 right-3 inline-flex items-center justify-center rounded-full bg-white/30 px-3 py-1 text-[10px] font-semibold">
-        {t("banners.viewCta")} <ChevronRight className="ml-0.5 h-3 w-3" />
-      </div>
-      <span className="absolute top-3 right-3 rounded-md bg-black/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/90">
-        {previewLang}
-      </span>
-    </div>
-  );
-}
-
-interface DraftBanner {
-  id: string;
-  kicker: Localized<string>;
-  title: Localized<string>;
-  subtitle: Localized<string>;
-  theme: BannerTheme;
-  imageUrl: string | null;
-  actionType: BannerActionType;
-  actionValue: string;
-  sortOrder: number;
-  isActive: boolean;
-}
-
-function normalizeDraft(banner: PromoBanner): DraftBanner {
-  return {
-    ...banner,
-    kicker: toLocalized(banner.kicker),
-    title: toLocalized(banner.title),
-    subtitle: toLocalized(banner.subtitle),
-  };
 }
 
 interface DrawerProps {
@@ -482,16 +311,16 @@ interface DrawerProps {
 }
 
 function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
-  const { t, lang } = useT();
-  const [draft, setDraft] = useState<DraftBanner>(() => normalizeDraft(banner));
-  const [previewLang, setPreviewLang] = useState<Lang>(lang);
+  const { t } = useT();
+  const [draft, setDraft] = useState<PromoBanner>(banner);
   const [products, setProducts] = useState<AdminStoreProduct[]>([]);
   const [productSearch, setProductSearch] = useState("");
-  const set = <K extends keyof DraftBanner>(key: K, value: DraftBanner[K]) =>
+  const savingRef = useRef(false);
+
+  const set = <K extends keyof PromoBanner>(key: K, value: PromoBanner[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
-  // Action picker uchun mahsulotlarni faqat "openProduct" rejimi tanlangach yuklaymiz —
-  // foydalanuvchi boshqa rejimni tanlasa, keraksiz so'rov ketmaydi.
+  // Only load products when the product picker is active.
   useEffect(() => {
     if (draft.actionType !== "openProduct" || products.length > 0) return;
     storeProductsApi
@@ -517,26 +346,30 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
       ? products.find((p) => String(p.id) === draft.actionValue)
       : null;
 
-  // URL validatsiya: http(s):// + xost bo'lishi shart.
   const urlInvalid =
     draft.actionType === "externalUrl" &&
     draft.actionValue.trim() !== "" &&
     !/^https?:\/\/[^\s]+\.[^\s]+/i.test(draft.actionValue.trim());
 
   const setAction = (type: BannerActionType) => {
-    // Rejim almashganda actionValue'ni tozalab beramiz — eski qiymat
-    // boshqa rejim uchun mantiqsiz bo'ladi.
     setDraft((d) => ({ ...d, actionType: type, actionValue: "" }));
   };
 
-  const hasContent = !!(
-    draft.kicker.uz ||
-    draft.kicker.ru ||
-    draft.kicker.en ||
-    draft.title.uz ||
-    draft.title.ru ||
-    draft.title.en
-  );
+  // Banner is only useful with an image; the action is the whole payload, so
+  // require both: an image plus a configured target (product chosen or a valid
+  // URL entered).
+  const actionReady =
+    (draft.actionType === "openProduct" && draft.actionValue.trim() !== "") ||
+    (draft.actionType === "externalUrl" &&
+      draft.actionValue.trim() !== "" &&
+      !urlInvalid);
+  const canSave = !!draft.imageUrl && actionReady;
+
+  const handleSave = () => {
+    if (savingRef.current || !canSave) return;
+    savingRef.current = true;
+    onSave(draft);
+  };
 
   return (
     <div className="fixed inset-0 z-40 flex">
@@ -544,89 +377,19 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative ml-auto flex h-full w-full max-w-xl flex-col border-l border-line bg-bg-panel shadow-panel">
+      <div className="relative ml-auto flex h-full w-full max-w-lg flex-col border-l border-line bg-bg-panel shadow-panel">
         <div className="flex items-center justify-between border-b border-line px-6 py-4">
           <h2 className="text-[17px] font-bold text-text-primary">
-            {banner.id && hasContent ? t("banners.editTitle") : t("banners.new")}
+            {banner.imageUrl || banner.actionValue
+              ? t("banners.editTitle")
+              : t("banners.new")}
           </h2>
-          <div className="flex items-center gap-2">
-            <TranslateAllButton
-              from={lang}
-              fields={[
-                { value: draft.kicker, onChange: (v) => set("kicker", v) },
-                { value: draft.title, onChange: (v) => set("title", v) },
-                { value: draft.subtitle, onChange: (v) => set("subtitle", v) },
-              ]}
-            />
-            <button className="icon-btn" onClick={onClose}>
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+          <button className="icon-btn" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto scrollbar-thin px-6 py-5 space-y-5">
-          <div>
-            <div className="mb-1.5 flex items-center justify-between gap-2">
-              <div className="text-[12px] font-medium text-text-secondary">
-                {t("banners.preview")}
-              </div>
-              <PreviewLangPicker active={previewLang} onChange={setPreviewLang} />
-            </div>
-            <BannerPreview
-              banner={draft as unknown as PromoBanner}
-              previewLang={previewLang}
-            />
-          </div>
-
-          <LocalizedField
-            label={t("banners.field.kicker")}
-            value={draft.kicker}
-            onChange={(v) => set("kicker", v)}
-            placeholder={t("banners.field.kickerPh")}
-          />
-
-          <LocalizedField
-            as="textarea"
-            rows={5}
-            label={t("banners.field.title")}
-            value={draft.title}
-            onChange={(v) => set("title", v)}
-            placeholder={t("banners.field.titlePh")}
-          />
-
-          <LocalizedField
-            label={t("banners.field.subtitle")}
-            value={draft.subtitle}
-            onChange={(v) => set("subtitle", v)}
-            placeholder={t("banners.field.subtitlePh")}
-          />
-
-          <div>
-            <label className="mb-1.5 block text-[12px] font-medium text-text-secondary">
-              {t("banners.field.theme")}
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {(Object.keys(themeStyles) as BannerTheme[]).map((th) => (
-                <button
-                  key={th}
-                  onClick={() => set("theme", th)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 rounded-lg border-2 p-2 transition-colors",
-                    draft.theme === th ? "border-brand" : "border-line",
-                  )}
-                >
-                  <div
-                    className="h-12 w-full rounded-md"
-                    style={{ background: themeStyles[th].bg }}
-                  />
-                  <span className="text-[12px] font-medium text-text-primary">
-                    {themeStyles[th].name}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
           <ImageUpload
             value={draft.imageUrl}
             onChange={(url) => set("imageUrl", url)}
@@ -634,18 +397,17 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
             label={t("banners.field.imageUrl")}
           />
 
-          {/* Action picker — 3 ta vizual karta */}
           <div>
             <label className="mb-2 block text-[12px] font-medium text-text-secondary">
               {t("banners.field.actionType")}
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <ActionCard
-                active={draft.actionType === "none"}
-                onClick={() => setAction("none")}
-                icon={<Ban className="h-4 w-4" />}
-                title={t("banners.actionCard.none.title")}
-                hint={t("banners.actionCard.none.hint")}
+                active={draft.actionType === "openProduct"}
+                onClick={() => setAction("openProduct")}
+                icon={<Package className="h-4 w-4" />}
+                title={t("banners.actionCard.openProduct.title")}
+                hint={t("banners.actionCard.openProduct.hint")}
               />
               <ActionCard
                 active={draft.actionType === "externalUrl"}
@@ -654,35 +416,8 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
                 title={t("banners.actionCard.externalUrl.title")}
                 hint={t("banners.actionCard.externalUrl.hint")}
               />
-              <ActionCard
-                active={draft.actionType === "openProduct"}
-                onClick={() => setAction("openProduct")}
-                icon={<Package className="h-4 w-4" />}
-                title={t("banners.actionCard.openProduct.title")}
-                hint={t("banners.actionCard.openProduct.hint")}
-              />
             </div>
 
-            {/* Filter rejimi — eski yozuvlar uchun saqlanadi (yashirin opt-in) */}
-            {draft.actionType === "filterByType" && (
-              <div className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/5 p-2.5 text-[11.5px] text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                <Filter className="h-3.5 w-3.5" />
-                <span>
-                  {t("banners.actionCard.filter.legacyHint", {
-                    value: draft.actionValue || "—",
-                  })}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setAction("none")}
-                  className="ml-auto rounded-md bg-amber-500/15 px-2 py-0.5 text-[10.5px] font-medium hover:bg-amber-500/25"
-                >
-                  {t("banners.actionCard.filter.clear")}
-                </button>
-              </div>
-            )}
-
-            {/* External URL inputi */}
             {draft.actionType === "externalUrl" && (
               <div className="mt-3 rounded-xl border border-line bg-bg-input p-3">
                 <label className="mb-1.5 block text-[11.5px] font-medium text-text-secondary">
@@ -716,7 +451,6 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
               </div>
             )}
 
-            {/* Mahsulot tanlash */}
             {draft.actionType === "openProduct" && (
               <div className="mt-3 rounded-xl border border-line bg-bg-input p-3 space-y-2">
                 <label className="block text-[11.5px] font-medium text-text-secondary">
@@ -856,8 +590,16 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
             {t("common.cancel")}
           </button>
           <button
-            className="btn-primary text-[12.5px]"
-            onClick={() => onSave(draft as PromoBanner)}
+            className="btn-primary text-[12.5px] disabled:opacity-50"
+            onClick={handleSave}
+            disabled={!canSave}
+            title={
+              !draft.imageUrl
+                ? t("banners.field.imageRequired")
+                : !actionReady
+                  ? t("banners.field.actionRequired")
+                  : undefined
+            }
           >
             {t("common.save")}
           </button>
@@ -904,34 +646,5 @@ function ActionCard({
       <div className="text-[12px] font-semibold text-text-primary">{title}</div>
       <div className="text-[10.5px] text-text-muted leading-snug">{hint}</div>
     </button>
-  );
-}
-
-function PreviewLangPicker({
-  active,
-  onChange,
-}: {
-  active: Lang;
-  onChange: (l: Lang) => void;
-}) {
-  const langs: Lang[] = ["uz", "uz_cyrl", "ru", "en"];
-  return (
-    <div className="flex items-center gap-0.5 rounded-md border border-line bg-bg-input p-0.5">
-      {langs.map((l) => (
-        <button
-          key={l}
-          type="button"
-          onClick={() => onChange(l)}
-          className={cn(
-            "rounded px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide transition-colors",
-            active === l
-              ? "bg-brand text-white"
-              : "text-text-secondary hover:bg-bg-hover",
-          )}
-        >
-          {l}
-        </button>
-      ))}
-    </div>
   );
 }

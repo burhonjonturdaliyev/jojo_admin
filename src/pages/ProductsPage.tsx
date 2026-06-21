@@ -86,7 +86,7 @@ export function ProductsPage() {
     images: [],
     brand: "",
     videoUrls: [],
-    ageLabel: "",
+    ageLabel: emptyLocalizedString(),
     isActive: true,
     isFeatured: false,
     stock: 0,
@@ -338,6 +338,7 @@ function ProductEditor({
       draft.description,
       draft.categoryLabel,
       draft.deliveryInfo,
+      draft.ageLabel,
     ];
     const score: Record<TranslateLang, number> = { uz: 0, uz_cyrl: 0, ru: 0, en: 0 };
     fields.forEach((f) => {
@@ -359,8 +360,8 @@ function ProductEditor({
       const next = { ...draft };
       const fields: (keyof Pick<
         UiProduct,
-        "name" | "shortDescription" | "description" | "categoryLabel" | "deliveryInfo"
-      >)[] = ["name", "shortDescription", "description", "categoryLabel", "deliveryInfo"];
+        "name" | "shortDescription" | "description" | "categoryLabel" | "deliveryInfo" | "ageLabel"
+      >)[] = ["name", "shortDescription", "description", "categoryLabel", "deliveryInfo", "ageLabel"];
       for (const key of fields) {
         const base = (next[key][source] || "").trim();
         if (!base) continue;
@@ -716,19 +717,12 @@ function ProductEditor({
                   ))}
                 </select>
               </div>
-              <div>
-                <div className="text-[12px] font-semibold text-text-secondary mb-1.5">
-                  Yosh chegarasi
-                </div>
-                <input
-                  value={draft.ageLabel}
-                  onChange={(e) =>
-                    setDraft({ ...draft, ageLabel: e.target.value })
-                  }
-                  placeholder="6+ yosh"
-                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
-                />
-              </div>
+              <MultilangInput
+                label="Yosh chegarasi"
+                value={draft.ageLabel}
+                onChange={(v) => setDraft({ ...draft, ageLabel: v })}
+                placeholder="6+ yosh"
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

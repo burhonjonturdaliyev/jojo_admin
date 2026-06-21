@@ -163,7 +163,7 @@ export function ProductPreview({
             <CardPreview
               name={name}
               categoryLabel={categoryLabel || categoryName}
-              ageLabel={product.ageLabel}
+              ageLabel={pickLang(product.ageLabel, lang)}
               priceUzs={product.priceUzs}
               oldPriceUzs={product.oldPriceUzs}
               hasDiscount={hasDiscount}
@@ -178,7 +178,7 @@ export function ProductPreview({
               shortDesc={shortDesc}
               fullDesc={fullDesc}
               tags={product.tags.map((t) => t.name).filter(Boolean)}
-              ageLabel={product.ageLabel}
+              ageLabel={pickLang(product.ageLabel, lang)}
               priceUzs={product.priceUzs}
               oldPriceUzs={product.oldPriceUzs}
               hasDiscount={hasDiscount}
