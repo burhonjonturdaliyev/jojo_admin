@@ -114,11 +114,13 @@ export function ChildrenPage() {
                 const status = c.child_status || (c.is_active ? "active" : "non_active");
                 const isInactive = status !== "active";
                 const lang = langInfo(c.language);
+                // Use boy/girl ("O'g'il"/"Qiz") rather than adult male/female
+                // ("Erkak"/"Ayol") — this page lists children.
                 const genderLabel =
                   c.gender === "male"
-                    ? t("lead.genderMale")
+                    ? t("lead.boy")
                     : c.gender === "female"
-                      ? t("lead.genderFemale")
+                      ? t("lead.girl")
                       : t("child.gender.unknown");
                 const statusKey =
                   status === "active"
@@ -455,9 +457,9 @@ function ChildInfoModal({
                   label={t("users.col.gender")}
                   value={
                     c.gender === "male"
-                      ? t("lead.genderMale")
+                      ? t("lead.boy")
                       : c.gender === "female"
-                        ? t("lead.genderFemale")
+                        ? t("lead.girl")
                         : t("child.gender.unknown")
                   }
                 />

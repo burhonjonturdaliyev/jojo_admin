@@ -267,8 +267,8 @@ const uz: Dict = {
   "children.stat.notConnected": "Ulanmagan",
   "children.connected": "Ulangan",
   "children.notConnected": "Ulanmagan",
-  "children.gender.male": "Erkak",
-  "children.gender.female": "Ayol",
+  "children.gender.male": "O'g'il",
+  "children.gender.female": "Qiz",
   "children.yearsOld": "yosh",
 
   // ───── Premium
@@ -1752,8 +1752,8 @@ const ru: Dict = {
   "children.stat.notConnected": "Не подключено",
   "children.connected": "Подключён",
   "children.notConnected": "Не подключён",
-  "children.gender.male": "Мужской",
-  "children.gender.female": "Женский",
+  "children.gender.male": "Мальчик",
+  "children.gender.female": "Девочка",
   "children.yearsOld": "лет",
 
   // ───── Premium
@@ -3237,8 +3237,8 @@ const en: Dict = {
   "children.stat.notConnected": "Not connected",
   "children.connected": "Connected",
   "children.notConnected": "Not connected",
-  "children.gender.male": "Male",
-  "children.gender.female": "Female",
+  "children.gender.male": "Boy",
+  "children.gender.female": "Girl",
   "children.yearsOld": "yrs",
 
   // ───── Premium
