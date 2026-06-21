@@ -181,7 +181,13 @@ export function Sidebar() {
                     <item.icon className="h-[18px] w-[18px]" strokeWidth={2} />
                     <span className="flex-1">{item.label}</span>
                     {"badge" in item && (item.badge ?? 0) > 0 && (
-                      <span className="inline-flex min-w-[20px] items-center justify-center rounded-full bg-status-blocked px-1.5 text-[10.5px] font-bold leading-none text-white">
+                      <span
+                        className={cn(
+                          "inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold leading-none tabular-nums tracking-tight transition-colors",
+                          "bg-gradient-to-b from-rose-500 to-rose-600 text-white shadow-[0_2px_6px_-1px_rgba(244,63,94,0.55)] ring-1 ring-white/25",
+                          "group-aria-[current=page]:bg-none group-aria-[current=page]:bg-brand group-aria-[current=page]:from-brand group-aria-[current=page]:to-brand group-aria-[current=page]:text-white group-aria-[current=page]:shadow-none group-aria-[current=page]:ring-brand/30",
+                        )}
+                      >
                         {item.badge! > 99 ? "99+" : item.badge}
                       </span>
                     )}
