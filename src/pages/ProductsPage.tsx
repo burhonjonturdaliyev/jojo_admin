@@ -391,7 +391,13 @@ function ProductEditor({
     }
   };
 
-  const canSave = filled(draft.name.uz) || filled(draft.name.ru) || filled(draft.name.en);
+  const hasName =
+    filled(draft.name.uz) || filled(draft.name.ru) || filled(draft.name.en);
+  // Category is required — without it the product won't surface anywhere in the
+  // parent store's category-filtered lists, so silently saving with no category
+  // creates an "orphan" product. Block the save buttons until one is chosen.
+  const hasCategory = Boolean(draft.categoryId);
+  const canSave = hasName && hasCategory;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -666,7 +672,12 @@ function ProductEditor({
                   onChange={(e) =>
                     setDraft({ ...draft, categoryId: e.target.value || null })
                   }
-                  className="w-full rounded-lg border border-line bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary"
+                  className={
+                    "w-full rounded-lg border bg-bg-input px-3 py-2 text-[13px] text-text-primary outline-none focus:border-primary " +
+                    (!draft.categoryId
+                      ? "border-red-500/60"
+                      : "border-line")
+                  }
                 >
                   <option value="">
                     {categories.length === 0
@@ -754,7 +765,11 @@ function ProductEditor({
             className="btn-secondary text-[12.5px] inline-flex items-center gap-1"
             onClick={() => onSaveClick(true)}
             disabled={!canSave || saving}
-            title="Saqlashda backend bo'sh maydonlarni tarjima qilib to'ldiradi"
+            title={
+              !hasCategory
+                ? "Avval kategoriyani tanlang"
+                : "Saqlashda backend bo'sh maydonlarni tarjima qilib to'ldiradi"
+            }
           >
             {saving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -767,6 +782,7 @@ function ProductEditor({
             className="btn-primary text-[12.5px]"
             onClick={() => onSaveClick(false)}
             disabled={!canSave || saving}
+            title={!hasCategory ? "Avval kategoriyani tanlang" : undefined}
           >
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Saqlash"}
           </button>
@@ -799,12 +815,18 @@ function CategoryQuickAddModal({
   const [activeLang, setActiveLang] = useState<"uz" | "ru" | "en">("uz");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Synchronous guard: state-based `busy` updates asynchronously, so a fast
+  // double-click (or Enter held down) fires submit() twice before React has
+  // re-rendered with `disabled`. The ref blocks duplicate POSTs immediately.
+  const inFlightRef = useRef(false);
 
   const submit = async () => {
+    if (inFlightRef.current) return;
     if (!name.uz.trim()) {
       setError(t("products.category.nameRequired"));
       return;
     }
+    inFlightRef.current = true;
     setError(null);
     setBusy(true);
     try {
@@ -814,10 +836,14 @@ function CategoryQuickAddModal({
         name_en: name.en.trim() || undefined,
         is_active: true,
       });
+      // onCreated already calls onClose (via the parent's setShowCategoryAdd
+      // false in onCategoryCreated callback). Do NOT setBusy(false) afterwards
+      // because the component is unmounted — React would warn, and a stale
+      // `inFlightRef` reset doesn't matter once disposed.
       onCreated(created);
     } catch (e) {
       setError((e as { message?: string }).message || "Error");
-    } finally {
+      inFlightRef.current = false;
       setBusy(false);
     }
   };
