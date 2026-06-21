@@ -81,8 +81,22 @@ export function OrdersPage() {
     void reload();
   }, [filter]);
 
-  const setStatus = async (id: number, status: string) => {
-    await ordersApi.update(id, { status });
+  /** Status select onChange'da darhol PATCH qilmasdan, izoh kiritish uchun
+   *  modal ochamiz. Modal Save'ni bossagina haqiqiy o'zgarish bo'ladi. */
+  const [statusChange, setStatusChange] = useState<{
+    order: AdminOrder;
+    newStatus: string;
+  } | null>(null);
+
+  const applyStatusChange = async (
+    order: AdminOrder,
+    newStatus: string,
+    note: string,
+  ) => {
+    await ordersApi.update(order.id, {
+      status: newStatus,
+      change_note: note,
+    });
     void reload();
   };
 
@@ -197,7 +211,11 @@ export function OrdersPage() {
                   <td className="px-4 py-3">
                     <select
                       value={o.status}
-                      onChange={(e) => setStatus(o.id, e.target.value)}
+                      onChange={(e) => {
+                        const newStatus = e.target.value;
+                        if (newStatus === o.status) return;
+                        setStatusChange({ order: o, newStatus });
+                      }}
                       className={
                         "rounded-full border-0 px-2.5 py-1 text-[11px] font-medium outline-none cursor-pointer " +
                         statusColor(o.status)
@@ -267,6 +285,24 @@ export function OrdersPage() {
           statusLabel={(s) => statusLabel(s, viewing)}
           statusColor={statusColor}
           onClose={() => setViewing(null)}
+        />
+      )}
+
+      {statusChange && (
+        <StatusChangeModal
+          order={statusChange.order}
+          newStatus={statusChange.newStatus}
+          statusLabel={(s) => statusLabel(s, statusChange.order)}
+          statusColor={statusColor}
+          onClose={() => setStatusChange(null)}
+          onSubmit={async (note) => {
+            await applyStatusChange(
+              statusChange.order,
+              statusChange.newStatus,
+              note,
+            );
+            setStatusChange(null);
+          }}
         />
       )}
 
@@ -936,6 +972,155 @@ function OrderTimelineModal({
               </div>
             ))}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Status change modal — status o'zgartirilganda admin izohi
+// ============================================================================
+
+function StatusChangeModal({
+  order,
+  newStatus,
+  statusLabel,
+  statusColor,
+  onClose,
+  onSubmit,
+}: {
+  order: AdminOrder;
+  newStatus: string;
+  statusLabel: (slug: string) => string;
+  statusColor: (slug: string) => string;
+  onClose: () => void;
+  onSubmit: (note: string) => Promise<void>;
+}) {
+  const { t } = useT();
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isCancel = newStatus === "cancelled";
+
+  const submit = async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await onSubmit(note.trim());
+    } catch (e) {
+      setError((e as { message?: string }).message || t("common.error"));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[55] bg-black/50 flex items-center justify-center p-4"
+      onClick={busy ? undefined : onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-bg p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-[15.5px] font-semibold text-text-primary">
+              {t("orders.statusChange.title")}
+            </h3>
+            <div className="mt-0.5 text-[11.5px] text-text-muted truncate">
+              {order.code || `#${order.id}`} ·{" "}
+              {order.product?.name || ""}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="icon-btn h-7 w-7 shrink-0"
+            disabled={busy}
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mb-4 flex items-center gap-2 text-[12.5px]">
+          <span
+            className={
+              "rounded-full px-2.5 py-1 text-[10.5px] font-semibold " +
+              statusColor(order.status)
+            }
+          >
+            {statusLabel(order.status)}
+          </span>
+          <span className="text-text-muted">→</span>
+          <span
+            className={
+              "rounded-full px-2.5 py-1 text-[10.5px] font-semibold " +
+              statusColor(newStatus)
+            }
+          >
+            {statusLabel(newStatus)}
+          </span>
+        </div>
+
+        <div className="mb-3">
+          <label className="mb-1.5 block text-[11.5px] font-medium text-text-secondary">
+            {isCancel
+              ? t("orders.statusChange.cancelReasonLabel")
+              : t("orders.statusChange.noteLabel")}
+          </label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={
+              isCancel
+                ? t("orders.statusChange.cancelReasonPh")
+                : t("orders.statusChange.notePh")
+            }
+            rows={3}
+            maxLength={1000}
+            disabled={busy}
+            className="w-full resize-none rounded-lg border border-line bg-bg-input px-3 py-2 text-[12.5px] outline-none focus:border-primary disabled:opacity-60"
+          />
+          <div className="mt-1 text-[10.5px] text-text-muted">
+            {isCancel
+              ? t("orders.statusChange.cancelReasonHint")
+              : t("orders.statusChange.noteHint")}
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-3 rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="btn-secondary text-[12.5px]"
+            disabled={busy}
+          >
+            {t("common.cancel")}
+          </button>
+          <button
+            onClick={submit}
+            disabled={busy}
+            className={
+              "text-[12.5px] inline-flex items-center gap-1 disabled:opacity-50 " +
+              (isCancel
+                ? "btn-secondary !bg-red-500 !text-white hover:!bg-red-600"
+                : "btn-primary")
+            }
+          >
+            {busy && <Clock className="h-3.5 w-3.5 animate-spin" />}
+            {busy
+              ? t("common.saving")
+              : isCancel
+                ? t("orders.statusChange.confirmCancel")
+                : t("orders.statusChange.confirm")}
+          </button>
         </div>
       </div>
     </div>

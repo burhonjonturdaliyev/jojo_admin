@@ -777,7 +777,14 @@ export const ordersApi = {
     api<AdminOrder[] | { results: AdminOrder[] }>("/admin/orders/", {
       query: query as Record<string, string>,
     }),
-  update: (id: number, data: Partial<AdminOrder> & { cancel_reason?: string }) =>
+  update: (
+    id: number,
+    data: Partial<AdminOrder> & {
+      cancel_reason?: string;
+      /** Status o'zgartirishda admin izohi — timeline'ga yozib qo'yiladi. */
+      change_note?: string;
+    },
+  ) =>
     api<AdminOrder>(`/admin/orders/${id}/`, { method: "PATCH", body: data }),
   remove: (id: number) =>
     api<void>(`/admin/orders/${id}/`, { method: "DELETE" }),
