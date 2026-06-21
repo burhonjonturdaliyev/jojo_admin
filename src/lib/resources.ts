@@ -755,15 +755,34 @@ export interface AdminOrder {
   updated_at?: string;
 }
 
+export interface AdminOrderEvent {
+  id: number;
+  kind:
+    | "created"
+    | "status_change"
+    | "cancelled_by_user"
+    | "cancelled_by_admin"
+    | "note";
+  from_status: string;
+  to_status: string;
+  note: string;
+  by_user_id?: number | null;
+  by_user_label?: string;
+  by_role?: "admin" | "user" | "system";
+  at: string;
+}
+
 export const ordersApi = {
   list: (query?: { status?: string }) =>
     api<AdminOrder[] | { results: AdminOrder[] }>("/admin/orders/", {
       query: query as Record<string, string>,
     }),
-  update: (id: number, data: Partial<AdminOrder>) =>
+  update: (id: number, data: Partial<AdminOrder> & { cancel_reason?: string }) =>
     api<AdminOrder>(`/admin/orders/${id}/`, { method: "PATCH", body: data }),
   remove: (id: number) =>
     api<void>(`/admin/orders/${id}/`, { method: "DELETE" }),
+  events: (id: number) =>
+    api<{ results: AdminOrderEvent[] }>(`/admin/orders/${id}/events/`),
 };
 
 // ============================================================================

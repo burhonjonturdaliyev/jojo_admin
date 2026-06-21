@@ -1,15 +1,29 @@
+import { translateApi, type TranslateLang } from "./resources";
 import type { Lang } from "./i18n";
 
 /**
- * Two-tier translation pipeline:
- *  1. Google's free public endpoint (translate.googleapis.com `gtx` client) —
- *     wide character allowance, supports uz↔ru cleanly. Primary engine.
- *  2. MyMemory — kept as a fallback when Google is unreachable / blocked.
+ * Three-tier translation pipeline, ordered by output quality:
  *
- * Results are cached in localStorage so re-edits are free.
+ *  1. **Backend `/admin/translate/`** — the same endpoint Products and
+ *     Categories pages use. The backend holds the paid API key (Google
+ *     Cloud / DeepL / similar) and can apply server-side glossary +
+ *     uz_cyrl transliteration. Highest quality. *Primary*.
+ *  2. **Google public `gtx`** — unofficial free endpoint, decent quality,
+ *     used as soon as the backend is unreachable / errors out.
+ *  3. **MyMemory** — last-resort fallback, low quality. Used only when
+ *     both Google paths fail; for uz↔ru it bridges through English.
+ *
+ * Before each call we mask brand names, URLs, emails, and {placeholder}
+ * tokens so translation engines can't mangle them. Unmasking after the
+ * response restores the originals byte-for-byte.
+ *
+ * Results are cached in localStorage so re-edits and re-translations
+ * of the same string are free across the whole admin.
  */
 
-const CACHE_KEY = "jojo_admin_translate_cache_v3";
+// Cache bump (v4): backend-primary changes most outputs; old v3 entries
+// would now mix lower-quality strings with the new professional ones.
+const CACHE_KEY = "jojo_admin_translate_cache_v4";
 const MAX_CHUNK_BYTES = 1200;
 
 const GOOGLE_ENDPOINT =
@@ -136,6 +150,133 @@ function chunkText(text: string): { parts: string[]; seps: string[] } {
 
 export class TranslateError extends Error {}
 
+// ============================================================================
+// Glossary / masking
+// ============================================================================
+
+// Tokens that must survive translation unchanged. Casing matters for brand
+// names — we re-insert them exactly as they were. The list is ordered:
+// longer phrases first so "JoJo Kids" doesn't get half-replaced when "JoJo"
+// would also match.
+const GLOSSARY: readonly string[] = [
+  "JoJo Kids",
+  "JoJo Parent",
+  "Jojo Parent",
+  "Jojo Kids",
+  "Jojo Studio",
+  "Jojolingo",
+  "Jojobot",
+  "JoJo",
+  "Jojo",
+];
+
+const URL_RE = /\bhttps?:\/\/\S+/gi;
+const EMAIL_RE = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g;
+// `{name}` style placeholders used by the broadcast templating layer.
+const PLACEHOLDER_RE = /\{[a-zA-Z_][\w.]*\}/g;
+
+interface MaskResult {
+  masked: string;
+  tokens: string[];
+}
+
+/**
+ * Replace each protected segment (brand name, URL, email, placeholder) with
+ * an opaque marker that won't tempt any translator into rewording it. We use
+ * zero-width-joined ASCII so the marker survives URL encoding cleanly.
+ */
+function maskProtected(text: string): MaskResult {
+  const tokens: string[] = [];
+  const stamp = (segment: string) => {
+    tokens.push(segment);
+    // Wrap in zero-width brackets so neither Google nor MyMemory tries to
+    // interpret the index as a number to translate.
+    return `⁣${tokens.length - 1}⁣`;
+  };
+
+  let out = text;
+  for (const entry of GLOSSARY) {
+    // Word-boundaryish — accept the brand surrounded by non-letter chars
+    // (start/end of string, space, punctuation).
+    const escaped = entry.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const re = new RegExp(`(^|[^A-Za-z0-9])${escaped}(?=[^A-Za-z0-9]|$)`, "g");
+    out = out.replace(re, (_match, before: string) => `${before}${stamp(entry)}`);
+  }
+  out = out.replace(URL_RE, (m) => stamp(m));
+  out = out.replace(EMAIL_RE, (m) => stamp(m));
+  out = out.replace(PLACEHOLDER_RE, (m) => stamp(m));
+  return { masked: out, tokens };
+}
+
+const MARKER_RE = /⁣(\d+)⁣/g;
+
+function unmask(text: string, tokens: string[]): string {
+  if (tokens.length === 0) return text;
+  return text.replace(MARKER_RE, (_match, idx: string) => {
+    const i = Number.parseInt(idx, 10);
+    return tokens[i] ?? "";
+  });
+}
+
+// ============================================================================
+// Backend translate (primary)
+// ============================================================================
+
+/**
+ * Backend `/admin/translate/` with one source → one target. Used for chunked
+ * single-language translations. Errors out via TranslateError so the chunk
+ * loop falls through to Google.
+ */
+async function callBackendOne(
+  chunk: string,
+  from: Lang,
+  to: Lang,
+): Promise<string> {
+  try {
+    const result = await translateApi.one(
+      chunk,
+      from as TranslateLang,
+      to as TranslateLang,
+    );
+    const out = result.text?.trim();
+    if (!out) throw new TranslateError("Tarjima qaytarilmadi.");
+    return out;
+  } catch (err) {
+    if (err instanceof TranslateError) throw err;
+    throw new TranslateError(
+      (err as { message?: string }).message ??
+        "Backend tarjima xizmati javob bermadi.",
+    );
+  }
+}
+
+/**
+ * Backend `/admin/translate/` with one source → ALL languages in a single
+ * round-trip. Returns whatever subset the backend produced; the caller can
+ * fall back to per-language calls for the missing ones.
+ */
+async function callBackendAll(
+  chunk: string,
+  from: Lang,
+): Promise<Partial<Record<Lang, string>>> {
+  try {
+    const result = await translateApi.all(chunk, from as TranslateLang);
+    const map = result.translations ?? {};
+    const cleaned: Partial<Record<Lang, string>> = {};
+    for (const k of Object.keys(map) as Lang[]) {
+      const v = (map as Record<string, string>)[k]?.trim();
+      if (v) cleaned[k] = v;
+    }
+    return cleaned;
+  } catch (err) {
+    if (err instanceof TranslateError) throw err;
+    throw new TranslateError(
+      (err as { message?: string }).message ??
+        "Backend tarjima xizmati javob bermadi.",
+    );
+  }
+}
+
 /**
  * Google Translate's public `gtx` client returns a deeply nested array.
  * Top-level shape: `[[ [translatedSegment, sourceSegment, ?, ?, ?], ... ], ...]`
@@ -238,29 +379,46 @@ async function callMyMemory(
 }
 
 /**
- * Try Google first (high quality, generous limits, real uz↔ru support);
- * if it fails (network/CORS/quota), fall back to MyMemory. When the direct
- * MyMemory pair is unsupported we bridge through English.
+ * Pipeline order:
+ *  1. Backend `/admin/translate/` — paid translator with brand glossary.
+ *  2. Google public `gtx` — decent free quality.
+ *  3. MyMemory — last-resort, via English when the direct pair fails.
+ *
+ * Brand names, URLs, emails, and {placeholders} are masked before *every*
+ * engine call and restored once a translation comes back.
  */
 async function translateChunk(
   chunk: string,
   from: Lang,
   to: Lang,
 ): Promise<string> {
-  // Primary: Google.
+  const { masked, tokens } = maskProtected(chunk);
+
+  // Primary: backend (professional engine, server-side glossary).
   try {
-    return await callGoogle(chunk, GOOGLE_CODE[from], GOOGLE_CODE[to]);
+    const out = await callBackendOne(masked, from, to);
+    return unmask(out, tokens);
   } catch {
-    // Fallback to MyMemory.
+    // Fall through to Google.
+  }
+
+  // Secondary: Google's public gtx endpoint.
+  try {
+    const out = await callGoogle(masked, GOOGLE_CODE[from], GOOGLE_CODE[to]);
+    return unmask(out, tokens);
+  } catch {
+    // Fall through to MyMemory.
   }
 
   try {
-    return await callMyMemory(chunk, MM_LOCALE[from], MM_LOCALE[to]);
+    const out = await callMyMemory(masked, MM_LOCALE[from], MM_LOCALE[to]);
+    return unmask(out, tokens);
   } catch (directErr) {
     if (from !== "en" && to !== "en") {
       try {
-        const viaEn = await callMyMemory(chunk, MM_LOCALE[from], MM_LOCALE.en);
-        return await callMyMemory(viaEn, MM_LOCALE.en, MM_LOCALE[to]);
+        const viaEn = await callMyMemory(masked, MM_LOCALE[from], MM_LOCALE.en);
+        const out = await callMyMemory(viaEn, MM_LOCALE.en, MM_LOCALE[to]);
+        return unmask(out, tokens);
       } catch {
         // Surface the original direct error so it's the most informative.
       }
@@ -312,29 +470,80 @@ export async function translateText(
 }
 
 /**
- * Translate the same source text into many target languages in parallel.
- * Returns a map keyed by target language. Targets equal to `from` resolve
- * to the source text unchanged.
+ * Translate the same source text into many target languages.
+ *
+ * Strategy: ask the backend for **all** translations in a single round-trip
+ * (`translateApi.all`). Short text → one HTTP call covers everything,
+ * including uz_cyrl which the backend transliterates server-side. Any
+ * targets the backend skipped fall back to per-language `translateText`
+ * (which itself walks backend → Google → MyMemory).
+ *
+ * Cache is checked first so repeat calls cost nothing.
  */
 export async function translateInto(
   text: string,
   from: Lang,
   targets: Lang[],
 ): Promise<Record<Lang, string>> {
+  const trimmed = text.trim();
   const out: Record<string, string> = {};
-  await Promise.all(
-    targets.map(async (lang) => {
-      if (lang === from) {
-        out[lang] = text;
-        return;
+  if (!trimmed) {
+    for (const l of targets) out[l] = "";
+    return out as Record<Lang, string>;
+  }
+
+  const cache = readCache();
+  const remaining: Lang[] = [];
+  for (const lang of targets) {
+    if (lang === from) {
+      out[lang] = text;
+      continue;
+    }
+    const hit = cache[cacheKey(trimmed, from, lang)];
+    if (hit) {
+      out[lang] = hit;
+      continue;
+    }
+    remaining.push(lang);
+  }
+  if (remaining.length === 0) return out as Record<Lang, string>;
+
+  // Short input → backend can do all targets in one shot.
+  if (byteLen(trimmed) <= MAX_CHUNK_BYTES) {
+    const { masked, tokens } = maskProtected(trimmed);
+    try {
+      const all = await callBackendAll(masked, from);
+      let mutated = false;
+      for (const lang of remaining) {
+        const translated = all[lang];
+        if (translated) {
+          const restored = unmask(translated, tokens);
+          out[lang] = restored;
+          cache[cacheKey(trimmed, from, lang)] = restored;
+          mutated = true;
+        }
       }
+      if (mutated) writeCache(cache);
+    } catch {
+      // Backend round-trip failed entirely — leave `remaining` untouched
+      // and fall through to per-language translateText calls below.
+    }
+  }
+
+  // Anything backend didn't deliver, ask per language. Chunking, cache,
+  // and the full fallback chain (Google/MyMemory) all live inside
+  // translateText, so longer inputs are handled correctly here too.
+  await Promise.all(
+    remaining.map(async (lang) => {
+      if (out[lang]) return;
       try {
-        out[lang] = await translateText(text, from, lang);
+        out[lang] = await translateText(trimmed, from, lang);
       } catch (e) {
         out[lang] = "";
         throw e;
       }
     }),
   );
+
   return out as Record<Lang, string>;
 }

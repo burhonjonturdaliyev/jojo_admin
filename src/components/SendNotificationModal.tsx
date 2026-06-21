@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Send, X, Sparkles, Loader2, Bell } from "lucide-react";
 import { useT, type Lang } from "../lib/i18n";
-import { translateText, TranslateError } from "../lib/translate";
+import { translateInto, TranslateError } from "../lib/translate";
 import { notificationsApi, type AdminUserRow } from "../lib/resources";
 import { cn } from "../lib/utils";
 
@@ -63,7 +63,9 @@ export function SendNotificationModal({
   };
 
   // Auto-translate from the currently-active language into the other three.
-  // Skips fields that are empty in the source language.
+  // `translateInto` issues a single backend round-trip per field that returns
+  // all target languages at once (plus server-side uz_cyrl transliteration).
+  // Empty source fields are skipped.
   const translateAll = async () => {
     setError(null);
     setTranslating(true);
@@ -75,22 +77,20 @@ export function SendNotificationModal({
         setError(t("usersNotif.fillSomethingFirst"));
         return;
       }
+      const [titleMap, bodyMap] = await Promise.all([
+        sourceTitle
+          ? translateInto(sourceTitle, activeLang, targets)
+          : Promise.resolve({} as Record<Lang, string>),
+        sourceBody
+          ? translateInto(sourceBody, activeLang, targets)
+          : Promise.resolve({} as Record<Lang, string>),
+      ]);
       const nextTitle = { ...title };
       const nextBody = { ...body };
-      await Promise.all(
-        targets.flatMap((to) => [
-          sourceTitle
-            ? translateText(sourceTitle, activeLang, to).then((v) => {
-                if (v) nextTitle[to] = v;
-              })
-            : Promise.resolve(),
-          sourceBody
-            ? translateText(sourceBody, activeLang, to).then((v) => {
-                if (v) nextBody[to] = v;
-              })
-            : Promise.resolve(),
-        ]),
-      );
+      for (const to of targets) {
+        if (titleMap[to]) nextTitle[to] = titleMap[to];
+        if (bodyMap[to]) nextBody[to] = bodyMap[to];
+      }
       setTitle(nextTitle);
       setBody(nextBody);
     } catch (e) {

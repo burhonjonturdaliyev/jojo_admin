@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ShoppingBag, Pencil, Trash2, X, Save, Settings2, Plus, GripVertical } from "lucide-react";
+import { ShoppingBag, Pencil, Trash2, X, Save, Settings2, Plus, GripVertical, Eye, Clock, User as UserIcon, Bot, ShieldCheck, AlertCircle } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { LocalizedField } from "../components/LocalizedField";
 import { useT, type Lang } from "../lib/i18n";
@@ -9,6 +9,7 @@ import {
   unwrapList,
   type AdminOrder,
   type AdminOrderStatus,
+  type AdminOrderEvent,
 } from "../lib/resources";
 import { emptyLocalized, type Localized } from "../types/locale";
 
@@ -31,6 +32,7 @@ export function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string | null>(null);
   const [editing, setEditing] = useState<AdminOrder | null>(null);
+  const [viewing, setViewing] = useState<AdminOrder | null>(null);
 
   const [statuses, setStatuses] = useState<AdminOrderStatus[]>([]);
   const [managerOpen, setManagerOpen] = useState(false);
@@ -217,6 +219,13 @@ export function OrdersPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
                       <button
+                        onClick={() => setViewing(o)}
+                        className="icon-btn h-7 w-7"
+                        title={t("orders.viewTimeline") || "Tarix"}
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </button>
+                      <button
                         onClick={() => setEditing(o)}
                         className="icon-btn h-7 w-7"
                         title={t("common.edit")}
@@ -249,6 +258,15 @@ export function OrdersPage() {
             );
             setEditing(null);
           }}
+        />
+      )}
+
+      {viewing && (
+        <OrderTimelineModal
+          order={viewing}
+          statusLabel={(s) => statusLabel(s, viewing)}
+          statusColor={statusColor}
+          onClose={() => setViewing(null)}
         />
       )}
 
@@ -691,6 +709,233 @@ function StatusEditor({
           >
             <Save className="h-3.5 w-3.5" /> {busy ? t("common.saving") : t("common.save")}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================================
+// Order timeline modal — har bir buyurtma uchun voqealar tarixi
+// ============================================================================
+
+function OrderTimelineModal({
+  order,
+  statusLabel,
+  statusColor,
+  onClose,
+}: {
+  order: AdminOrder;
+  statusLabel: (slug: string) => string;
+  statusColor: (slug: string) => string;
+  onClose: () => void;
+}) {
+  const { t } = useT();
+  const [events, setEvents] = useState<AdminOrderEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    ordersApi
+      .events(order.id)
+      .then((r) => {
+        if (!cancelled) setEvents(r.results || []);
+      })
+      .catch((e) => {
+        if (!cancelled)
+          setError((e as { message?: string }).message || t("common.error"));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [order.id, t]);
+
+  const kindLabel = (e: AdminOrderEvent): string => {
+    switch (e.kind) {
+      case "created":
+        return t("orders.event.created");
+      case "status_change":
+        return t("orders.event.statusChange", {
+          from: statusLabel(e.from_status),
+          to: statusLabel(e.to_status),
+        });
+      case "cancelled_by_user":
+        return t("orders.event.cancelledByUser");
+      case "cancelled_by_admin":
+        return t("orders.event.cancelledByAdmin");
+      case "note":
+        return t("orders.event.note");
+      default:
+        return e.kind;
+    }
+  };
+
+  const kindIcon = (e: AdminOrderEvent) => {
+    if (e.kind === "created") return <ShoppingBag className="h-3.5 w-3.5" />;
+    if (e.kind === "cancelled_by_user" || e.kind === "cancelled_by_admin")
+      return <AlertCircle className="h-3.5 w-3.5" />;
+    if (e.kind === "note") return <Pencil className="h-3.5 w-3.5" />;
+    return <Clock className="h-3.5 w-3.5" />;
+  };
+
+  const kindDotColor = (e: AdminOrderEvent): string => {
+    if (e.kind === "created") return "bg-primary";
+    if (e.kind === "cancelled_by_user" || e.kind === "cancelled_by_admin")
+      return "bg-red-500";
+    return "bg-emerald-500";
+  };
+
+  const fmtDateTime = (iso: string) => {
+    try {
+      const d = new Date(iso);
+      return (
+        d.toLocaleDateString("uz-UZ", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }) +
+        " " +
+        d.toLocaleTimeString("uz-UZ", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      );
+    } catch {
+      return iso;
+    }
+  };
+
+  const roleIcon = (role?: string) => {
+    if (role === "admin") return <ShieldCheck className="h-3 w-3" />;
+    if (role === "user") return <UserIcon className="h-3 w-3" />;
+    return <Bot className="h-3 w-3" />;
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex justify-end" onClick={onClose}>
+      <div
+        className="w-full max-w-md bg-bg h-full overflow-y-auto scrollbar-thin shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-2 border-b border-line bg-bg px-5 py-4">
+          <div className="min-w-0">
+            <div className="text-[15px] font-semibold text-text-primary">
+              {order.code || `#${order.id}`}
+            </div>
+            <div className="mt-0.5 text-[11.5px] text-text-muted truncate">
+              {order.product?.name || "—"}
+            </div>
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
+              <span
+                className={
+                  "rounded-full px-2.5 py-1 text-[10.5px] font-semibold " +
+                  statusColor(order.status)
+                }
+              >
+                {statusLabel(order.status)}
+              </span>
+              {order.total_price != null && (
+                <span className="text-[11.5px] text-text-secondary font-medium">
+                  {order.total_price.toLocaleString("uz-UZ").replace(/,/g, " ")} {t("premium.priceCurrency")}
+                </span>
+              )}
+            </div>
+          </div>
+          <button onClick={onClose} className="icon-btn h-8 w-8 shrink-0">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Buyer info */}
+        <div className="border-b border-line bg-bg-input/40 px-5 py-3 space-y-1.5">
+          <div className="text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">
+            {t("orders.timeline.buyerSection")}
+          </div>
+          <div className="text-[12.5px] text-text-primary">
+            {order.user?.full_name || order.contact_name || "—"}
+          </div>
+          {(order.user?.phone || order.contact_phone) && (
+            <div className="text-[12px] text-text-secondary font-mono">
+              {order.user?.phone || order.contact_phone}
+            </div>
+          )}
+          {order.address && (
+            <div className="text-[11.5px] text-text-secondary leading-snug">
+              {order.address}
+            </div>
+          )}
+          {order.note && (
+            <div className="text-[11px] text-text-muted italic">
+              "{order.note}"
+            </div>
+          )}
+        </div>
+
+        {/* Timeline */}
+        <div className="p-5">
+          <div className="mb-3 text-[10.5px] font-semibold uppercase tracking-wider text-text-muted">
+            {t("orders.timeline.title")}
+          </div>
+          {loading && (
+            <div className="text-center py-6 text-[12px] text-text-muted">
+              {t("common.loading")}
+            </div>
+          )}
+          {error && (
+            <div className="rounded-lg bg-red-500/10 px-3 py-2 text-[12px] text-red-500">
+              {error}
+            </div>
+          )}
+          {!loading && events.length === 0 && !error && (
+            <div className="text-center py-6 text-[12px] text-text-muted">
+              {t("orders.timeline.empty")}
+            </div>
+          )}
+          <div className="relative pl-5">
+            <div className="absolute left-1.5 top-1 bottom-1 w-px bg-line" />
+            {events.map((e, i) => (
+              <div key={e.id} className={"relative " + (i < events.length - 1 ? "pb-4" : "")}>
+                <span
+                  className={
+                    "absolute -left-[18px] top-1.5 h-3 w-3 rounded-full ring-2 ring-bg " +
+                    kindDotColor(e)
+                  }
+                />
+                <div className="flex items-start gap-2">
+                  <div className="text-text-secondary mt-0.5">{kindIcon(e)}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[12.5px] text-text-primary font-medium leading-snug">
+                      {kindLabel(e)}
+                    </div>
+                    {e.note && (
+                      <div className="mt-1 rounded-md bg-bg-input px-2.5 py-1.5 text-[11.5px] text-text-secondary leading-snug">
+                        "{e.note}"
+                      </div>
+                    )}
+                    <div className="mt-1 flex items-center gap-2 text-[10.5px] text-text-muted">
+                      <span>{fmtDateTime(e.at)}</span>
+                      {e.by_user_label && (
+                        <>
+                          <span>·</span>
+                          <span className="inline-flex items-center gap-0.5">
+                            {roleIcon(e.by_role)}
+                            <span>{e.by_user_label}</span>
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
