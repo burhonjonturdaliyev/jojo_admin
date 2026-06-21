@@ -299,9 +299,7 @@ export function UsersPage() {
                         <div className="flex items-center gap-1.5">
                           <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
                           <span className="text-[12px] text-text-secondary">
-                            {(u.last_device?.brand || u.last_device?.model)
-                              ? `${u.last_device?.brand ?? ""} ${u.last_device?.model ?? ""}`.trim()
-                              : (u.last_device?.type === "ios" ? "iPhone" : "Android")}
+                            {formatDeviceName(u.last_device)}
                           </span>
                           {u.device_count > 1 && (
                             <span className="text-[10.5px] text-text-muted">×{u.device_count}</span>
@@ -488,6 +486,63 @@ export function UsersPage() {
       )}
     </div>
   );
+}
+
+// Apple sends the raw machine identifier (`iPhone17,1`) — translate the
+// most common identifiers to user-visible names so the device column in
+// the parents list doesn't make operators look up Apple's docs. Unknown
+// codes fall through to the raw value so backend updates can land here.
+const IOS_MODEL_NAMES: Record<string, string> = {
+  // iPhone 17 line (post-2025, when these ship)
+  "iPhone18,1": "iPhone 17 Pro",
+  "iPhone18,2": "iPhone 17 Pro Max",
+  "iPhone18,3": "iPhone 17",
+  "iPhone18,4": "iPhone 17 Air",
+  // iPhone 16 line
+  "iPhone17,1": "iPhone 16 Pro",
+  "iPhone17,2": "iPhone 16 Pro Max",
+  "iPhone17,3": "iPhone 16",
+  "iPhone17,4": "iPhone 16 Plus",
+  // iPhone 15 line
+  "iPhone16,1": "iPhone 15 Pro",
+  "iPhone16,2": "iPhone 15 Pro Max",
+  "iPhone15,4": "iPhone 15",
+  "iPhone15,5": "iPhone 15 Plus",
+  // iPhone 14 line
+  "iPhone15,2": "iPhone 14 Pro",
+  "iPhone15,3": "iPhone 14 Pro Max",
+  "iPhone14,7": "iPhone 14",
+  "iPhone14,8": "iPhone 14 Plus",
+  // iPhone 13 line
+  "iPhone14,2": "iPhone 13 Pro",
+  "iPhone14,3": "iPhone 13 Pro Max",
+  "iPhone14,4": "iPhone 13 mini",
+  "iPhone14,5": "iPhone 13",
+  // SE
+  "iPhone14,6": "iPhone SE (3rd gen)",
+};
+
+function prettifyIosModel(raw: string): string {
+  return IOS_MODEL_NAMES[raw] ?? raw;
+}
+
+function formatDeviceName(
+  device: AdminUserRow["last_device"] | undefined,
+): string {
+  if (!device) return "—";
+  const type = device.type;
+  const brand = (device.brand ?? "").trim();
+  const rawModel = (device.model ?? "").trim();
+  if (type === "ios" || brand.toLowerCase() === "apple") {
+    const model = rawModel ? prettifyIosModel(rawModel) : "iPhone";
+    return brand && brand.toLowerCase() !== "apple"
+      ? `${brand} ${model}`.trim()
+      : model;
+  }
+  if (brand || rawModel) {
+    return `${brand} ${rawModel}`.trim();
+  }
+  return type === "ios" ? "iPhone" : "Android";
 }
 
 function UserEditor({
