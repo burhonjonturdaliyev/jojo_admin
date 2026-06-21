@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Plus,
   GripVertical,
@@ -11,6 +11,8 @@ import {
   Search,
   ExternalLink,
   Image as ImageIcon,
+  Ban,
+  Loader2,
 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
@@ -36,7 +38,9 @@ const emptyBanner = (sortOrder: number): PromoBanner => ({
   subtitle: emptyLocalized(),
   theme: "sky",
   imageUrl: null,
-  actionType: "openProduct",
+  // Default — dekorativ banner. Foydalanuvchi xohlasa keyin Product yoki
+  // tashqi URL'ga o'zgartiradi.
+  actionType: "none",
   actionValue: "",
   sortOrder,
   isActive: true,
@@ -117,6 +121,8 @@ export function PromoBannersPage() {
   };
 
   const save = async (b: PromoBanner) => {
+    // Modal yopilmasa ham xato'larni yuqoriga uzatadigan qilamiz —
+    // drawer o'zining `saving` va `error` holatlarini boshqaradi.
     setBusy(true);
     try {
       const payload = bannerToApi(b);
@@ -128,8 +134,6 @@ export function PromoBannersPage() {
       }
       await reload();
       setEditing(null);
-    } catch (err) {
-      console.error("save failed", err);
     } finally {
       setBusy(false);
     }
@@ -307,7 +311,7 @@ function actionLabel(
 interface DrawerProps {
   banner: PromoBanner;
   onClose: () => void;
-  onSave: (b: PromoBanner) => void;
+  onSave: (b: PromoBanner) => Promise<void>;
 }
 
 function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
@@ -315,7 +319,8 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
   const [draft, setDraft] = useState<PromoBanner>(banner);
   const [products, setProducts] = useState<AdminStoreProduct[]>([]);
   const [productSearch, setProductSearch] = useState("");
-  const savingRef = useRef(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const set = <K extends keyof PromoBanner>(key: K, value: PromoBanner[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
@@ -355,20 +360,29 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
     setDraft((d) => ({ ...d, actionType: type, actionValue: "" }));
   };
 
-  // Banner is only useful with an image; the action is the whole payload, so
-  // require both: an image plus a configured target (product chosen or a valid
-  // URL entered).
-  const actionReady =
-    (draft.actionType === "openProduct" && draft.actionValue.trim() !== "") ||
+  // Bannerga rasm shart — dekorativ holat ham, action holat ham bo'lsa
+  // ham, rasm ko'rsatilishi kerak. Action ixtiyoriy:
+  //  - "none"        → tap qilinganda hech narsa qilmaydi
+  //  - "openProduct" → mahsulot tanlangan bo'lishi shart
+  //  - "externalUrl" → URL kiritilgan va valid bo'lishi shart
+  const actionInvalid =
+    (draft.actionType === "openProduct" && draft.actionValue.trim() === "") ||
     (draft.actionType === "externalUrl" &&
-      draft.actionValue.trim() !== "" &&
-      !urlInvalid);
-  const canSave = !!draft.imageUrl && actionReady;
+      (draft.actionValue.trim() === "" || urlInvalid));
+  const canSave = !!draft.imageUrl && !actionInvalid && !saving;
 
-  const handleSave = () => {
-    if (savingRef.current || !canSave) return;
-    savingRef.current = true;
-    onSave(draft);
+  const handleSave = async () => {
+    if (saving || !canSave) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onSave(draft);
+    } catch (err) {
+      const message = (err as { message?: string })?.message || "Saqlash xatosi";
+      setSaveError(message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -401,7 +415,14 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
             <label className="mb-2 block text-[12px] font-medium text-text-secondary">
               {t("banners.field.actionType")}
             </label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
+              <ActionCard
+                active={draft.actionType === "none"}
+                onClick={() => setAction("none")}
+                icon={<Ban className="h-4 w-4" />}
+                title={t("banners.actionCard.none.title")}
+                hint={t("banners.actionCard.none.hint")}
+              />
               <ActionCard
                 active={draft.actionType === "openProduct"}
                 onClick={() => setAction("openProduct")}
@@ -585,23 +606,33 @@ function BannerFormDrawer({ banner, onClose, onSave }: DrawerProps) {
           </div>
         </div>
 
+        {saveError && (
+          <div className="border-t border-red-500/30 bg-red-500/10 px-6 py-2.5 text-[12px] text-red-500">
+            {saveError}
+          </div>
+        )}
         <div className="flex items-center justify-end gap-2 border-t border-line px-6 py-4">
-          <button className="btn-secondary text-[12.5px]" onClick={onClose}>
+          <button
+            className="btn-secondary text-[12.5px]"
+            onClick={onClose}
+            disabled={saving}
+          >
             {t("common.cancel")}
           </button>
           <button
-            className="btn-primary text-[12.5px] disabled:opacity-50"
+            className="btn-primary text-[12.5px] inline-flex items-center gap-1.5 disabled:opacity-50"
             onClick={handleSave}
             disabled={!canSave}
             title={
               !draft.imageUrl
                 ? t("banners.field.imageRequired")
-                : !actionReady
+                : actionInvalid
                   ? t("banners.field.actionRequired")
                   : undefined
             }
           >
-            {t("common.save")}
+            {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {saving ? t("common.loading") : t("common.save")}
           </button>
         </div>
       </div>
