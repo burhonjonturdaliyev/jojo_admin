@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Plus, Package, Pencil, Trash2, Search, Sparkles, Loader2, X, ImagePlus, Video } from "lucide-react";
+import { Plus, Package, Pencil, Trash2, Search, Sparkles, Loader2, X, ImagePlus, Video, Smartphone } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { ImageUpload } from "../components/ImageUpload";
 import { MultilangInput } from "../components/MultilangInput";
 import { TagsInput } from "../components/TagsInput";
+import { ProductPreview } from "../components/ProductPreview";
 import { useT } from "../lib/i18n";
 import { uploadMedia } from "../lib/api";
 import {
@@ -399,23 +400,39 @@ function ProductEditor({
   const hasCategory = Boolean(draft.categoryId);
   const canSave = hasName && hasCategory;
 
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto rounded-3xl bg-bg shadow-2xl">
-        <div className="sticky top-0 bg-bg/95 backdrop-blur border-b border-line px-6 py-4 flex items-center justify-between rounded-t-3xl">
-          <div>
-            <h3 className="text-[17px] font-bold text-text-primary">
-              {product.id !== "0" ? t("products.editTitle") : t("products.newTitle")}
-            </h3>
-            <p className="text-[12px] text-text-muted">
-              Uz / Ru / En tillarida to'ldiring — yoki avtomatik tarjima qildiring
-            </p>
+      <div className="flex h-[92vh] w-full max-w-[1180px] overflow-hidden rounded-3xl bg-bg shadow-2xl">
+        {/* Form column */}
+        <div className="flex flex-1 min-w-0 flex-col">
+          <div className="sticky top-0 z-20 flex items-center justify-between border-b border-line bg-bg px-6 py-4 rounded-tl-3xl">
+            <div>
+              <h3 className="text-[17px] font-bold text-text-primary">
+                {product.id !== "0" ? t("products.editTitle") : t("products.newTitle")}
+              </h3>
+              <p className="text-[12px] text-text-muted">
+                Uz / Ru / En tillarida to'ldiring — yoki avtomatik tarjima qildiring
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Mobile/narrow screens: preview toggle */}
+              <button
+                type="button"
+                onClick={() => setShowMobilePreview((v) => !v)}
+                className="inline-flex lg:hidden items-center gap-1.5 rounded-lg bg-primary/10 text-primary px-2.5 py-1.5 text-[11.5px] font-medium hover:bg-primary/20"
+              >
+                <Smartphone className="h-3.5 w-3.5" />
+                {showMobilePreview ? "Yopish" : "Preview"}
+              </button>
+              <button onClick={onClose} className="icon-btn h-8 w-8">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-          <button onClick={onClose} className="icon-btn h-8 w-8">
-            ×
-          </button>
-        </div>
-        <div className="px-6 py-5 grid grid-cols-5 gap-5">
+          <div className="flex-1 overflow-y-auto scrollbar-thin">
+            <div className="px-6 py-5 grid grid-cols-5 gap-5">
           {/* Left column — media */}
           <div className="col-span-2 space-y-4">
             <ImageUpload
@@ -757,37 +774,81 @@ function ProductEditor({
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-bg/95 backdrop-blur border-t border-line px-6 py-3 flex justify-end gap-2 rounded-b-3xl">
-          <button className="btn-secondary text-[12.5px]" onClick={onClose}>
-            Bekor qilish
-          </button>
-          <button
-            className="btn-secondary text-[12.5px] inline-flex items-center gap-1"
-            onClick={() => onSaveClick(true)}
-            disabled={!canSave || saving}
-            title={
-              !hasCategory
-                ? "Avval kategoriyani tanlang"
-                : "Saqlashda backend bo'sh maydonlarni tarjima qilib to'ldiradi"
-            }
-          >
-            {saving ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5" />
-            )}
-            Tarjima bilan saqlash
-          </button>
-          <button
-            className="btn-primary text-[12.5px]"
-            onClick={() => onSaveClick(false)}
-            disabled={!canSave || saving}
-            title={!hasCategory ? "Avval kategoriyani tanlang" : undefined}
-          >
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Saqlash"}
-          </button>
+          </div>
+          <div className="sticky bottom-0 z-20 flex justify-end gap-2 border-t border-line bg-bg px-6 py-3 rounded-bl-3xl">
+            <button className="btn-secondary text-[12.5px]" onClick={onClose}>
+              Bekor qilish
+            </button>
+            <button
+              className="btn-secondary text-[12.5px] inline-flex items-center gap-1"
+              onClick={() => onSaveClick(true)}
+              disabled={!canSave || saving}
+              title={
+                !hasCategory
+                  ? "Avval kategoriyani tanlang"
+                  : "Saqlashda backend bo'sh maydonlarni tarjima qilib to'ldiradi"
+              }
+            >
+              {saving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" />
+              )}
+              Tarjima bilan saqlash
+            </button>
+            <button
+              className="btn-primary text-[12.5px]"
+              onClick={() => onSaveClick(false)}
+              disabled={!canSave || saving}
+              title={!hasCategory ? "Avval kategoriyani tanlang" : undefined}
+            >
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Saqlash"}
+            </button>
+          </div>
+        </div>
+
+        {/* Preview column — desktop only */}
+        <div className="hidden lg:flex w-[400px] shrink-0 flex-col border-l border-line bg-bg-input/40">
+          <div className="border-b border-line px-5 py-3 flex items-center gap-2 bg-bg">
+            <Smartphone className="h-4 w-4 text-primary" />
+            <div className="text-[13px] font-semibold text-text-primary">
+              Jojo ilovasidagi ko'rinish
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto scrollbar-thin p-5">
+            <ProductPreview product={draft} categories={categories} />
+          </div>
         </div>
       </div>
+
+      {/* Mobile preview overlay */}
+      {showMobilePreview && (
+        <div
+          className="lg:hidden fixed inset-0 z-[55] bg-black/60 flex items-center justify-center p-4"
+          onClick={() => setShowMobilePreview(false)}
+        >
+          <div
+            className="w-full max-w-md max-h-[92vh] overflow-y-auto scrollbar-thin rounded-3xl bg-bg p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4 text-primary" />
+                <div className="text-[14px] font-semibold text-text-primary">
+                  Jojo ilovasidagi ko'rinish
+                </div>
+              </div>
+              <button
+                onClick={() => setShowMobilePreview(false)}
+                className="icon-btn h-8 w-8"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <ProductPreview product={draft} categories={categories} />
+          </div>
+        </div>
+      )}
 
       {showCategoryAdd && (
         <CategoryQuickAddModal
