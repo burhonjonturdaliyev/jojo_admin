@@ -1,9 +1,4 @@
-// Status code stored on the backend's ParentStoreOrder rows.
-// `sent` is the legacy code (kept here for type compatibility with any
-// row that hasn't been migrated yet); `new` is the canonical name and
-// what new rows are written with.
 export type OrderStatus =
-  | "new"
   | "sent"
   | "review"
   | "confirmed"
@@ -37,7 +32,6 @@ export interface Order {
 // loaded). Mirrors the `orderStatus.*` locale keys; runtime UI prefers
 // the localized version via `useT()`.
 export const orderStatusLabels: Record<OrderStatus, string> = {
-  new: "Yangi",
   sent: "Yangi",
   review: "Ko'rib chiqilmoqda",
   confirmed: "Tasdiqlangan",
@@ -50,13 +44,6 @@ export const orderStatusColors: Record<
   OrderStatus,
   { dot: string; chip: string; bg: string }
 > = {
-  // Both legacy `sent` and modern `new` share the same chip style — the
-  // visual is identical regardless of which row the DB still carries.
-  new: {
-    dot: "bg-status-new",
-    chip: "bg-status-new/15 text-status-new",
-    bg: "#9AA3B2",
-  },
   sent: {
     dot: "bg-status-new",
     chip: "bg-status-new/15 text-status-new",
@@ -90,7 +77,7 @@ export const orderStatusColors: Record<
 };
 
 export const orderFlow: OrderStatus[] = [
-  "new",
+  "sent",
   "review",
   "confirmed",
   "shipping",
