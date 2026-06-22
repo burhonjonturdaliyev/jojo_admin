@@ -417,6 +417,7 @@ function AdviceEditor({
                 onChange={(url) => setDraft({ ...draft, image: url })}
                 folder="blog/thumbnails"
                 label={t("advice.field.image")}
+                hint={t("advice.field.imageHint")}
               />
             </div>
             <div className="col-span-2">

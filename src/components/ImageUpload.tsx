@@ -15,6 +15,7 @@ interface Props {
     | "blog/banners"
     | "uploads";
   label?: string;
+  hint?: string;
   className?: string;
 }
 
@@ -23,6 +24,7 @@ export function ImageUpload({
   onChange,
   folder = "uploads",
   label,
+  hint,
   className = "",
 }: Props) {
   const { t } = useT();
@@ -47,7 +49,12 @@ export function ImageUpload({
 
   return (
     <div className={"space-y-2 " + className}>
-      <div className="text-[12px] font-medium text-text-secondary">{displayLabel}</div>
+      <div className="flex items-baseline gap-2">
+        <div className="text-[12px] font-medium text-text-secondary">{displayLabel}</div>
+        {hint && (
+          <div className="text-[10.5px] text-text-muted">{hint}</div>
+        )}
+      </div>
       <div className="flex items-start gap-3">
         <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-line bg-bg-input">
           {value ? (
