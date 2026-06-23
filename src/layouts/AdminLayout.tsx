@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "../components/Sidebar";
+import { NewLoginAlert } from "../components/NewLoginAlert";
 
 export function AdminLayout() {
   return (
@@ -8,6 +9,8 @@ export function AdminLayout() {
       <main className="flex-1 overflow-hidden">
         <Outlet />
       </main>
+      {/* Akkauntga yangi qurilmadan login bo'lsa — global bildirishnoma */}
+      <NewLoginAlert />
     </div>
   );
 }

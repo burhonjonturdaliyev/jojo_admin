@@ -1485,6 +1485,54 @@ export const settingsApi = {
 };
 
 // ============================================================================
+// Admin sessiyalar (Telegram-style "Active Sessions / Devices")
+// ============================================================================
+
+export interface AdminSession {
+  sid: string;
+  is_current: boolean;
+  browser: string;
+  os: string;
+  device_type: string;
+  device_label: string;
+  ip_address: string | null;
+  location_label: string;
+  country: string;
+  city: string;
+  latitude: number | null;
+  longitude: number | null;
+  created_at: string | null;
+  last_seen_at: string | null;
+  age_seconds: number;
+  can_terminate: boolean;
+}
+
+export interface AdminSessionListResponse {
+  sessions: AdminSession[];
+  current_sid: string | null;
+  can_terminate_others: boolean;
+  terminate_others_available_in: number; // sekund (0 = hozir mumkin)
+  rule_window_seconds: number;
+}
+
+export const sessionsApi = {
+  list: () => api<AdminSessionListResponse>("/admin/sessions/"),
+  terminate: (sid: string) =>
+    api<{ status: boolean; sid: string }>(`/admin/sessions/${sid}/terminate/`, {
+      method: "POST",
+    }),
+  terminateOthers: () =>
+    api<{ status: boolean; terminated: number }>(
+      "/admin/sessions/terminate-others/",
+      { method: "POST" },
+    ),
+  alerts: () =>
+    api<{ alerts: AdminSession[]; count: number }>("/admin/sessions/alerts/"),
+  ackAlerts: () =>
+    api<{ status: boolean }>("/admin/sessions/alerts/seen/", { method: "POST" }),
+};
+
+// ============================================================================
 // Helpers — list response shape normallashtirish
 // ============================================================================
 

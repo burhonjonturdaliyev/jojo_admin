@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Lock, CheckCircle2, AlertCircle, LogOut, User } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
+import { DevicesSessionsSection } from "../components/DevicesSessionsSection";
 import { useT } from "../lib/i18n";
 import { useAuth } from "../lib/auth";
 import { settingsApi } from "../lib/resources";
@@ -150,6 +151,9 @@ export function SettingsPage() {
             </div>
           </div>
         </div>
+
+        {/* Faol qurilmalar / sessiyalar (Telegram-style) */}
+        <DevicesSessionsSection />
       </div>
     </div>
   );

@@ -17,6 +17,9 @@ const SOCKET_URL = (() => {
 type LeadEvent =
   | "lead_changed"
   | "lead_comment"
+  // Admin sessiyalar — joriy admin akkauntiga yangi qurilmadan login bo'lganda
+  // server `admin_<id>` room'iga yuboradi (boshqa qurilmalar eshitadi).
+  | "admin.session.new"
   | "connect"
   | "disconnect"
   | "connect_error"
